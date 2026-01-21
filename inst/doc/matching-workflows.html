@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-01-14" />
+<meta name="date" content="2026-01-20" />
 
 <title>Matching Workflows</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Matching Workflows</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-01-14</h4>
+<h4 class="date">2026-01-20</h4>
 
 
 
@@ -363,21 +363,22 @@ pipeline: preprocessing, matching, assessment, and reporting.</p>
 data scientists working with observational data</p>
 <p><strong>Prerequisites</strong>:</p>
 <ul>
-<li>Familiarity with basic <code>couplr</code> usage
-(<code>vignette(&quot;getting-started&quot;)</code>)</li>
-<li>Understanding of causal inference concepts (treatment effects,
-confounding)</li>
-<li>Basic statistics (means, standard deviations, t-tests)</li>
+<li><p>Familiarity with basic <code>couplr</code> usage
+(<code>vignette(&quot;getting-started&quot;)</code>)</p></li>
+<li><p>Understanding of causal inference concepts (treatment effects,
+confounding)</p></li>
+<li><p>Basic statistics (means, standard deviations, t-tests)</p></li>
 </ul>
 <p><strong>What You’ll Learn</strong>:</p>
 <ul>
-<li>How to match treatment and control units with
-<code>match_couples()</code></li>
-<li>Automatic preprocessing: scaling, health checks, categorical
-encoding</li>
-<li>Assessing match quality with <code>balance_diagnostics()</code></li>
-<li>When to use optimal vs greedy matching</li>
-<li>Creating publication-ready balance tables</li>
+<li><p>How to match treatment and control units with
+<code>match_couples()</code></p></li>
+<li><p>Automatic preprocessing: scaling, health checks, categorical
+encoding</p></li>
+<li><p>Assessing match quality with
+<code>balance_diagnostics()</code></p></li>
+<li><p>When to use optimal vs greedy matching</p></li>
+<li><p>Creating publication-ready balance tables</p></li>
 </ul>
 <p><strong>Time to complete</strong>: 30-45 minutes</p>
 </div>
@@ -436,12 +437,13 @@ credibly.</p>
 <div id="key-features" class="section level3">
 <h3>Key Features</h3>
 <ul>
-<li>Automatic preprocessing with health checks and smart scaling</li>
-<li>Optimal matching via linear assignment algorithms</li>
-<li>Fast greedy matching for large datasets (n &gt; 5,000)</li>
-<li>Blocking and stratification support</li>
-<li>Comprehensive balance diagnostics</li>
-<li>Publication-ready output tables</li>
+<li><p>Automatic preprocessing with health checks and smart
+scaling</p></li>
+<li><p>Optimal matching via linear assignment algorithms</p></li>
+<li><p>Fast greedy matching for large datasets (n &gt; 5,000)</p></li>
+<li><p>Blocking and stratification support</p></li>
+<li><p>Comprehensive balance diagnostics</p></li>
+<li><p>Publication-ready output tables</p></li>
 </ul>
 </div>
 </div>
@@ -451,8 +453,9 @@ credibly.</p>
 <h3>The Matching Problem</h3>
 <p>Given two groups of units:</p>
 <ul>
-<li><strong>Left group</strong> (treatment, exposed, cases): <span class="math inline">\(n_L\)</span> units</li>
-<li><strong>Right group</strong> (control, unexposed, controls): <span class="math inline">\(n_R\)</span> units</li>
+<li><p><strong>Left group</strong> (treatment, exposed, cases): <span class="math inline">\(n_L\)</span> units</p></li>
+<li><p><strong>Right group</strong> (control, unexposed, controls):
+<span class="math inline">\(n_R\)</span> units</p></li>
 </ul>
 <p>Each unit <span class="math inline">\(i\)</span> has a covariate
 vector <span class="math inline">\(\mathbf{x}_i \in
@@ -470,18 +473,20 @@ distance function (typically Euclidean or Mahalanobis) and <span class="math inl
 <h3>Why Matching Matters</h3>
 <p><strong>Without matching:</strong></p>
 <ul>
-<li>Groups may differ systematically on important covariates</li>
-<li>Treatment effect estimates are confounded by these differences</li>
-<li>Statistical adjustments (regression) rely on untestable
-assumptions</li>
+<li><p>Groups may differ systematically on important covariates</p></li>
+<li><p>Treatment effect estimates are confounded by these
+differences</p></li>
+<li><p>Statistical adjustments (regression) rely on untestable
+assumptions</p></li>
 </ul>
 <p><strong>With matching:</strong></p>
 <ul>
-<li>Create comparable groups that differ primarily in treatment
-status</li>
-<li>Balance covariates to reduce confounding</li>
-<li>Improve causal inference by mimicking randomized experiments</li>
-<li>Transparent, non-parametric preprocessing step</li>
+<li><p>Create comparable groups that differ primarily in treatment
+status</p></li>
+<li><p>Balance covariates to reduce confounding</p></li>
+<li><p>Improve causal inference by mimicking randomized
+experiments</p></li>
+<li><p>Transparent, non-parametric preprocessing step</p></li>
 </ul>
 </div>
 <div id="distance-metrics" class="section level3">
@@ -583,12 +588,13 @@ automatic preprocessing:</p>
 <span id="cb1-70"><a href="#cb1-70" tabindex="-1"></a><span class="co">#&gt; [1] 150</span></span></code></pre></div>
 <p>The result contains:</p>
 <ul>
-<li><code>pairs</code>: Matched pairs with IDs and distances</li>
-<li><code>info</code>: Matching method, counts, total distance</li>
-<li><code>left_unmatched</code>, <code>right_unmatched</code>: Units
-without matches</li>
-<li><code>cost_matrix</code>: Full distance matrix (if
-<code>return_diagnostics = TRUE</code>)</li>
+<li><p><code>pairs</code>: Matched pairs with IDs and distances</p></li>
+<li><p><code>info</code>: Matching method, counts, total
+distance</p></li>
+<li><p><code>left_unmatched</code>, <code>right_unmatched</code>: Units
+without matches</p></li>
+<li><p><code>cost_matrix</code>: Full distance matrix (if
+<code>return_diagnostics = TRUE</code>)</p></li>
 </ul>
 </div>
 <div id="understanding-the-output" class="section level3">
@@ -621,10 +627,11 @@ without matches</li>
 <p><img role="img" aria-label="Histogram showing the distribution of match distances, with most matches having low distances indicating good match quality" src="data:image/png;base64,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" alt="Histogram showing the distribution of match distances, with most matches having low distances indicating good match quality" /></p>
 <p><strong>Interpretation:</strong></p>
 <ul>
-<li>Lower distances indicate better matches (more similar units)</li>
-<li>Median distance provides typical match quality</li>
-<li>Large distances suggest poor matches (consider caliper
-constraints)</li>
+<li><p>Lower distances indicate better matches (more similar
+units)</p></li>
+<li><p>Median distance provides typical match quality</p></li>
+<li><p>Large distances suggest poor matches (consider caliper
+constraints)</p></li>
 </ul>
 </div>
 </div>
@@ -634,12 +641,12 @@ constraints)</li>
 <h3>Why Preprocessing Matters</h3>
 <p>Raw covariates often have:</p>
 <ul>
-<li><strong>Different scales</strong>: Age in years (20-80), income in
-dollars (20,000-200,000)</li>
-<li><strong>Different units</strong>: Continuous (age), categorical
-(education), binary (smoker)</li>
-<li><strong>Data quality issues</strong>: Missing values, constant
-variables, extreme outliers</li>
+<li><p><strong>Different scales</strong>: Age in years (20-80), income
+in dollars (20,000-200,000)</p></li>
+<li><p><strong>Different units</strong>: Continuous (age), categorical
+(education), binary (smoker)</p></li>
+<li><p><strong>Data quality issues</strong>: Missing values, constant
+variables, extreme outliers</p></li>
 </ul>
 <p>Without preprocessing, high-variance variables dominate distance
 calculations.</p>
@@ -649,22 +656,22 @@ calculations.</p>
 <p>When <code>auto_scale = TRUE</code>, <code>match_couples()</code>
 automatically:</p>
 <ol style="list-style-type: decimal">
-<li><strong>Detects problematic variables</strong>
+<li><p><strong>Detects problematic variables</strong></p>
 <ul>
-<li>Constant variables (SD = 0) → excluded with warning</li>
-<li>High missingness (&gt;50%) → warned</li>
-<li>Extreme skewness (|skew| &gt; 2) → informed</li>
+<li><p>Constant variables (SD = 0) → excluded with warning</p></li>
+<li><p>High missingness (&gt;50%) → warned</p></li>
+<li><p>Extreme skewness (|skew| &gt; 2) → informed</p></li>
 </ul></li>
-<li><strong>Applies appropriate scaling</strong>
+<li><p><strong>Applies appropriate scaling</strong></p>
 <ul>
-<li>Continuous variables → scaled by selected method</li>
-<li>Binary variables (0/1) → used as-is</li>
-<li>Categorical → converted to numeric if ordered</li>
+<li><p>Continuous variables → scaled by selected method</p></li>
+<li><p>Binary variables (0/1) → used as-is</p></li>
+<li><p>Categorical → converted to numeric if ordered</p></li>
 </ul></li>
-<li><strong>Handles categorical variables</strong>
+<li><p><strong>Handles categorical variables</strong></p>
 <ul>
-<li>Unordered factors → converted to binary indicators</li>
-<li>Ordered factors → converted to numeric ranks</li>
+<li><p>Unordered factors → converted to binary indicators</p></li>
+<li><p>Ordered factors → converted to numeric ranks</p></li>
 </ul></li>
 </ol>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Create data with scaling challenges</span></span>
@@ -715,27 +722,27 @@ default): <span class="math display">\[
 x_{\text{scaled}} = \frac{x - \text{median}(x)}{\text{MAD}(x)}
 \]</span></p>
 <ul>
-<li>Uses median and median absolute deviation (MAD)</li>
-<li>Resistant to outliers and skewness</li>
-<li>Best for: Real-world data with potential outliers</li>
+<li><p>Uses median and median absolute deviation (MAD)</p></li>
+<li><p>Resistant to outliers and skewness</p></li>
+<li><p>Best for: Real-world data with potential outliers</p></li>
 </ul>
 <p><strong>2. Standardization</strong>
 (<code>scale = &quot;standardize&quot;</code>): <span class="math display">\[
 x_{\text{scaled}} = \frac{x - \text{mean}(x)}{\text{SD}(x)}
 \]</span></p>
 <ul>
-<li>Classical z-score normalization</li>
-<li>Assumes approximate normality</li>
-<li>Best for: Clean, normally-distributed data</li>
+<li><p>Classical z-score normalization</p></li>
+<li><p>Assumes approximate normality</p></li>
+<li><p>Best for: Clean, normally-distributed data</p></li>
 </ul>
 <p><strong>3. Range scaling</strong> (<code>scale = &quot;range&quot;</code>):
 <span class="math display">\[
 x_{\text{scaled}} = \frac{x - \min(x)}{\max(x) - \min(x)}
 \]</span></p>
 <ul>
-<li>Scales to [0, 1] range</li>
-<li>Preserves exact relationships</li>
-<li>Best for: Bounded variables, visualization</li>
+<li><p>Scales to [0, 1] range</p></li>
+<li><p>Preserves exact relationships</p></li>
+<li><p>Best for: Bounded variables, visualization</p></li>
 </ul>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Demonstrate scaling methods</span></span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>demo_var <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">20</span>, <span class="dv">25</span>, <span class="dv">30</span>, <span class="dv">100</span>)  <span class="co"># Contains outlier (100)</span></span>
@@ -808,20 +815,20 @@ alternatives.</p>
 <p><strong>Optimal matching</strong>
 (<code>method = &quot;optimal&quot;</code>):</p>
 <ul>
-<li>Minimizes total distance (globally optimal solution)</li>
-<li>Uses linear assignment algorithms (<span class="math inline">\(O(n^3)\)</span> complexity)</li>
-<li>Suitable for: n &lt; 5,000, when optimality is critical</li>
-<li>Typical runtime: &lt;1 second for n=1,000, ~10 seconds for
-n=3,000</li>
+<li><p>Minimizes total distance (globally optimal solution)</p></li>
+<li><p>Uses linear assignment algorithms (<span class="math inline">\(O(n^3)\)</span> complexity)</p></li>
+<li><p>Suitable for: n &lt; 5,000, when optimality is critical</p></li>
+<li><p>Typical runtime: &lt;1 second for n=1,000, ~10 seconds for
+n=3,000</p></li>
 </ul>
 <p><strong>Greedy matching</strong>
 (<code>method = &quot;greedy&quot;</code>):</p>
 <ul>
-<li>Fast approximation (10-100x faster)</li>
-<li>Three strategies: sorted, row_best, pq</li>
-<li>Suitable for: n &gt; 5,000, exploratory analysis, when speed
-matters</li>
-<li>Typical runtime: &lt;1 second for n=10,000</li>
+<li><p>Fast approximation (10-100x faster)</p></li>
+<li><p>Three strategies: sorted, row_best, pq</p></li>
+<li><p>Suitable for: n &gt; 5,000, exploratory analysis, when speed
+matters</p></li>
+<li><p>Typical runtime: &lt;1 second for n=10,000</p></li>
 </ul>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Create moderately large dataset</span></span>
 <span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">789</span>)</span>
@@ -861,18 +868,18 @@ matters</li>
 <span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Optimal matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co">#&gt; Optimal matching:</span></span>
 <span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 195.72 seconds</span></span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 162.73 seconds</span></span>
 <span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_optimal<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.3368</span></span>
 <span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a></span>
 <span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a><span class="co">#&gt; Greedy matching:</span></span>
 <span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 1.64 seconds</span></span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 1.58 seconds</span></span>
 <span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_greedy<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.4667</span></span>
 <span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Speedup:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>] <span class="sc">/</span> time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">1</span>), <span class="st">&quot;x</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 119.3 x</span></span></code></pre></div>
+<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 103 x</span></span></code></pre></div>
 </div>
 <div id="greedy-strategies" class="section level3">
 <h3>Greedy Strategies</h3>
@@ -880,37 +887,44 @@ matters</li>
 <code>greedy_couples()</code>:</p>
 <p><strong>1. Sorted</strong> (<code>strategy = &quot;sorted&quot;</code>):</p>
 <ul>
-<li>Sort all possible pairs by distance</li>
-<li>Assign greedily from best to worst</li>
-<li>Best quality among greedy methods</li>
-<li>Slowest greedy option (still much faster than optimal)</li>
+<li><p>Sort all possible pairs by distance</p></li>
+<li><p>Assign greedily from best to worst</p></li>
+<li><p>Best quality among greedy methods</p></li>
+<li><p>Slowest greedy option (still much faster than optimal)</p></li>
 </ul>
 <pre><code>Algorithm:
 1. Compute all n_L × n_R distances
+
 2. Sort pairs by distance (ascending)
+
 3. For each pair in sorted order:
+
    - If both units unmatched, assign them
+
 4. Stop when no more matches possible</code></pre>
 <p><strong>2. Row-best</strong> (<code>strategy = &quot;row_best&quot;</code>,
 default):</p>
 <ul>
-<li>For each left unit, find best available right unit</li>
-<li>Process left units in order</li>
-<li>Fast and simple</li>
-<li>Medium quality</li>
+<li><p>For each left unit, find best available right unit</p></li>
+<li><p>Process left units in order</p></li>
+<li><p>Fast and simple</p></li>
+<li><p>Medium quality</p></li>
 </ul>
 <pre><code>Algorithm:
 1. For i = 1 to n_L:
+
    - Find unmatched right unit j with minimum distance to i
+
    - Assign (i, j)
+
 2. Return all assignments</code></pre>
 <p><strong>3. Priority queue</strong>
 (<code>strategy = &quot;pq&quot;</code>):</p>
 <ul>
-<li>Maintains priority queue of potential matches</li>
-<li>Updates dynamically as assignments made</li>
-<li>Best for very large problems</li>
-<li>Fastest option</li>
+<li><p>Maintains priority queue of potential matches</p></li>
+<li><p>Updates dynamically as assignments made</p></li>
+<li><p>Best for very large problems</p></li>
+<li><p>Fastest option</p></li>
 </ul>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Compare greedy strategies on same data</span></span>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">101</span>)</span>
@@ -948,16 +962,16 @@ default):</p>
 <span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a></span>
 <span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a><span class="fu">print</span>(comparison)</span>
 <span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt;          strategy time_sec mean_distance total_distance</span></span>
-<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; elapsed    sorted     0.06        0.0912          18.24</span></span>
-<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; elapsed1 row_best     0.06        0.0968          19.36</span></span>
-<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.08        0.0912          18.24</span></span></code></pre></div>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; elapsed    sorted     0.07        0.0912          18.24</span></span>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; elapsed1 row_best     0.04        0.0968          19.36</span></span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.04        0.0912          18.24</span></span></code></pre></div>
 <p><strong>Recommendation:</strong></p>
 <ul>
-<li>Default to <code>strategy = &quot;row_best&quot;</code> for good speed/quality
-balance</li>
-<li>Use <code>strategy = &quot;sorted&quot;</code> when quality is important but
-optimal is too slow</li>
-<li>Use <code>strategy = &quot;pq&quot;</code> for n &gt; 10,000</li>
+<li><p>Default to <code>strategy = &quot;row_best&quot;</code> for good
+speed/quality balance</p></li>
+<li><p>Use <code>strategy = &quot;sorted&quot;</code> when quality is important
+but optimal is too slow</p></li>
+<li><p>Use <code>strategy = &quot;pq&quot;</code> for n &gt; 10,000</p></li>
 </ul>
 </div>
 </div>
@@ -970,10 +984,12 @@ quality.</p>
 <p>Without calipers, optimal matching may pair very dissimilar units
 just to maximize the number of matches. Calipers prevent this by:</p>
 <ul>
-<li>Setting a distance threshold beyond which matches are forbidden</li>
-<li>Reducing the number of matches to improve average quality</li>
-<li>Implementing the “common support” requirement in propensity score
-matching</li>
+<li><p>Setting a distance threshold beyond which matches are
+forbidden</p></li>
+<li><p>Reducing the number of matches to improve average
+quality</p></li>
+<li><p>Implementing the “common support” requirement in propensity score
+matching</p></li>
 </ul>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Create data where some units are far apart</span></span>
 <span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">202</span>)</span>
@@ -1093,19 +1109,21 @@ matching on remaining covariates is a powerful strategy.</p>
 <h3>Why Use Blocking</h3>
 <p><strong>Benefits:</strong></p>
 <ul>
-<li>Ensures exact balance on critical variables (site, gender, age
-category)</li>
-<li>Reduces problem size (smaller within-block matching problems)</li>
-<li>Prevents poor cross-block matches</li>
-<li>Transparent and interpretable</li>
+<li><p>Ensures exact balance on critical variables (site, gender, age
+category)</p></li>
+<li><p>Reduces problem size (smaller within-block matching
+problems)</p></li>
+<li><p>Prevents poor cross-block matches</p></li>
+<li><p>Transparent and interpretable</p></li>
 </ul>
 <p><strong>When to use:</strong></p>
 <ul>
-<li>Strong domain knowledge about important stratification
-variables</li>
-<li>Variables that absolutely must be balanced (e.g., study site in
-multi-center trials)</li>
-<li>Large datasets where blocking reduces computational burden</li>
+<li><p>Strong domain knowledge about important stratification
+variables</p></li>
+<li><p>Variables that absolutely must be balanced (e.g., study site in
+multi-center trials)</p></li>
+<li><p>Large datasets where blocking reduces computational
+burden</p></li>
 </ul>
 </div>
 <div id="exact-blocking-with-matchmaker" class="section level3">
@@ -1163,8 +1181,8 @@ multi-center trials)</li>
 <span id="cb13-51"><a href="#cb13-51" tabindex="-1"></a><span class="co"># Verify exact site balance</span></span>
 <span id="cb13-52"><a href="#cb13-52" tabindex="-1"></a>result_blocked<span class="sc">$</span>pairs <span class="sc">%&gt;%</span></span>
 <span id="cb13-53"><a href="#cb13-53" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">left_id =</span> <span class="fu">as.integer</span>(left_id), <span class="at">right_id =</span> <span class="fu">as.integer</span>(right_id)) <span class="sc">%&gt;%</span></span>
-<span id="cb13-54"><a href="#cb13-54" tabindex="-1"></a>  <span class="fu">left_join</span>(left_site <span class="sc">%&gt;%</span> <span class="fu">select</span>(id, site), <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;left_id&quot;</span> <span class="ot">=</span> <span class="st">&quot;id&quot;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb13-55"><a href="#cb13-55" tabindex="-1"></a>  <span class="fu">left_join</span>(right_site <span class="sc">%&gt;%</span> <span class="fu">select</span>(id, site), <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;right_id&quot;</span> <span class="ot">=</span> <span class="st">&quot;id&quot;</span>), <span class="at">suffix =</span> <span class="fu">c</span>(<span class="st">&quot;_left&quot;</span>, <span class="st">&quot;_right&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb13-54"><a href="#cb13-54" tabindex="-1"></a>  <span class="fu">left_join</span>(left_site <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(id, site), <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;left_id&quot;</span> <span class="ot">=</span> <span class="st">&quot;id&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb13-55"><a href="#cb13-55" tabindex="-1"></a>  <span class="fu">left_join</span>(right_site <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(id, site), <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;right_id&quot;</span> <span class="ot">=</span> <span class="st">&quot;id&quot;</span>), <span class="at">suffix =</span> <span class="fu">c</span>(<span class="st">&quot;_left&quot;</span>, <span class="st">&quot;_right&quot;</span>)) <span class="sc">%&gt;%</span></span>
 <span id="cb13-56"><a href="#cb13-56" tabindex="-1"></a>  <span class="fu">count</span>(site_left, site_right)</span>
 <span id="cb13-57"><a href="#cb13-57" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 3</span></span>
 <span id="cb13-58"><a href="#cb13-58" tabindex="-1"></a><span class="co">#&gt;   site_left site_right     n</span></span>
@@ -1235,9 +1253,9 @@ blocks:</p>
 \]</span></p>
 <p><strong>Thresholds:</strong></p>
 <ul>
-<li>&lt; 0.1: Excellent balance</li>
-<li>0.1 - 0.25: Good balance</li>
-<li>0.25 - 0.5: Acceptable (may need further adjustment)</li>
+<li><p>&lt; 0.1: Excellent balance</p></li>
+<li><p>0.1 - 0.25: Good balance</p></li>
+<li><p>0.25 - 0.5: Acceptable (may need further adjustment)</p></li>
 <li><blockquote>
 <p>0.5: Poor balance (reconsider matching strategy)</p>
 </blockquote></li>
@@ -1247,14 +1265,14 @@ blocks:</p>
 \]</span></p>
 <p><strong>Interpretation:</strong></p>
 <ul>
-<li>Close to 1.0: Similar variability (good)</li>
-<li>&lt; 0.5 or &gt; 2.0: Concerning imbalance in spread</li>
+<li><p>Close to 1.0: Similar variability (good)</p></li>
+<li><p>&lt; 0.5 or &gt; 2.0: Concerning imbalance in spread</p></li>
 </ul>
 <p><strong>3. Kolmogorov-Smirnov tests:</strong></p>
 <ul>
-<li>Non-parametric test for distributional differences</li>
-<li>Sensitive to differences beyond mean/variance</li>
-<li>P-value &gt; 0.05 suggests similar distributions</li>
+<li><p>Non-parametric test for distributional differences</p></li>
+<li><p>Sensitive to differences beyond mean/variance</p></li>
+<li><p>P-value &gt; 0.05 suggests similar distributions</p></li>
 </ul>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># Perform matching</span></span>
 <span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>match_result <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
@@ -1369,23 +1387,25 @@ Variable Statistics:
 </table>
 <p><strong>Quality thresholds</strong> for standardized differences:</p>
 <ul>
-<li><strong>&lt; 0.1</strong>: Excellent balance (treat as successfully
-matched)</li>
-<li><strong>0.1-0.25</strong>: Good balance (acceptable for most
-purposes)</li>
-<li><strong>0.25-0.5</strong>: Marginal (consider refinement or
-sensitivity analysis)</li>
-<li><strong>&gt; 0.5</strong>: Poor balance (matching strategy needs
-revision)</li>
+<li><p><strong>&lt; 0.1</strong>: Excellent balance (treat as
+successfully matched)</p></li>
+<li><p><strong>0.1-0.25</strong>: Good balance (acceptable for most
+purposes)</p></li>
+<li><p><strong>0.25-0.5</strong>: Marginal (consider refinement or
+sensitivity analysis)</p></li>
+<li><p><strong>&gt; 0.5</strong>: Poor balance (matching strategy needs
+revision)</p></li>
 </ul>
 <p><strong>What to do if balance is poor</strong>:</p>
 <ol style="list-style-type: decimal">
-<li><strong>Add more matching variables</strong> that explain the
-imbalance</li>
-<li><strong>Tighten calipers</strong> (accept fewer matches but better
-quality)</li>
-<li><strong>Try blocking</strong> on the problematic variable</li>
-<li><strong>Report and discuss</strong> in limitations section</li>
+<li><p><strong>Add more matching variables</strong> that explain the
+imbalance</p></li>
+<li><p><strong>Tighten calipers</strong> (accept fewer matches but
+better quality)</p></li>
+<li><p><strong>Try blocking</strong> on the problematic
+variable</p></li>
+<li><p><strong>Report and discuss</strong> in limitations
+section</p></li>
 </ol>
 </div>
 <div id="visualizing-balance" class="section level3">
@@ -1406,7 +1426,7 @@ quality)</li>
 <span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a><span class="co"># Combine for plotting</span></span>
 <span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a>balance_comparison <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
 <span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a>  pre_match_stats,</span>
-<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a>  balance<span class="sc">$</span>var_stats <span class="sc">%&gt;%</span> <span class="fu">select</span>(variable, std_diff) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">when =</span> <span class="st">&quot;After&quot;</span>)</span>
+<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a>  balance<span class="sc">$</span>var_stats <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(variable, std_diff) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">when =</span> <span class="st">&quot;After&quot;</span>)</span>
 <span id="cb17-18"><a href="#cb17-18" tabindex="-1"></a>)</span>
 <span id="cb17-19"><a href="#cb17-19" tabindex="-1"></a></span>
 <span id="cb17-20"><a href="#cb17-20" tabindex="-1"></a><span class="fu">ggplot</span>(balance_comparison, <span class="fu">aes</span>(<span class="at">x =</span> variable, <span class="at">y =</span> std_diff, <span class="at">fill =</span> when)) <span class="sc">+</span></span>
@@ -1451,10 +1471,11 @@ Participants self-selected into the program, creating potential
 selection bias.</p>
 <p><strong>Data:</strong></p>
 <ul>
-<li>Treatment: 200 program participants</li>
-<li>Control: 500 non-participants</li>
-<li>Covariates: age, education, prior earnings, employment status</li>
-<li>Outcome: Earnings one year after program</li>
+<li><p>Treatment: 200 program participants</p></li>
+<li><p>Control: 500 non-participants</p></li>
+<li><p>Covariates: age, education, prior earnings, employment
+status</p></li>
+<li><p>Outcome: Earnings one year after program</p></li>
 </ul>
 </div>
 <div id="step-1-data-preparation" class="section level3">
@@ -1697,32 +1718,32 @@ selection bias.</p>
 <h3>Scalability</h3>
 <p><strong>Optimal matching complexity:</strong> <span class="math inline">\(O(n^3)\)</span> using Jonker-Volgenant</p>
 <ul>
-<li>n = 100: &lt; 0.01 seconds</li>
-<li>n = 500: ~ 0.1 seconds</li>
-<li>n = 1,000: ~ 1 second</li>
-<li>n = 3,000: ~ 10 seconds</li>
-<li>n = 5,000: ~ 30-60 seconds</li>
+<li><p>n = 100: &lt; 0.01 seconds</p></li>
+<li><p>n = 500: ~ 0.1 seconds</p></li>
+<li><p>n = 1,000: ~ 1 second</p></li>
+<li><p>n = 3,000: ~ 10 seconds</p></li>
+<li><p>n = 5,000: ~ 30-60 seconds</p></li>
 </ul>
 <p><strong>Greedy matching complexity:</strong> <span class="math inline">\(O(n^2 \log n)\)</span> for sorted, <span class="math inline">\(O(n^2)\)</span> for row-best</p>
 <ul>
-<li>n = 5,000: ~ 1 second</li>
-<li>n = 10,000: ~ 3-5 seconds</li>
-<li>n = 50,000: ~ 30-60 seconds</li>
+<li><p>n = 5,000: ~ 1 second</p></li>
+<li><p>n = 10,000: ~ 3-5 seconds</p></li>
+<li><p>n = 50,000: ~ 30-60 seconds</p></li>
 </ul>
 </div>
 <div id="memory-usage" class="section level3">
 <h3>Memory Usage</h3>
 <ul>
-<li>Cost matrix: 8n² bytes (for n×n problem)</li>
-<li>n = 1,000: ~ 8 MB</li>
-<li>n = 5,000: ~ 200 MB</li>
-<li>n = 10,000: ~ 800 MB</li>
+<li><p>Cost matrix: 8n² bytes (for n×n problem)</p></li>
+<li><p>n = 1,000: ~ 8 MB</p></li>
+<li><p>n = 5,000: ~ 200 MB</p></li>
+<li><p>n = 10,000: ~ 800 MB</p></li>
 </ul>
 <p>For very large problems:</p>
 <ol style="list-style-type: decimal">
-<li>Use greedy matching to avoid full cost matrix</li>
-<li>Use blocking to reduce within-block size</li>
-<li>Consider approximate methods (upcoming vignette)</li>
+<li><p>Use greedy matching to avoid full cost matrix</p></li>
+<li><p>Use blocking to reduce within-block size</p></li>
+<li><p>Consider approximate methods (upcoming vignette)</p></li>
 </ol>
 </div>
 <div id="optimization-tips" class="section level3">
@@ -1776,8 +1797,11 @@ solutions.</p>
 <p><strong>Symptom</strong>: <code>balance_diagnostics()</code> shows
 |std_diff| &gt; 0.25 for some variables.</p>
 <p><strong>Causes</strong>: - Groups are fundamentally too different
-(weak overlap) - Important confounders not included in matching
-variables - Caliper too loose</p>
+(weak overlap)</p>
+<ul>
+<li><p>Important confounders not included in matching variables</p></li>
+<li><p>Caliper too loose</p></li>
+</ul>
 <p><strong>Solutions</strong>:</p>
 <div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="co"># 1. Add more matching variables</span></span>
 <span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(left, right,</span>
@@ -1797,8 +1821,11 @@ variables - Caliper too loose</p>
 <h3>Problem: Very Few Matches</h3>
 <p><strong>Symptom</strong>: <code>n_matched</code> is much smaller than
 <code>nrow(left)</code>.</p>
-<p><strong>Causes</strong>: - Caliper too strict - Non-overlapping
-covariate distributions - Blocking creates small strata</p>
+<p><strong>Causes</strong>: - Caliper too strict</p>
+<ul>
+<li><p>Non-overlapping covariate distributions</p></li>
+<li><p>Blocking creates small strata</p></li>
+</ul>
 <p><strong>Diagnosis</strong>:</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># Check covariate overlap</span></span>
 <span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
@@ -1809,9 +1836,12 @@ covariate distributions - Blocking creates small strata</p>
 <span id="cb27-7"><a href="#cb27-7" tabindex="-1"></a><span class="fu">ggplot</span>(combined, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">fill =</span> group)) <span class="sc">+</span></span>
 <span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a>  <span class="fu">geom_density</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
 <span id="cb27-9"><a href="#cb27-9" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&quot;Check for Overlap&quot;</span>)</span></code></pre></div>
-<p><strong>Solutions</strong>: - Relax caliper - Use coarser blocking
-categories - Accept that some treatment units are unmatchable (report
-this!)</p>
+<p><strong>Solutions</strong>: - Relax caliper</p>
+<ul>
+<li><p>Use coarser blocking categories</p></li>
+<li><p>Accept that some treatment units are unmatchable (report
+this!)</p></li>
+</ul>
 </div>
 <div id="problem-matching-takes-too-long" class="section level3">
 <h3>Problem: Matching Takes Too Long</h3>
@@ -1834,8 +1864,11 @@ vector of size X”.</p>
 <p><strong>Cause</strong>: Full cost matrix doesn’t fit in RAM. A
 10,000×10,000 matrix needs ~800 MB.</p>
 <p><strong>Solutions</strong>: - Use <code>greedy_couples()</code> which
-doesn’t require full matrix - Use blocking to create smaller
-sub-problems - Consider random sampling if sample size permits</p>
+doesn’t require full matrix</p>
+<ul>
+<li><p>Use blocking to create smaller sub-problems</p></li>
+<li><p>Consider random sampling if sample size permits</p></li>
+</ul>
 </div>
 </div>
 <div id="summary" class="section level2">
@@ -1843,18 +1876,18 @@ sub-problems - Consider random sampling if sample size permits</p>
 <p>This vignette walked through a complete matching workflow using the
 job training evaluation example:</p>
 <ol style="list-style-type: decimal">
-<li><strong>Problem framing</strong>: Treatment effect estimation with
-selection bias</li>
-<li><strong>Matching</strong>: Creating comparable groups with
-<code>match_couples()</code></li>
-<li><strong>Preprocessing</strong>: Automatic scaling and variable
-health checks</li>
-<li><strong>Assessment</strong>: Balance diagnostics and
-interpretation</li>
-<li><strong>Refinement</strong>: Calipers, blocking, and greedy
-alternatives</li>
-<li><strong>Estimation</strong>: Treatment effect with confidence
-intervals</li>
+<li><p><strong>Problem framing</strong>: Treatment effect estimation
+with selection bias</p></li>
+<li><p><strong>Matching</strong>: Creating comparable groups with
+<code>match_couples()</code></p></li>
+<li><p><strong>Preprocessing</strong>: Automatic scaling and variable
+health checks</p></li>
+<li><p><strong>Assessment</strong>: Balance diagnostics and
+interpretation</p></li>
+<li><p><strong>Refinement</strong>: Calipers, blocking, and greedy
+alternatives</p></li>
+<li><p><strong>Estimation</strong>: Treatment effect with confidence
+intervals</p></li>
 </ol>
 <p><strong>Key Takeaways</strong>:</p>
 <table>
@@ -1899,16 +1932,18 @@ reason not to</td>
 <div id="see-also" class="section level2">
 <h2>See Also</h2>
 <ul>
-<li><code>vignette(&quot;getting-started&quot;)</code> - Basic LAP solving</li>
-<li><code>vignette(&quot;algorithms&quot;)</code> - Mathematical foundations</li>
-<li><code>vignette(&quot;comparison&quot;)</code> - How couplr compares to
-MatchIt, optmatch, designmatch</li>
-<li><code>vignette(&quot;troubleshooting&quot;)</code> - Common issues and
-solutions</li>
-<li><code>vignette(&quot;pixel-morphing&quot;)</code> - Large-scale approximation
-strategies</li>
-<li><code>?match_couples</code>, <code>?greedy_couples</code>,
-<code>?balance_diagnostics</code>, <code>?matchmaker</code></li>
+<li><p><code>vignette(&quot;getting-started&quot;)</code> - Basic LAP
+solving</p></li>
+<li><p><code>vignette(&quot;algorithms&quot;)</code> - Mathematical
+foundations</p></li>
+<li><p><code>vignette(&quot;comparison&quot;)</code> - How couplr compares to
+MatchIt, optmatch, designmatch</p></li>
+<li><p><code>vignette(&quot;troubleshooting&quot;)</code> - Common issues and
+solutions</p></li>
+<li><p><code>vignette(&quot;pixel-morphing&quot;)</code> - Large-scale
+approximation strategies</p></li>
+<li><p><code>?match_couples</code>, <code>?greedy_couples</code>,
+<code>?balance_diagnostics</code>, <code>?matchmaker</code></p></li>
 </ul>
 </div>
 

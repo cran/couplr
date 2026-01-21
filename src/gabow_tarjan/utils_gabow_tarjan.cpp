@@ -1380,9 +1380,9 @@ void solve_gabow_tarjan_inner(const CostMatrix& cost,
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < m; ++j) {
                 if (scaled_cost[i][j] < BIG_INT) {
-                    // Double current cost
-                    c_current[i][j] = c_current[i][j] << 1;
-                    
+                    // Double current cost (use multiplication to avoid UB on negative values)
+                    c_current[i][j] = c_current[i][j] * 2;
+
                     // Add bit s
                     long long bit_s = (scaled_cost[i][j] >> s) & 1LL;
                     c_current[i][j] += bit_s;
@@ -1391,11 +1391,12 @@ void solve_gabow_tarjan_inner(const CostMatrix& cost,
         }
         
         // Update duals: y(v) ← 2y(v) - 1
+        // Use multiplication instead of bit shift to avoid UB with negative values
         for (int i = 0; i < n; ++i) {
-            y_u[i] = (y_u[i] << 1) - 1;
+            y_u[i] = 2 * y_u[i] - 1;
         }
         for (int j = 0; j < m; ++j) {
-            y_v[j] = (y_v[j] << 1) - 1;
+            y_v[j] = 2 * y_v[j] - 1;
         }
         
         // Step 2: Find 1-optimal matching with scale_match

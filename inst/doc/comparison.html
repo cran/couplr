@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-01-14" />
+<meta name="date" content="2026-01-20" />
 
 <title>Comparison with Alternatives</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Comparison with Alternatives</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-01-14</h4>
+<h4 class="date">2026-01-20</h4>
 
 
 
@@ -349,10 +349,15 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <h2>Overview</h2>
 <p>This vignette compares couplr’s approach to matching with established
 R packages: 1. <strong>MatchIt</strong> - The most popular matching
-package in R 2. <strong>optmatch</strong> - Optimal full matching with
-constraints 3. <strong>designmatch</strong> - Optimization-based
-matching with balance constraints 4. <strong>Matching</strong> - Genetic
-matching and multivariate matching</p>
+package in R</p>
+<ol start="2" style="list-style-type: decimal">
+<li><p><strong>optmatch</strong> - Optimal full matching with
+constraints</p></li>
+<li><p><strong>designmatch</strong> - Optimization-based matching with
+balance constraints</p></li>
+<li><p><strong>Matching</strong> - Genetic matching and multivariate
+matching</p></li>
+</ol>
 <p>Each comparison examines algorithmic differences, API design,
 performance characteristics, and appropriate use cases. We use simulated
 observational data to demonstrate practical differences.</p>
@@ -487,7 +492,7 @@ matches directly on covariates (multivariate distance).</p>
 <span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>  )</span>
 <span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a></span>
 <span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>  couplr_balance_df <span class="ot">&lt;-</span> couplr_balance<span class="sc">$</span>var_stats <span class="sc">%&gt;%</span></span>
-<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>    <span class="fu">select</span>(variable, std_diff) <span class="sc">%&gt;%</span></span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">select</span>(variable, std_diff) <span class="sc">%&gt;%</span></span>
 <span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">method =</span> <span class="st">&quot;couplr&quot;</span>)</span>
 <span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a></span>
 <span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a>  <span class="co"># Combine and plot</span></span>
@@ -571,14 +576,22 @@ matches directly on covariates (multivariate distance).</p>
 <div id="when-to-use-each" class="section level3">
 <h3>When to Use Each</h3>
 <p><strong>MatchIt</strong>: - Propensity score methods are preferred
-(common in epidemiology) - Need full matching, CEM, or genetic matching
-- Following published protocols that specify MatchIt - Familiar with
-propensity score theory</p>
+(common in epidemiology)</p>
+<ul>
+<li><p>Need full matching, CEM, or genetic matching</p></li>
+<li><p>Following published protocols that specify MatchIt</p></li>
+<li><p>Familiar with propensity score theory</p></li>
+</ul>
 <p><strong>couplr</strong>: - Direct covariate matching is preferred (no
-model for treatment) - Need optimal (minimum distance) one-to-one
-matching - Working with large datasets (20+ LAP algorithms for different
-scales) - Need fine-grained control over distance computation - Matching
-on continuous variables where Euclidean distance is natural</p>
+model for treatment)</p>
+<ul>
+<li><p>Need optimal (minimum distance) one-to-one matching</p></li>
+<li><p>Working with large datasets (20+ LAP algorithms for different
+scales)</p></li>
+<li><p>Need fine-grained control over distance computation</p></li>
+<li><p>Matching on continuous variables where Euclidean distance is
+natural</p></li>
+</ul>
 <hr />
 </div>
 </div>
@@ -635,12 +648,12 @@ matching with 20+ algorithm choices.</p>
 <p>Both packages use optimal assignment algorithms, so they should
 achieve similar total distances. The key differences are in:</p>
 <ol style="list-style-type: decimal">
-<li><strong>API design</strong>: optmatch uses formula interface; couplr
-uses separate data frames</li>
-<li><strong>Algorithm selection</strong>: optmatch uses RELAX-IV; couplr
-offers 20+ algorithms</li>
-<li><strong>Full matching</strong>: optmatch supports variable-ratio
-matching; couplr is one-to-one only</li>
+<li><p><strong>API design</strong>: optmatch uses formula interface;
+couplr uses separate data frames</p></li>
+<li><p><strong>Algorithm selection</strong>: optmatch uses RELAX-IV;
+couplr offers 20+ algorithms</p></li>
+<li><p><strong>Full matching</strong>: optmatch supports variable-ratio
+matching; couplr is one-to-one only</p></li>
 </ol>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;optmatch&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="co"># Compare total distances</span></span>
@@ -701,12 +714,18 @@ matching; couplr is one-to-one only</li>
 <div id="when-to-use-each-1" class="section level3">
 <h3>When to Use Each</h3>
 <p><strong>optmatch</strong>: - Full matching or variable ratio matching
-needed - Network flow formulation is preferred - Integration with
-RItools for diagnostics</p>
-<p><strong>couplr</strong>: - One-to-one matching is sufficient - Need
-algorithm flexibility (auction for n &gt; 1000, sparse methods, etc.) -
-Large-scale problems requiring greedy approximations - Distance caching
-for iterative analysis</p>
+needed</p>
+<ul>
+<li><p>Network flow formulation is preferred</p></li>
+<li><p>Integration with RItools for diagnostics</p></li>
+</ul>
+<p><strong>couplr</strong>: - One-to-one matching is sufficient</p>
+<ul>
+<li><p>Need algorithm flexibility (auction for n &gt; 1000, sparse
+methods, etc.)</p></li>
+<li><p>Large-scale problems requiring greedy approximations</p></li>
+<li><p>Distance caching for iterative analysis</p></li>
+</ul>
 <hr />
 </div>
 </div>
@@ -837,12 +856,19 @@ through distance minimization:</p>
 <div id="when-to-use-each-2" class="section level3">
 <h3>When to Use Each</h3>
 <p><strong>designmatch</strong>: - Specific balance requirements must be
-guaranteed - Cardinality matching (fixed sample sizes) - Fine-grained
-moment balancing (means, variances, quantiles) - Willing to accept no
-solution if constraints infeasible</p>
-<p><strong>couplr</strong>: - Distance minimization is the goal -
-Balance is assessed post-hoc (typical workflow) - Need guaranteed
-solutions - Iterative refinement (match, assess, refine)</p>
+guaranteed</p>
+<ul>
+<li><p>Cardinality matching (fixed sample sizes)</p></li>
+<li><p>Fine-grained moment balancing (means, variances,
+quantiles)</p></li>
+<li><p>Willing to accept no solution if constraints infeasible</p></li>
+</ul>
+<p><strong>couplr</strong>: - Distance minimization is the goal</p>
+<ul>
+<li><p>Balance is assessed post-hoc (typical workflow)</p></li>
+<li><p>Need guaranteed solutions</p></li>
+<li><p>Iterative refinement (match, assess, refine)</p></li>
+</ul>
 <hr />
 </div>
 </div>
@@ -936,12 +962,18 @@ scaling) and optimizes assignment.</p>
 <div id="when-to-use-each-3" class="section level3">
 <h3>When to Use Each</h3>
 <p><strong>Matching</strong>: - Need automatic weight selection via
-genetic optimization - Matching with replacement is acceptable - Need
-ATE or ATC estimands (not just ATT) - Willing to accept stochastic
-results</p>
-<p><strong>couplr</strong>: - Deterministic, reproducible matching -
-Matching without replacement - Direct control over variable scaling -
-Large problems (couplr scales better)</p>
+genetic optimization</p>
+<ul>
+<li><p>Matching with replacement is acceptable</p></li>
+<li><p>Need ATE or ATC estimands (not just ATT)</p></li>
+<li><p>Willing to accept stochastic results</p></li>
+</ul>
+<p><strong>couplr</strong>: - Deterministic, reproducible matching</p>
+<ul>
+<li><p>Matching without replacement</p></li>
+<li><p>Direct control over variable scaling</p></li>
+<li><p>Large problems (couplr scales better)</p></li>
+</ul>
 <hr />
 </div>
 </div>
@@ -1185,52 +1217,57 @@ greedy modes.</p>
 <div id="choose-couplr-when" class="section level3">
 <h3>Choose couplr when:</h3>
 <ol style="list-style-type: decimal">
-<li><strong>Direct covariate matching</strong> is preferred over
-propensity scores</li>
-<li><strong>Optimal one-to-one matching</strong> is the goal</li>
-<li><strong>Large datasets</strong> (n &gt; 5,000) with greedy or
-blocking options</li>
-<li><strong>Algorithm flexibility</strong> is needed (auction for large
-dense, sparse for many forbidden)</li>
-<li><strong>Distance caching</strong> helps iterative analysis</li>
-<li><strong>Tidy workflow</strong> with tibble outputs is preferred</li>
-<li><strong>Reproducibility</strong> requires deterministic
-algorithms</li>
+<li><p><strong>Direct covariate matching</strong> is preferred over
+propensity scores</p></li>
+<li><p><strong>Optimal one-to-one matching</strong> is the goal</p></li>
+<li><p><strong>Large datasets</strong> (n &gt; 5,000) with greedy or
+blocking options</p></li>
+<li><p><strong>Algorithm flexibility</strong> is needed (auction for
+large dense, sparse for many forbidden)</p></li>
+<li><p><strong>Distance caching</strong> helps iterative
+analysis</p></li>
+<li><p><strong>Tidy workflow</strong> with tibble outputs is
+preferred</p></li>
+<li><p><strong>Reproducibility</strong> requires deterministic
+algorithms</p></li>
 </ol>
 </div>
 <div id="choose-matchit-when" class="section level3">
 <h3>Choose MatchIt when:</h3>
 <ol style="list-style-type: decimal">
-<li><strong>Propensity score matching</strong> is standard in your
-field</li>
-<li>Need <strong>full matching</strong> or <strong>CEM</strong>
-(coarsened exact matching)</li>
-<li>Following a <strong>published protocol</strong> that specifies
-MatchIt</li>
-<li>Need <strong>genetic matching</strong> for automatic weight
-selection</li>
-<li><strong>Integration</strong> with existing MatchIt workflows</li>
+<li><p><strong>Propensity score matching</strong> is standard in your
+field</p></li>
+<li><p>Need <strong>full matching</strong> or <strong>CEM</strong>
+(coarsened exact matching)</p></li>
+<li><p>Following a <strong>published protocol</strong> that specifies
+MatchIt</p></li>
+<li><p>Need <strong>genetic matching</strong> for automatic weight
+selection</p></li>
+<li><p><strong>Integration</strong> with existing MatchIt
+workflows</p></li>
 </ol>
 </div>
 <div id="choose-optmatch-when" class="section level3">
 <h3>Choose optmatch when:</h3>
 <ol style="list-style-type: decimal">
-<li><strong>Full matching</strong> with variable ratios is needed</li>
-<li><strong>Network flow</strong> formulation is preferred</li>
-<li>Working with <strong>RItools</strong> for diagnostics</li>
-<li>Need <strong>optimal pair matching</strong> with sparse distance
-matrices</li>
+<li><p><strong>Full matching</strong> with variable ratios is
+needed</p></li>
+<li><p><strong>Network flow</strong> formulation is preferred</p></li>
+<li><p>Working with <strong>RItools</strong> for diagnostics</p></li>
+<li><p>Need <strong>optimal pair matching</strong> with sparse distance
+matrices</p></li>
 </ol>
 </div>
 <div id="choose-designmatch-when" class="section level3">
 <h3>Choose designmatch when:</h3>
 <ol style="list-style-type: decimal">
-<li><strong>Specific balance constraints</strong> must be
-guaranteed</li>
-<li><strong>Cardinality matching</strong> (exact sample sizes) is
-needed</li>
-<li>Fine-grained <strong>moment balancing</strong> is required</li>
-<li>MIP solvers (Gurobi) are available for speed</li>
+<li><p><strong>Specific balance constraints</strong> must be
+guaranteed</p></li>
+<li><p><strong>Cardinality matching</strong> (exact sample sizes) is
+needed</p></li>
+<li><p>Fine-grained <strong>moment balancing</strong> is
+required</p></li>
+<li><p>MIP solvers (Gurobi) are available for speed</p></li>
 </ol>
 <hr />
 </div>
@@ -1397,7 +1434,7 @@ efficient matching. couplr handles this with greedy matching:</p>
 <span id="cb15-29"><a href="#cb15-29" tabindex="-1"></a>)</span>
 <span id="cb15-30"><a href="#cb15-30" tabindex="-1"></a></span>
 <span id="cb15-31"><a href="#cb15-31" tabindex="-1"></a>after_df <span class="ot">&lt;-</span> balance_lalonde<span class="sc">$</span>var_stats <span class="sc">%&gt;%</span></span>
-<span id="cb15-32"><a href="#cb15-32" tabindex="-1"></a>  <span class="fu">select</span>(variable, std_diff) <span class="sc">%&gt;%</span></span>
+<span id="cb15-32"><a href="#cb15-32" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(variable, std_diff) <span class="sc">%&gt;%</span></span>
 <span id="cb15-33"><a href="#cb15-33" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">stage =</span> <span class="st">&quot;After&quot;</span>)</span>
 <span id="cb15-34"><a href="#cb15-34" tabindex="-1"></a></span>
 <span id="cb15-35"><a href="#cb15-35" tabindex="-1"></a>balance_plot_df <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(before_df, after_df) <span class="sc">%&gt;%</span></span>
@@ -1450,13 +1487,14 @@ efficient matching. couplr handles this with greedy matching:</p>
 <div id="key-takeaways" class="section level3">
 <h3>Key Takeaways</h3>
 <ol style="list-style-type: decimal">
-<li><strong>Greedy matching</strong> handles 185:15,815 ratio
-efficiently</li>
-<li><strong>Robust scaling</strong> handles skewed earnings
-distributions</li>
-<li><strong>Balance diagnostics</strong> quantify improvement</li>
-<li><strong>Large control pools</strong> actually help - more options
-for good matches</li>
+<li><p><strong>Greedy matching</strong> handles 185:15,815 ratio
+efficiently</p></li>
+<li><p><strong>Robust scaling</strong> handles skewed earnings
+distributions</p></li>
+<li><p><strong>Balance diagnostics</strong> quantify
+improvement</p></li>
+<li><p><strong>Large control pools</strong> actually help - more options
+for good matches</p></li>
 </ol>
 <p>For comparison, optimal matching would require full distance matrix
 computation (n × m entries), but greedy matching finds excellent matches
@@ -1489,13 +1527,14 @@ Review</em>, 76(4), 604-620.</p></li>
 <div id="see-also" class="section level2">
 <h2>See Also</h2>
 <ul>
-<li><code>vignette(&quot;getting-started&quot;)</code> - Basic couplr usage</li>
-<li><code>vignette(&quot;matching-workflows&quot;)</code> - Production matching
-pipelines</li>
-<li><code>vignette(&quot;algorithms&quot;)</code> - LAP algorithm selection
-guide</li>
-<li><code>vignette(&quot;troubleshooting&quot;)</code> - Common issues and
-solutions</li>
+<li><p><code>vignette(&quot;getting-started&quot;)</code> - Basic couplr
+usage</p></li>
+<li><p><code>vignette(&quot;matching-workflows&quot;)</code> - Production matching
+pipelines</p></li>
+<li><p><code>vignette(&quot;algorithms&quot;)</code> - LAP algorithm selection
+guide</p></li>
+<li><p><code>vignette(&quot;troubleshooting&quot;)</code> - Common issues and
+solutions</p></li>
 </ul>
 </div>
 

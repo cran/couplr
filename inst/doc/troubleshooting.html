@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-01-14" />
+<meta name="date" content="2026-01-20" />
 
 <title>Troubleshooting Guide</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Troubleshooting Guide</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-01-14</h4>
+<h4 class="date">2026-01-20</h4>
 
 
 
@@ -553,12 +553,14 @@ entries, no valid assignment exists.</p>
 <div id="causes" class="section level3">
 <h3>Causes</h3>
 <ol style="list-style-type: decimal">
-<li><strong>Weak overlap</strong>: Groups are too different on key
-variables</li>
-<li><strong>Missing confounders</strong>: Important variables not
-included in matching</li>
-<li><strong>Caliper too loose</strong>: Accepting poor matches</li>
-<li><strong>Wrong scaling</strong>: Variables not properly weighted</li>
+<li><p><strong>Weak overlap</strong>: Groups are too different on key
+variables</p></li>
+<li><p><strong>Missing confounders</strong>: Important variables not
+included in matching</p></li>
+<li><p><strong>Caliper too loose</strong>: Accepting poor
+matches</p></li>
+<li><p><strong>Wrong scaling</strong>: Variables not properly
+weighted</p></li>
 </ol>
 </div>
 <div id="solutions-1" class="section level3">
@@ -699,7 +701,7 @@ complexity. For n = 5,000, this means ~125 billion operations.</p>
 <span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a>})</span>
 <span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a></span>
 <span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy matching (n=500):&quot;</span>, <span class="fu">round</span>(time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">2</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="co">#&gt; Greedy matching (n=500): 0.38 seconds</span></span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="co">#&gt; Greedy matching (n=500): 0.45 seconds</span></span>
 <span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Quality (mean distance):&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_greedy<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a><span class="co">#&gt; Quality (mean distance): 0.2886</span></span></code></pre></div>
 <p><strong>2. Use blocking to divide the problem:</strong></p>
@@ -1010,10 +1012,10 @@ consistency.</p>
 <h2>Getting Help</h2>
 <p>If you encounter an issue not covered here:</p>
 <ol style="list-style-type: decimal">
-<li><strong>Check function documentation</strong>:
-<code>?match_couples</code>, <code>?lap_solve</code></li>
-<li><strong>Search GitHub issues</strong>: <a href="https://github.com/gcol33/couplr/issues">github.com/gcol33/couplr/issues</a></li>
-<li><strong>Create a minimal reproducible example</strong>:</li>
+<li><p><strong>Check function documentation</strong>:
+<code>?match_couples</code>, <code>?lap_solve</code></p></li>
+<li><p><strong>Search GitHub issues</strong>: <a href="https://github.com/gcol33/couplr/issues">github.com/gcol33/couplr/issues</a></p></li>
+<li><p><strong>Create a minimal reproducible example</strong>:</p></li>
 </ol>
 <div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a><span class="co"># Minimal example template</span></span>
 <span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="fu">library</span>(couplr)</span>
@@ -1040,12 +1042,13 @@ consistency.</p>
 <div id="see-also" class="section level2">
 <h2>See Also</h2>
 <ul>
-<li><code>vignette(&quot;getting-started&quot;)</code> - Basic usage</li>
-<li><code>vignette(&quot;matching-workflows&quot;)</code> - Production matching
-pipelines</li>
-<li><code>vignette(&quot;algorithms&quot;)</code> - Algorithm selection guide</li>
-<li><code>vignette(&quot;comparison&quot;)</code> - Comparison with other
-packages</li>
+<li><p><code>vignette(&quot;getting-started&quot;)</code> - Basic usage</p></li>
+<li><p><code>vignette(&quot;matching-workflows&quot;)</code> - Production matching
+pipelines</p></li>
+<li><p><code>vignette(&quot;algorithms&quot;)</code> - Algorithm selection
+guide</p></li>
+<li><p><code>vignette(&quot;comparison&quot;)</code> - Comparison with other
+packages</p></li>
 </ul>
 </div>
 

@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-01-14" />
+<meta name="date" content="2026-01-20" />
 
 <title>Quick Start</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Quick Start</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-01-14</h4>
+<h4 class="date">2026-01-20</h4>
 
 
 
@@ -353,10 +353,10 @@ finds the best one-to-one pairing based on similarity across variables
 you specify.</p>
 <p><strong>Common use cases:</strong></p>
 <ul>
-<li>Matching treated patients to similar controls in observational
-studies</li>
-<li>Pairing survey respondents for comparison</li>
-<li>Creating balanced samples for causal inference</li>
+<li><p>Matching treated patients to similar controls in observational
+studies</p></li>
+<li><p>Pairing survey respondents for comparison</p></li>
+<li><p>Creating balanced samples for causal inference</p></li>
 </ul>
 <div id="documentation-roadmap" class="section level3">
 <h3>Documentation Roadmap</h3>
@@ -443,11 +443,12 @@ matches your use case.</p>
 <span id="cb1-37"><a href="#cb1-37" tabindex="-1"></a><span class="co">#&gt; 6 6       36          0.130    -1.43          62.2</span></span></code></pre></div>
 <p><strong>What happened:</strong></p>
 <ol style="list-style-type: decimal">
-<li>couplr calculated how similar each treatment unit is to each control
-unit</li>
-<li>It found the optimal one-to-one pairing that minimizes total
-distance</li>
-<li>Each treatment unit gets matched to exactly one control unit</li>
+<li><p>couplr calculated how similar each treatment unit is to each
+control unit</p></li>
+<li><p>It found the optimal one-to-one pairing that minimizes total
+distance</p></li>
+<li><p>Each treatment unit gets matched to exactly one control
+unit</p></li>
 </ol>
 <div id="understanding-the-output" class="section level3">
 <h3>Understanding the Output</h3>
@@ -475,10 +476,11 @@ distance</li>
 <span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="co">#&gt; [1] 50</span></span></code></pre></div>
 <p>The <code>result$pairs</code> table contains:</p>
 <ul>
-<li><code>left_id</code>: Row number from the treatment group</li>
-<li><code>right_id</code>: Row number from the control group</li>
-<li><code>distance</code>: How different the matched units are (lower =
-more similar)</li>
+<li><p><code>left_id</code>: Row number from the treatment
+group</p></li>
+<li><p><code>right_id</code>: Row number from the control group</p></li>
+<li><p><code>distance</code>: How different the matched units are (lower
+= more similar)</p></li>
 </ul>
 <hr />
 </div>
@@ -909,11 +911,13 @@ all results in one tidy table.</p>
 <div id="see-also" class="section level2">
 <h2>See Also</h2>
 <ul>
-<li><code>?match_couples</code> - Optimal matching function
-reference</li>
-<li><code>?greedy_couples</code> - Fast approximate matching</li>
-<li><code>?balance_diagnostics</code> - Formal balance assessment</li>
-<li><code>?lap_solve</code> - Direct assignment problem solving</li>
+<li><p><code>?match_couples</code> - Optimal matching function
+reference</p></li>
+<li><p><code>?greedy_couples</code> - Fast approximate matching</p></li>
+<li><p><code>?balance_diagnostics</code> - Formal balance
+assessment</p></li>
+<li><p><code>?lap_solve</code> - Direct assignment problem
+solving</p></li>
 </ul>
 </div>
 

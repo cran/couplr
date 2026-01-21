@@ -104,7 +104,7 @@ cat("  Mean distance:", round(mean(result_couplr$pairs$distance), 4), "\n")
 #   )
 # 
 #   couplr_balance_df <- couplr_balance$var_stats %>%
-#     select(variable, std_diff) %>%
+#     dplyr::select(variable, std_diff) %>%
 #     mutate(method = "couplr")
 # 
 #   # Combine and plot
@@ -356,7 +356,7 @@ before_df <- tibble(
 )
 
 after_df <- balance_lalonde$var_stats %>%
-  select(variable, std_diff) %>%
+  dplyr::select(variable, std_diff) %>%
   mutate(stage = "After")
 
 balance_plot_df <- bind_rows(before_df, after_df) %>%

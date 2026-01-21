@@ -1,6 +1,6 @@
 Package: couplr
 Title: Optimal Pairing and Matching via Linear Assignment
-Version: 1.0.6
+Version: 1.0.8
 Authors@R: 
     person("Gilles", "Colling", email = "gilles.colling051@gmail.com", role = c("aut", "cre", "cph"))
 Description: Solves optimal pairing and matching problems using linear assignment
@@ -40,8 +40,8 @@ BugReports: https://github.com/gcol33/couplr/issues
 Config/testthat/edition: 3
 Config/testthat/parallel: true
 NeedsCompilation: yes
-Packaged: 2026-01-14 21:35:36 UTC; Gilles Colling
+Packaged: 2026-01-20 19:51:29 UTC; Gilles Colling
 Author: Gilles Colling [aut, cre, cph]
 Maintainer: Gilles Colling <gilles.colling051@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-01-20 10:30:13 UTC
+Date/Publication: 2026-01-21 07:40:02 UTC
