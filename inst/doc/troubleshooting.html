@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-01-20" />
+<meta name="date" content="2026-01-21" />
 
 <title>Troubleshooting Guide</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Troubleshooting Guide</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-01-20</h4>
+<h4 class="date">2026-01-21</h4>
 
 
 
@@ -701,7 +701,7 @@ complexity. For n = 5,000, this means ~125 billion operations.</p>
 <span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a>})</span>
 <span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a></span>
 <span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy matching (n=500):&quot;</span>, <span class="fu">round</span>(time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">2</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="co">#&gt; Greedy matching (n=500): 0.45 seconds</span></span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="co">#&gt; Greedy matching (n=500): 0.24 seconds</span></span>
 <span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Quality (mean distance):&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_greedy<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a><span class="co">#&gt; Quality (mean distance): 0.2886</span></span></code></pre></div>
 <p><strong>2. Use blocking to divide the problem:</strong></p>
@@ -763,7 +763,7 @@ complexity. For n = 5,000, this means ~125 billion operations.</p>
 </div>
 <div id="cause-2" class="section level3">
 <h3>Cause</h3>
-<p>A full distance matrix for n×n requires 8n² bytes:</p>
+<p>A full distance matrix for nxn requires 8n² bytes:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="co"># Memory requirements</span></span>
 <span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>memory_needed <span class="ot">&lt;-</span> <span class="cf">function</span>(n) {</span>
 <span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>  bytes <span class="ot">&lt;-</span> <span class="dv">8</span> <span class="sc">*</span> n<span class="sc">^</span><span class="dv">2</span></span>

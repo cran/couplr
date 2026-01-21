@@ -203,7 +203,7 @@ cat("  BMI:", round(mean(treated_matched$bmi) - mean(control_matched$bmi), 2), "
 cat("  Smoker %:", round(100*(mean(treated_matched$smoker) - mean(control_matched$smoker)), 1), "\n")
 
 ## ----lap-solve-basic----------------------------------------------------------
-# Cost matrix: 3 workers × 3 tasks
+# Cost matrix: 3 workers x 3 tasks
 cost <- matrix(c(
   4, 2, 5,
   3, 3, 6,

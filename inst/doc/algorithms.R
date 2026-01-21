@@ -89,8 +89,8 @@ ggplot(race_data, aes(x = reorder(algorithm, -time_ms), y = time_ms, fill = algo
   )) +
   coord_flip(clip = "off") +
   labs(
-    title = "Same Problem, Same Answer, 22× Speed Difference",
-    subtitle = "400 × 400 dense cost matrix, median of 5 runs",
+    title = "Same Problem, Same Answer, 22x Speed Difference",
+    subtitle = "400 x 400 dense cost matrix, median of 5 runs",
     x = NULL,
     y = "Time (milliseconds)"
   ) +
@@ -170,7 +170,7 @@ ggraph(g, layout = "manual", x = layout$x, y = layout$y) +
                            name = NULL) +
   scale_edge_width_manual(values = c("Optimal" = 1.5, "Available" = 0.8), guide = "none") +
   labs(title = "Assignment as Bipartite Matching",
-       subtitle = "Optimal: W1→J1 (2) + W2→J2 (1) + W3→J3 (2) = 5") +
+       subtitle = "Optimal: W1->J1 (2) + W2->J2 (1) + W3->J3 (2) = 5") +
   theme_graph_clean() +
   coord_fixed(clip = "off")
 
@@ -376,7 +376,7 @@ ggplot(phases) +
   geom_point(aes(x = x, y = 0.5), size = c(13, 14, 15, 16, 18),
              color = phase_colors) +
   # Epsilon labels inside circles (dark text, same size)
-  geom_text(aes(x = x, y = 0.5, label = paste0("\u03b5=", epsilon)),
+  geom_text(aes(x = x, y = 0.5, label = paste0("e=", epsilon)),
             color = "#3E3F3A", fontface = "bold", size = 3.5) +
   # Phase labels below
   geom_text(aes(x = x, y = 0.15, label = paste0("Phase ", phase)),
@@ -385,10 +385,10 @@ ggplot(phases) +
   annotate("segment", x = 1, xend = 5, y = 0.9, yend = 0.9,
            arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
            linewidth = 1, color = col_text) +
-  annotate("text", x = 3, y = 0.98, label = "\u03b5 halves each phase \u2192 precision improves",
+  annotate("text", x = 3, y = 0.98, label = "epsilon halves each phase -> precision improves",
            size = 3.8, color = col_text) +
-  labs(title = "CSA: Systematic \u03b5-Scaling",
-       subtitle = "Each phase halves \u03b5 and refines the assignment until optimal") +
+  labs(title = "CSA: Systematic Epsilon-Scaling",
+       subtitle = "Each phase halves epsilon and refines the assignment until optimal") +
   theme_diagram() +
   coord_fixed(ratio = 1.5, xlim = c(0.3, 5.7), ylim = c(0, 1.15))
 
@@ -428,10 +428,10 @@ ggplot(bits) +
   annotate("segment", x = 1, xend = 8, y = 1.05, yend = 1.05,
            arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
            linewidth = 1.2, color = col_text) +
-  annotate("text", x = 4.5, y = 1.18, label = "Process most significant \u2192 least significant",
+  annotate("text", x = 4.5, y = 1.18, label = "Process most significant -> least significant",
            size = 3.8, color = col_text) +
   labs(title = "Gabow-Tarjan: Bit-Scaling",
-       subtitle = "Process integer costs bit-by-bit from coarse to fine. Complexity: O(n\u00b3 log C)") +
+       subtitle = "Process integer costs bit-by-bit from coarse to fine. Complexity: O(n^3 log C)") +
   theme_diagram() +
   theme(legend.position = "bottom",
         legend.text = element_text(size = 10, color = col_text)) +
@@ -555,7 +555,7 @@ cat("Total cost:", round(get_total_cost(result), 2), "\n")
 ## ----ramshaw-tarjan-example---------------------------------------------------
 set.seed(333)
 n_rows <- 30
-n_cols <- 100  # Highly rectangular: 30 × 100
+n_cols <- 100  # Highly rectangular: 30 x 100
 cost <- matrix(runif(n_rows * n_cols, 0, 100), n_rows, n_cols)
 result <- lap_solve(cost, method = "ramshaw_tarjan")
 cat("Matched", sum(result$assignment > 0), "of", n_rows, "rows\n")
@@ -614,7 +614,7 @@ ggplot(bench_results, aes(x = size, y = time, color = method, group = method)) +
   labs(
     title = "Algorithm Scaling: Dense Matrices",
     subtitle = "Log scale. CSA and JV consistently fastest. Hungarian falls behind.",
-    x = "Matrix Size (n × n)",
+    x = "Matrix Size (n x n)",
     y = "Time (milliseconds, log scale)",
     color = "Algorithm",
     shape = "Algorithm"
@@ -649,7 +649,7 @@ ggplot(sparse_results, aes(x = size, y = time, color = method, group = method)) 
   labs(
     title = "Sparse vs Dense: 80% Forbidden Entries",
     subtitle = "Sparse algorithms (SAP, LAPMOD) dramatically outperform dense (JV)",
-    x = "Matrix Size (n × n)",
+    x = "Matrix Size (n x n)",
     y = "Time (milliseconds)",
     color = "Algorithm"
   ) +

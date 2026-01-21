@@ -392,7 +392,7 @@ cat("  Max |std diff| after:",
     round(balance_lalonde$overall$max_abs_std_diff, 3), "\n")
 
 if (balance_lalonde$overall$max_abs_std_diff < 0.25) {
-  cat("\n✓ All variables within acceptable balance threshold (0.25)\n")
+  cat("\nYes All variables within acceptable balance threshold (0.25)\n")
 } else {
   cat("\n⚠ Some variables exceed 0.25 threshold - consider calipers or blocking\n")
 }
