@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-01-21" />
+<meta name="date" content="2026-03-03" />
 
 <title>Matching Workflows</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Matching Workflows</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-01-21</h4>
+<h4 class="date">2026-03-03</h4>
 
 
 
@@ -868,18 +868,18 @@ matters</p></li>
 <span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Optimal matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co">#&gt; Optimal matching:</span></span>
 <span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 93.79 seconds</span></span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 210.33 seconds</span></span>
 <span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_optimal<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.3368</span></span>
 <span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a></span>
 <span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a><span class="co">#&gt; Greedy matching:</span></span>
 <span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 1 seconds</span></span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 1.59 seconds</span></span>
 <span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_greedy<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.4667</span></span>
 <span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Speedup:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>] <span class="sc">/</span> time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">1</span>), <span class="st">&quot;x</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 93.8 x</span></span></code></pre></div>
+<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 132.3 x</span></span></code></pre></div>
 </div>
 <div id="greedy-strategies" class="section level3">
 <h3>Greedy Strategies</h3>
@@ -962,9 +962,9 @@ default):</p>
 <span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a></span>
 <span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a><span class="fu">print</span>(comparison)</span>
 <span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt;          strategy time_sec mean_distance total_distance</span></span>
-<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; elapsed    sorted     0.05        0.0912          18.24</span></span>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; elapsed    sorted     0.06        0.0912          18.24</span></span>
 <span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; elapsed1 row_best     0.05        0.0968          19.36</span></span>
-<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.05        0.0912          18.24</span></span></code></pre></div>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.08        0.0912          18.24</span></span></code></pre></div>
 <p><strong>Recommendation:</strong></p>
 <ul>
 <li><p>Default to <code>strategy = &quot;row_best&quot;</code> for good
@@ -1065,8 +1065,8 @@ matching</p></li>
 pooled SD</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Calculate pooled SD</span></span>
 <span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>combined <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  left_data <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">&quot;left&quot;</span>),</span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  right_data <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">&quot;right&quot;</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>  left_data <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">&quot;left&quot;</span>),</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  right_data <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">&quot;right&quot;</span>)</span>
 <span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>)</span>
 <span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a></span>
 <span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>pooled_sd <span class="ot">&lt;-</span> <span class="fu">sd</span>(combined<span class="sc">$</span>age)  <span class="co"># For single variable</span></span>
@@ -1147,8 +1147,8 @@ burden</p></li>
 <span id="cb13-17"><a href="#cb13-17" tabindex="-1"></a>  )</span>
 <span id="cb13-18"><a href="#cb13-18" tabindex="-1"></a>)</span>
 <span id="cb13-19"><a href="#cb13-19" tabindex="-1"></a></span>
-<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a>left_site <span class="ot">&lt;-</span> multi_site <span class="sc">%&gt;%</span> <span class="fu">filter</span>(group <span class="sc">==</span> <span class="st">&quot;treatment&quot;</span>)</span>
-<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a>right_site <span class="ot">&lt;-</span> multi_site <span class="sc">%&gt;%</span> <span class="fu">filter</span>(group <span class="sc">==</span> <span class="st">&quot;control&quot;</span>)</span>
+<span id="cb13-20"><a href="#cb13-20" tabindex="-1"></a>left_site <span class="ot">&lt;-</span> multi_site <span class="sc">|&gt;</span> <span class="fu">filter</span>(group <span class="sc">==</span> <span class="st">&quot;treatment&quot;</span>)</span>
+<span id="cb13-21"><a href="#cb13-21" tabindex="-1"></a>right_site <span class="ot">&lt;-</span> multi_site <span class="sc">|&gt;</span> <span class="fu">filter</span>(group <span class="sc">==</span> <span class="st">&quot;control&quot;</span>)</span>
 <span id="cb13-22"><a href="#cb13-22" tabindex="-1"></a></span>
 <span id="cb13-23"><a href="#cb13-23" tabindex="-1"></a><span class="co"># Create exact blocks by site</span></span>
 <span id="cb13-24"><a href="#cb13-24" tabindex="-1"></a>blocks <span class="ot">&lt;-</span> <span class="fu">matchmaker</span>(</span>
@@ -1179,10 +1179,10 @@ burden</p></li>
 <span id="cb13-49"><a href="#cb13-49" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
 <span id="cb13-50"><a href="#cb13-50" tabindex="-1"></a></span>
 <span id="cb13-51"><a href="#cb13-51" tabindex="-1"></a><span class="co"># Verify exact site balance</span></span>
-<span id="cb13-52"><a href="#cb13-52" tabindex="-1"></a>result_blocked<span class="sc">$</span>pairs <span class="sc">%&gt;%</span></span>
-<span id="cb13-53"><a href="#cb13-53" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">left_id =</span> <span class="fu">as.integer</span>(left_id), <span class="at">right_id =</span> <span class="fu">as.integer</span>(right_id)) <span class="sc">%&gt;%</span></span>
-<span id="cb13-54"><a href="#cb13-54" tabindex="-1"></a>  <span class="fu">left_join</span>(left_site <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(id, site), <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;left_id&quot;</span> <span class="ot">=</span> <span class="st">&quot;id&quot;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb13-55"><a href="#cb13-55" tabindex="-1"></a>  <span class="fu">left_join</span>(right_site <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(id, site), <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;right_id&quot;</span> <span class="ot">=</span> <span class="st">&quot;id&quot;</span>), <span class="at">suffix =</span> <span class="fu">c</span>(<span class="st">&quot;_left&quot;</span>, <span class="st">&quot;_right&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb13-52"><a href="#cb13-52" tabindex="-1"></a>result_blocked<span class="sc">$</span>pairs <span class="sc">|&gt;</span></span>
+<span id="cb13-53"><a href="#cb13-53" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">left_id =</span> <span class="fu">as.integer</span>(left_id), <span class="at">right_id =</span> <span class="fu">as.integer</span>(right_id)) <span class="sc">|&gt;</span></span>
+<span id="cb13-54"><a href="#cb13-54" tabindex="-1"></a>  <span class="fu">left_join</span>(left_site <span class="sc">|&gt;</span> dplyr<span class="sc">::</span><span class="fu">select</span>(id, site), <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;left_id&quot;</span> <span class="ot">=</span> <span class="st">&quot;id&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb13-55"><a href="#cb13-55" tabindex="-1"></a>  <span class="fu">left_join</span>(right_site <span class="sc">|&gt;</span> dplyr<span class="sc">::</span><span class="fu">select</span>(id, site), <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&quot;right_id&quot;</span> <span class="ot">=</span> <span class="st">&quot;id&quot;</span>), <span class="at">suffix =</span> <span class="fu">c</span>(<span class="st">&quot;_left&quot;</span>, <span class="st">&quot;_right&quot;</span>)) <span class="sc">|&gt;</span></span>
 <span id="cb13-56"><a href="#cb13-56" tabindex="-1"></a>  <span class="fu">count</span>(site_left, site_right)</span>
 <span id="cb13-57"><a href="#cb13-57" tabindex="-1"></a><span class="co">#&gt; # A tibble: 3 × 3</span></span>
 <span id="cb13-58"><a href="#cb13-58" tabindex="-1"></a><span class="co">#&gt;   site_left site_right     n</span></span>
@@ -1225,8 +1225,8 @@ blocks:</p>
 <span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
 <span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a></span>
 <span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a><span class="co"># Show age distribution by cluster</span></span>
-<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a>cluster_blocks<span class="sc">$</span>left <span class="sc">%&gt;%</span></span>
-<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a>  <span class="fu">group_by</span>(block_id) <span class="sc">%&gt;%</span></span>
+<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a>cluster_blocks<span class="sc">$</span>left <span class="sc">|&gt;</span></span>
+<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a>  <span class="fu">group_by</span>(block_id) <span class="sc">|&gt;</span></span>
 <span id="cb14-33"><a href="#cb14-33" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
 <span id="cb14-34"><a href="#cb14-34" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb14-35"><a href="#cb14-35" tabindex="-1"></a>    <span class="at">mean_age =</span> <span class="fu">mean</span>(age),</span>
@@ -1284,10 +1284,10 @@ blocks:</p>
 <span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
 <span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a></span>
 <span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="co"># Get matched samples</span></span>
-<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>matched_left <span class="ot">&lt;-</span> left_data <span class="sc">%&gt;%</span></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>matched_left <span class="ot">&lt;-</span> left_data <span class="sc">|&gt;</span></span>
 <span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>  <span class="fu">filter</span>(id <span class="sc">%in%</span> match_result<span class="sc">$</span>pairs<span class="sc">$</span>left_id)</span>
 <span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a></span>
-<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a>matched_right <span class="ot">&lt;-</span> right_data <span class="sc">%&gt;%</span></span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a>matched_right <span class="ot">&lt;-</span> right_data <span class="sc">|&gt;</span></span>
 <span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a>  <span class="fu">filter</span>(id <span class="sc">%in%</span> match_result<span class="sc">$</span>pairs<span class="sc">$</span>right_id)</span>
 <span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a></span>
 <span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="co"># Compute balance diagnostics</span></span>
@@ -1426,7 +1426,7 @@ section</p></li>
 <span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a><span class="co"># Combine for plotting</span></span>
 <span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a>balance_comparison <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
 <span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a>  pre_match_stats,</span>
-<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a>  balance<span class="sc">$</span>var_stats <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">select</span>(variable, std_diff) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">when =</span> <span class="st">&quot;After&quot;</span>)</span>
+<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a>  balance<span class="sc">$</span>var_stats <span class="sc">|&gt;</span> dplyr<span class="sc">::</span><span class="fu">select</span>(variable, std_diff) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">when =</span> <span class="st">&quot;After&quot;</span>)</span>
 <span id="cb17-18"><a href="#cb17-18" tabindex="-1"></a>)</span>
 <span id="cb17-19"><a href="#cb17-19" tabindex="-1"></a></span>
 <span id="cb17-20"><a href="#cb17-20" tabindex="-1"></a><span class="fu">ggplot</span>(balance_comparison, <span class="fu">aes</span>(<span class="at">x =</span> variable, <span class="at">y =</span> std_diff, <span class="at">fill =</span> when)) <span class="sc">+</span></span>
@@ -1511,7 +1511,7 @@ status</p></li>
 <span id="cb18-29"><a href="#cb18-29" tabindex="-1"></a></span>
 <span id="cb18-30"><a href="#cb18-30" tabindex="-1"></a><span class="co"># Simulate outcome (earnings) with treatment effect</span></span>
 <span id="cb18-31"><a href="#cb18-31" tabindex="-1"></a><span class="co"># True effect: +$5,000, with heterogeneity</span></span>
-<span id="cb18-32"><a href="#cb18-32" tabindex="-1"></a>treatment_group <span class="ot">&lt;-</span> treatment_group <span class="sc">%&gt;%</span></span>
+<span id="cb18-32"><a href="#cb18-32" tabindex="-1"></a>treatment_group <span class="ot">&lt;-</span> treatment_group <span class="sc">|&gt;</span></span>
 <span id="cb18-33"><a href="#cb18-33" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
 <span id="cb18-34"><a href="#cb18-34" tabindex="-1"></a>    <span class="at">earnings =</span> prior_earnings <span class="sc">+</span></span>
 <span id="cb18-35"><a href="#cb18-35" tabindex="-1"></a>      <span class="dv">5000</span> <span class="sc">+</span>  <span class="co"># True treatment effect</span></span>
@@ -1519,7 +1519,7 @@ status</p></li>
 <span id="cb18-37"><a href="#cb18-37" tabindex="-1"></a>      <span class="dv">100</span> <span class="sc">*</span> education_years  <span class="co"># Education effect</span></span>
 <span id="cb18-38"><a href="#cb18-38" tabindex="-1"></a>  )</span>
 <span id="cb18-39"><a href="#cb18-39" tabindex="-1"></a></span>
-<span id="cb18-40"><a href="#cb18-40" tabindex="-1"></a>control_group <span class="ot">&lt;-</span> control_group <span class="sc">%&gt;%</span></span>
+<span id="cb18-40"><a href="#cb18-40" tabindex="-1"></a>control_group <span class="ot">&lt;-</span> control_group <span class="sc">|&gt;</span></span>
 <span id="cb18-41"><a href="#cb18-41" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
 <span id="cb18-42"><a href="#cb18-42" tabindex="-1"></a>    <span class="at">earnings =</span> prior_earnings <span class="sc">+</span></span>
 <span id="cb18-43"><a href="#cb18-43" tabindex="-1"></a>      <span class="dv">2000</span> <span class="sc">*</span> <span class="fu">rnorm</span>(<span class="fu">n</span>()) <span class="sc">+</span></span>
@@ -1564,10 +1564,10 @@ status</p></li>
 <div id="step-3-assess-balance" class="section level3">
 <h3>Step 3: Assess Balance</h3>
 <div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="co"># Extract matched samples</span></span>
-<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>matched_treated <span class="ot">&lt;-</span> treatment_group <span class="sc">%&gt;%</span></span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>matched_treated <span class="ot">&lt;-</span> treatment_group <span class="sc">|&gt;</span></span>
 <span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>  <span class="fu">filter</span>(id <span class="sc">%in%</span> job_match<span class="sc">$</span>pairs<span class="sc">$</span>left_id)</span>
 <span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a></span>
-<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>matched_control <span class="ot">&lt;-</span> control_group <span class="sc">%&gt;%</span></span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>matched_control <span class="ot">&lt;-</span> control_group <span class="sc">|&gt;</span></span>
 <span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a>  <span class="fu">filter</span>(id <span class="sc">%in%</span> job_match<span class="sc">$</span>pairs<span class="sc">$</span>right_id)</span>
 <span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a></span>
 <span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a><span class="co"># Compute balance</span></span>
@@ -1672,7 +1672,7 @@ status</p></li>
 <span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a></span>
 <span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a><span class="co"># Table 2: Sample characteristics</span></span>
 <span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a>sample_table <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
-<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a>  matched_treated <span class="sc">%&gt;%</span></span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a>  matched_treated <span class="sc">|&gt;</span></span>
 <span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
 <span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a>      <span class="at">Group =</span> <span class="st">&quot;Treatment&quot;</span>,</span>
 <span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a>      <span class="at">N =</span> <span class="fu">n</span>(),</span>
@@ -1683,7 +1683,7 @@ status</p></li>
 <span id="cb22-15"><a href="#cb22-15" tabindex="-1"></a>                                 <span class="fu">format</span>(<span class="fu">round</span>(<span class="fu">sd</span>(prior_earnings)), <span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>)),</span>
 <span id="cb22-16"><a href="#cb22-16" tabindex="-1"></a>      <span class="st">`</span><span class="at">Employed (%)</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sprintf</span>(<span class="st">&quot;%.1f&quot;</span>, <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(employed))</span>
 <span id="cb22-17"><a href="#cb22-17" tabindex="-1"></a>    ),</span>
-<span id="cb22-18"><a href="#cb22-18" tabindex="-1"></a>  matched_control <span class="sc">%&gt;%</span></span>
+<span id="cb22-18"><a href="#cb22-18" tabindex="-1"></a>  matched_control <span class="sc">|&gt;</span></span>
 <span id="cb22-19"><a href="#cb22-19" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
 <span id="cb22-20"><a href="#cb22-20" tabindex="-1"></a>      <span class="at">Group =</span> <span class="st">&quot;Control&quot;</span>,</span>
 <span id="cb22-21"><a href="#cb22-21" tabindex="-1"></a>      <span class="at">N =</span> <span class="fu">n</span>(),</span>
@@ -1830,8 +1830,8 @@ solutions.</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a><span class="co"># Check covariate overlap</span></span>
 <span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a>combined <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
-<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a>  left <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">&quot;treatment&quot;</span>),</span>
-<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a>  right <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">&quot;control&quot;</span>)</span>
+<span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a>  left <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">&quot;treatment&quot;</span>),</span>
+<span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a>  right <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">&quot;control&quot;</span>)</span>
 <span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a>)</span>
 <span id="cb27-7"><a href="#cb27-7" tabindex="-1"></a><span class="fu">ggplot</span>(combined, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">fill =</span> group)) <span class="sc">+</span></span>
 <span id="cb27-8"><a href="#cb27-8" tabindex="-1"></a>  <span class="fu">geom_density</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>

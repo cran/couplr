@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-01-21" />
+<meta name="date" content="2026-03-03" />
 
 <title>Troubleshooting Guide</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Troubleshooting Guide</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-01-21</h4>
+<h4 class="date">2026-03-03</h4>
 
 
 
@@ -484,8 +484,8 @@ entries, no valid assignment exists.</p>
 <span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co"># Visualize overlap</span></span>
 <span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
 <span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>combined <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(</span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  left <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">&quot;Left&quot;</span>),</span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  right <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">&quot;Right&quot;</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  left <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">&quot;Left&quot;</span>),</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  right <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">group =</span> <span class="st">&quot;Right&quot;</span>)</span>
 <span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>)</span>
 <span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a></span>
 <span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="fu">ggplot</span>(combined, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">fill =</span> group)) <span class="sc">+</span></span>
@@ -518,37 +518,38 @@ entries, no valid assignment exists.</p>
 <span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  <span class="at">income =</span> <span class="fu">rnorm</span>(<span class="dv">100</span>, <span class="dv">40000</span>, <span class="dv">10000</span>)  <span class="co"># Very different income</span></span>
 <span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>)</span>
 <span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a></span>
-<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(left, right, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>), <span class="at">auto_scale =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>balance <span class="ot">&lt;-</span> <span class="fu">balance_diagnostics</span>(result, left, right, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>))</span>
-<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="fu">print</span>(balance)</span>
-<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt; Balance Diagnostics for Matched Pairs</span></span>
-<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt; ======================================</span></span>
-<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; Matching Summary:</span></span>
-<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt;   Method: lap</span></span>
-<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt;   Matched pairs: 100</span></span>
-<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt;   Unmatched left: 0 (of 100)</span></span>
-<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt;   Unmatched right: 0 (of 100)</span></span>
-<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt; Variable-level Balance:</span></span>
-<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 7</span></span>
-<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt;   Variable `Mean Left` `Mean Right` `Mean Diff` `Std Diff` `Var Ratio` `KS Stat`</span></span>
-<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a><span class="co">#&gt; 1 age             30.6         32.5       -1.89     -0.386        1.05      0.22</span></span>
-<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a><span class="co">#&gt; 2 income       77666.       41353.     36313.        2.40         2.15      0.81</span></span>
-<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a><span class="co">#&gt; Overall Balance:</span></span>
-<span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a><span class="co">#&gt;   Mean |Std Diff|: 1.391 (Poor)</span></span>
-<span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co">#&gt;   Max |Std Diff|: 2.397</span></span>
-<span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a><span class="co">#&gt;   Vars with |Std Diff| &gt; 0.25: 100.0%</span></span>
-<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a><span class="co">#&gt; Balance Interpretation:</span></span>
-<span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| &lt; 0.10: Excellent balance</span></span>
-<span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| 0.10-0.25: Good balance</span></span>
-<span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| 0.25-0.50: Acceptable balance</span></span>
-<span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| &gt; 0.50: Poor balance</span></span></code></pre></div>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(left, right, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>), <span class="at">auto_scale =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>                        <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span>)</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>balance <span class="ot">&lt;-</span> <span class="fu">balance_diagnostics</span>(result, left, right, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>))</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="fu">print</span>(balance)</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt; Balance Diagnostics for Matched Pairs</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt; ======================================</span></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt; Matching Summary:</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt;   Method: lap</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt;   Matched pairs: 100</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt;   Unmatched left: 0 (of 100)</span></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt;   Unmatched right: 0 (of 100)</span></span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt; Variable-level Balance:</span></span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 7</span></span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#&gt;   Variable `Mean Left` `Mean Right` `Mean Diff` `Std Diff` `Var Ratio` `KS Stat`</span></span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt;</span></span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a><span class="co">#&gt; 1 age             30.6         32.5       -1.89     -0.386        1.05      0.22</span></span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a><span class="co">#&gt; 2 income       77666.       41353.     36313.        2.40         2.15      0.81</span></span>
+<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a><span class="co">#&gt; Overall Balance:</span></span>
+<span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co">#&gt;   Mean |Std Diff|: 1.391 (Poor)</span></span>
+<span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a><span class="co">#&gt;   Max |Std Diff|: 2.397</span></span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Vars with |Std Diff| &gt; 0.25: 100.0%</span></span>
+<span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a><span class="co">#&gt; Balance Interpretation:</span></span>
+<span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| &lt; 0.10: Excellent balance</span></span>
+<span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| 0.10-0.25: Good balance</span></span>
+<span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| 0.25-0.50: Acceptable balance</span></span>
+<span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| &gt; 0.50: Poor balance</span></span></code></pre></div>
 </div>
 <div id="causes" class="section level3">
 <h3>Causes</h3>
@@ -577,46 +578,45 @@ weighted</p></li>
 <span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  left, right,</span>
 <span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
 <span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">max_distance =</span> <span class="fl">0.3</span>,  <span class="co"># Stricter caliper</span></span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">auto_scale =</span> <span class="cn">TRUE</span></span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>)</span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt; Error in `lap_solve_auction_scaled()`:</span></span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt; ! Auction(scaled): iteration guard at eps=7885383213142811494408480082840444688844086424042268422604802684204020084804602286084062426808668246202024044680060000888826240426666820268808860060886662888880668826624624282408686624866884640486622460688806226620844868208208262004280626244240268286668462608648088464686088602226464888282882.000000, phase=19</span></span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a></span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Original matches:&quot;</span>, result<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co">#&gt; Original matches: 100</span></span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;With caliper:&quot;</span>, result_strict<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt; With caliper: 40</span></span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a></span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>balance_strict <span class="ot">&lt;-</span> <span class="fu">balance_diagnostics</span>(result_strict, left, right, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>))</span>
-<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="fu">print</span>(balance_strict)</span>
-<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="co">#&gt; Balance Diagnostics for Matched Pairs</span></span>
-<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="co">#&gt; ======================================</span></span>
-<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="co">#&gt; Matching Summary:</span></span>
-<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="co">#&gt;   Method: lap</span></span>
-<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="co">#&gt;   Matched pairs: 40</span></span>
-<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="co">#&gt;   Unmatched left: 0 (of 100)</span></span>
-<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="co">#&gt;   Unmatched right: 60 (of 100)</span></span>
-<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a><span class="co">#&gt; Variable-level Balance:</span></span>
-<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 7</span></span>
-<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a><span class="co">#&gt;   Variable `Mean Left` `Mean Right` `Mean Diff` `Std Diff` `Var Ratio` `KS Stat`</span></span>
-<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a><span class="co">#&gt; 1 age             30.4         32.9       -2.52     -0.517        1.25     0.275</span></span>
-<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a><span class="co">#&gt; 2 income       75769.       41145.     34624.        2.42         2.41     0.825</span></span>
-<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a><span class="co">#&gt; Overall Balance:</span></span>
-<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="co">#&gt;   Mean |Std Diff|: 1.468 (Poor)</span></span>
-<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a><span class="co">#&gt;   Max |Std Diff|: 2.419</span></span>
-<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a><span class="co">#&gt;   Vars with |Std Diff| &gt; 0.25: 100.0%</span></span>
-<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a><span class="co">#&gt; Balance Interpretation:</span></span>
-<span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| &lt; 0.10: Excellent balance</span></span>
-<span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| 0.10-0.25: Good balance</span></span>
-<span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| 0.25-0.50: Acceptable balance</span></span>
-<span id="cb8-44"><a href="#cb8-44" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| &gt; 0.50: Poor balance</span></span></code></pre></div>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">auto_scale =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>)</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Original matches:&quot;</span>, result<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt; Original matches: 100</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;With caliper:&quot;</span>, result_strict<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; With caliper: 23</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>balance_strict <span class="ot">&lt;-</span> <span class="fu">balance_diagnostics</span>(result_strict, left, right, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>))</span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="fu">print</span>(balance_strict)</span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="co">#&gt; Balance Diagnostics for Matched Pairs</span></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="co">#&gt; ======================================</span></span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="co">#&gt; Matching Summary:</span></span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="co">#&gt;   Method: lap</span></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="co">#&gt;   Matched pairs: 23</span></span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="co">#&gt;   Unmatched left: 0 (of 100)</span></span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="co">#&gt;   Unmatched right: 77 (of 100)</span></span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a><span class="co">#&gt; Variable-level Balance:</span></span>
+<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 7</span></span>
+<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a><span class="co">#&gt;   Variable `Mean Left` `Mean Right` `Mean Diff` `Std Diff` `Var Ratio` `KS Stat`</span></span>
+<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt;</span></span>
+<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a><span class="co">#&gt; 1 age             31.5         31.6      -0.084     -0.018        1.03     0.13 </span></span>
+<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a><span class="co">#&gt; 2 income       53974.       51903.     2071.         0.283        1.11     0.217</span></span>
+<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a><span class="co">#&gt; Overall Balance:</span></span>
+<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a><span class="co">#&gt;   Mean |Std Diff|: 0.151 (Good)</span></span>
+<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="co">#&gt;   Max |Std Diff|: 0.283</span></span>
+<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a><span class="co">#&gt;   Vars with |Std Diff| &gt; 0.25: 50.0%</span></span>
+<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a><span class="co">#&gt; Balance Interpretation:</span></span>
+<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| &lt; 0.10: Excellent balance</span></span>
+<span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| 0.10-0.25: Good balance</span></span>
+<span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| 0.25-0.50: Acceptable balance</span></span>
+<span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| &gt; 0.50: Poor balance</span></span></code></pre></div>
 <p><strong>3. Use blocking on problematic variable:</strong></p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Block on income tertiles to ensure exact balance</span></span>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>left<span class="sc">$</span>income_cat <span class="ot">&lt;-</span> <span class="fu">cut</span>(left<span class="sc">$</span>income, <span class="at">breaks =</span> <span class="dv">3</span>, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;low&quot;</span>, <span class="st">&quot;mid&quot;</span>, <span class="st">&quot;high&quot;</span>))</span>
@@ -632,14 +632,15 @@ weighted</p></li>
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Compare scaling methods</span></span>
 <span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="cf">for</span> (scale_method <span class="cf">in</span> <span class="fu">c</span>(<span class="st">&quot;robust&quot;</span>, <span class="st">&quot;standardize&quot;</span>, <span class="st">&quot;range&quot;</span>)) {</span>
 <span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  res <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(left, right, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>                       <span class="at">auto_scale =</span> <span class="cn">TRUE</span>, <span class="at">scale =</span> scale_method)</span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  bal <span class="ot">&lt;-</span> <span class="fu">balance_diagnostics</span>(res, left, right, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>))</span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  <span class="fu">cat</span>(scale_method, <span class="st">&quot;- max |std_diff|:&quot;</span>,</span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>      <span class="fu">round</span>(bal<span class="sc">$</span>overall<span class="sc">$</span>max_abs_std_diff, <span class="dv">3</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>}</span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt; robust - max |std_diff|: 2.397 </span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt; standardize - max |std_diff|: 2.397 </span></span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt; range - max |std_diff|: 2.397</span></span></code></pre></div>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>                       <span class="at">auto_scale =</span> <span class="cn">TRUE</span>, <span class="at">scale =</span> scale_method,</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>                       <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  bal <span class="ot">&lt;-</span> <span class="fu">balance_diagnostics</span>(res, left, right, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>))</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  <span class="fu">cat</span>(scale_method, <span class="st">&quot;- max |std_diff|:&quot;</span>,</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>      <span class="fu">round</span>(bal<span class="sc">$</span>overall<span class="sc">$</span>max_abs_std_diff, <span class="dv">3</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>}</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt; robust - max |std_diff|: 2.397 </span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt; standardize - max |std_diff|: 2.397 </span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&gt; range - max |std_diff|: 2.397</span></span></code></pre></div>
 <hr />
 </div>
 </div>
@@ -701,7 +702,7 @@ complexity. For n = 5,000, this means ~125 billion operations.</p>
 <span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a>})</span>
 <span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a></span>
 <span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy matching (n=500):&quot;</span>, <span class="fu">round</span>(time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">2</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="co">#&gt; Greedy matching (n=500): 0.24 seconds</span></span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="co">#&gt; Greedy matching (n=500): 0.36 seconds</span></span>
 <span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Quality (mean distance):&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_greedy<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a><span class="co">#&gt; Quality (mean distance): 0.2886</span></span></code></pre></div>
 <p><strong>2. Use blocking to divide the problem:</strong></p>
@@ -743,15 +744,9 @@ complexity. For n = 5,000, this means ~125 billion operations.</p>
 <span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>)</span>
 <span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a></span>
 <span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co"># Fast: reuse cached distances</span></span>
-<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>result1 <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(dist_cache, <span class="at">max_distance =</span> <span class="fl">0.3</span>)</span>
-<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="co">#&gt; Error in `lap_solve_auction_scaled()`:</span></span>
-<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co">#&gt; ! Auction(scaled): iteration guard at eps=7885383213142811494408480082840444688844086424042268422604802684204020084804602286084062426808668246202024044680060000888826240426666820268808860060886662888880668826624624282408686624866884640486622460688806226620844868208208262004280626244240268286668462608648088464686088602226464888282882.000000, phase=19</span></span>
-<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>result2 <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(dist_cache, <span class="at">max_distance =</span> <span class="fl">0.5</span>)</span>
-<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a><span class="co">#&gt; Error in `lap_solve_auction_scaled()`:</span></span>
-<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a><span class="co">#&gt; ! Auction(scaled): iteration guard at eps=7885383213142811494408480082840444688844086424042268422604802684204020084804602286084062426808668246202024044680060000888826240426666820268808860060886662888880668826624624282408686624866884640486622460688806226620844868208208262004280626244240268286668462608648088464686088602226464888282882.000000, phase=19</span></span>
-<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a>result3 <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(dist_cache, <span class="at">max_distance =</span> <span class="fl">1.0</span>)</span>
-<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="co">#&gt; Error in `lap_solve_auction_scaled()`:</span></span>
-<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="co">#&gt; ! Auction(scaled): iteration guard at eps=1126483316163258824588840464686822002040606866822442644006464204284244600860220408644206628884660088462204820084486686828448800068422244884462088864286246088448668606428686082644420022446608028628488602664280848840444608420828066682648826868226802866640024264200844882840648848844628646628040.000000, phase=20</span></span></code></pre></div>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>result1 <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(dist_cache, <span class="at">max_distance =</span> <span class="fl">0.3</span>, <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span>)</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>result2 <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(dist_cache, <span class="at">max_distance =</span> <span class="fl">0.5</span>, <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span>)</span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>result3 <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(dist_cache, <span class="at">max_distance =</span> <span class="fl">1.0</span>, <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span>)</span></code></pre></div>
 <hr />
 </div>
 </div>
@@ -900,15 +895,15 @@ matching variables cause issues.</p>
 <div id="solutions-5" class="section level3">
 <h3>Solutions</h3>
 <p><strong>1. Remove rows with NA (before matching):</strong></p>
-<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a>left_clean <span class="ot">&lt;-</span> left <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(age))</span>
-<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a>right_clean <span class="ot">&lt;-</span> right <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(age))</span>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" tabindex="-1"></a>left_clean <span class="ot">&lt;-</span> left <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(age))</span>
+<span id="cb27-2"><a href="#cb27-2" tabindex="-1"></a>right_clean <span class="ot">&lt;-</span> right <span class="sc">|&gt;</span> <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(age))</span>
 <span id="cb27-3"><a href="#cb27-3" tabindex="-1"></a></span>
 <span id="cb27-4"><a href="#cb27-4" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(left_clean, right_clean, <span class="at">vars =</span> <span class="st">&quot;age&quot;</span>)</span>
 <span id="cb27-5"><a href="#cb27-5" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Matched&quot;</span>, result<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;pairs (excluded 1 left unit with NA)</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb27-6"><a href="#cb27-6" tabindex="-1"></a><span class="co">#&gt; Matched 4 pairs (excluded 1 left unit with NA)</span></span></code></pre></div>
 <p><strong>2. Impute missing values:</strong></p>
 <div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># Simple mean imputation</span></span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a>left_imputed <span class="ot">&lt;-</span> left <span class="sc">%&gt;%</span></span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a>left_imputed <span class="ot">&lt;-</span> left <span class="sc">|&gt;</span></span>
 <span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">age =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(age), <span class="fu">mean</span>(age, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), age))</span>
 <span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a></span>
 <span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(left_imputed, right, <span class="at">vars =</span> <span class="st">&quot;age&quot;</span>)</span>

@@ -34,7 +34,7 @@ control <- tibble(
 )
 
 # Combine for packages that expect single data frame
-combined <- bind_rows(treatment, control) %>%
+combined <- bind_rows(treatment, control) |>
   mutate(treated = as.integer(group == "treatment"))
 
 cat("Treatment units:", nrow(treatment), "\n")
@@ -85,8 +85,8 @@ cat("  Mean distance:", round(mean(result_couplr$pairs$distance), 4), "\n")
 ## ----eval = requireNamespace("MatchIt", quietly = TRUE), fig.width=9, fig.height=5, fig.alt="Side-by-side comparison of covariate balance achieved by MatchIt and couplr, showing standardized mean differences for age, education, prior_earnings, and employed"----
 # if (requireNamespace("MatchIt", quietly = TRUE)) {
 #   # MatchIt balance
-#   matched_treated_ps <- matched_ps %>% filter(treated == 1)
-#   matched_control_ps <- matched_ps %>% filter(treated == 0)
+#   matched_treated_ps <- matched_ps |> filter(treated == 1)
+#   matched_control_ps <- matched_ps |> filter(treated == 0)
 # 
 #   matchit_balance <- tibble(
 #     variable = vars,
@@ -103,8 +103,8 @@ cat("  Mean distance:", round(mean(result_couplr$pairs$distance), 4), "\n")
 #     result_couplr, treatment, control, vars
 #   )
 # 
-#   couplr_balance_df <- couplr_balance$var_stats %>%
-#     dplyr::select(variable, std_diff) %>%
+#   couplr_balance_df <- couplr_balance$var_stats |>
+#     dplyr::select(variable, std_diff) |>
 #     mutate(method = "couplr")
 # 
 #   # Combine and plot
@@ -276,6 +276,12 @@ cat("  Max |std diff|:", round(balance_dm$overall$max_abs_std_diff, 4), "\n")
 # matched_data <- join_matched(matched, treatment_data, control_data)
 # model <- lm(outcome ~ treatment, data = matched_data)
 
+## ----eval = FALSE-------------------------------------------------------------
+# # Use couplr for: initial exploration, large-scale matching, distance caching
+# # Use MatchIt for: propensity scores, full matching, published protocols
+# # Use optmatch for: optimal full matching with sparse distances
+# # Use designmatch for: guaranteed balance constraints
+
 ## ----lalonde-style------------------------------------------------------------
 set.seed(1986)
 
@@ -355,11 +361,11 @@ before_df <- tibble(
   stage = "Before"
 )
 
-after_df <- balance_lalonde$var_stats %>%
-  dplyr::select(variable, std_diff) %>%
+after_df <- balance_lalonde$var_stats |>
+  dplyr::select(variable, std_diff) |>
   mutate(stage = "After")
 
-balance_plot_df <- bind_rows(before_df, after_df) %>%
+balance_plot_df <- bind_rows(before_df, after_df) |>
   mutate(stage = factor(stage, levels = c("Before", "After")))
 
 ggplot(balance_plot_df, aes(x = reorder(variable, abs(std_diff)),

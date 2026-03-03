@@ -302,8 +302,8 @@ ggplot(result_no_cal$pairs, aes(x = distance)) +
 ## ----caliper-sd, eval=FALSE---------------------------------------------------
 # # Calculate pooled SD
 # combined <- bind_rows(
-#   left_data %>% mutate(group = "left"),
-#   right_data %>% mutate(group = "right")
+#   left_data |> mutate(group = "left"),
+#   right_data |> mutate(group = "right")
 # )
 # 
 # pooled_sd <- sd(combined$age)  # For single variable
@@ -353,8 +353,8 @@ multi_site <- bind_rows(
   )
 )
 
-left_site <- multi_site %>% filter(group == "treatment")
-right_site <- multi_site %>% filter(group == "control")
+left_site <- multi_site |> filter(group == "treatment")
+right_site <- multi_site |> filter(group == "control")
 
 # Create exact blocks by site
 blocks <- matchmaker(
@@ -377,10 +377,10 @@ result_blocked <- match_couples(
 )
 
 # Verify exact site balance
-result_blocked$pairs %>%
-  mutate(left_id = as.integer(left_id), right_id = as.integer(right_id)) %>%
-  left_join(left_site %>% dplyr::select(id, site), by = c("left_id" = "id")) %>%
-  left_join(right_site %>% dplyr::select(id, site), by = c("right_id" = "id"), suffix = c("_left", "_right")) %>%
+result_blocked$pairs |>
+  mutate(left_id = as.integer(left_id), right_id = as.integer(right_id)) |>
+  left_join(left_site |> dplyr::select(id, site), by = c("left_id" = "id")) |>
+  left_join(right_site |> dplyr::select(id, site), by = c("right_id" = "id"), suffix = c("_left", "_right")) |>
   count(site_left, site_right)
 
 ## ----blocking-cluster---------------------------------------------------------
@@ -406,8 +406,8 @@ result_clustered <- match_couples(
 )
 
 # Show age distribution by cluster
-cluster_blocks$left %>%
-  group_by(block_id) %>%
+cluster_blocks$left |>
+  group_by(block_id) |>
   summarise(
     n = n(),
     mean_age = mean(age),
@@ -424,10 +424,10 @@ match_result <- match_couples(
 )
 
 # Get matched samples
-matched_left <- left_data %>%
+matched_left <- left_data |>
   filter(id %in% match_result$pairs$left_id)
 
-matched_right <- right_data %>%
+matched_right <- right_data |>
   filter(id %in% match_result$pairs$right_id)
 
 # Compute balance diagnostics
@@ -461,7 +461,7 @@ pre_match_stats <- tibble(
 # Combine for plotting
 balance_comparison <- bind_rows(
   pre_match_stats,
-  balance$var_stats %>% dplyr::select(variable, std_diff) %>% mutate(when = "After")
+  balance$var_stats |> dplyr::select(variable, std_diff) |> mutate(when = "After")
 )
 
 ggplot(balance_comparison, aes(x = variable, y = std_diff, fill = when)) +
@@ -519,7 +519,7 @@ control_group <- create_participant(500, FALSE)
 
 # Simulate outcome (earnings) with treatment effect
 # True effect: +$5,000, with heterogeneity
-treatment_group <- treatment_group %>%
+treatment_group <- treatment_group |>
   mutate(
     earnings = prior_earnings +
       5000 +  # True treatment effect
@@ -527,7 +527,7 @@ treatment_group <- treatment_group %>%
       100 * education_years  # Education effect
   )
 
-control_group <- control_group %>%
+control_group <- control_group |>
   mutate(
     earnings = prior_earnings +
       2000 * rnorm(n()) +
@@ -562,10 +562,10 @@ cat("  Match rate:",
 
 ## ----real-world-balance-------------------------------------------------------
 # Extract matched samples
-matched_treated <- treatment_group %>%
+matched_treated <- treatment_group |>
   filter(id %in% job_match$pairs$left_id)
 
-matched_control <- control_group %>%
+matched_control <- control_group |>
   filter(id %in% job_match$pairs$right_id)
 
 # Compute balance
@@ -623,7 +623,7 @@ cat("  (Closer to true effect of $5,000)\n")
 # 
 # # Table 2: Sample characteristics
 # sample_table <- bind_rows(
-#   matched_treated %>%
+#   matched_treated |>
 #     summarise(
 #       Group = "Treatment",
 #       N = n(),
@@ -634,7 +634,7 @@ cat("  (Closer to true effect of $5,000)\n")
 #                                  format(round(sd(prior_earnings)), big.mark = ",")),
 #       `Employed (%)` = sprintf("%.1f", 100 * mean(employed))
 #     ),
-#   matched_control %>%
+#   matched_control |>
 #     summarise(
 #       Group = "Control",
 #       N = n(),
@@ -722,8 +722,8 @@ cat("  (Closer to true effect of $5,000)\n")
 # # Check covariate overlap
 # library(ggplot2)
 # combined <- bind_rows(
-#   left %>% mutate(group = "treatment"),
-#   right %>% mutate(group = "control")
+#   left |> mutate(group = "treatment"),
+#   right |> mutate(group = "control")
 # )
 # ggplot(combined, aes(x = age, fill = group)) +
 #   geom_density(alpha = 0.5) +
