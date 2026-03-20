@@ -162,6 +162,18 @@ result_blocked <- match_couples(
 # Verify: matches stay within their block
 result_blocked$pairs |> count(block_id)
 
+## ----full-match-example-------------------------------------------------------
+result_full <- full_match(
+  left = treatment,
+  right = control,
+  vars = c("age", "income")
+)
+
+result_full
+
+# Each group has one or more left and right units with matching weights
+head(result_full$groups)
+
 ## ----complete-example---------------------------------------------------------
 # 1. Prepare your data
 set.seed(789)

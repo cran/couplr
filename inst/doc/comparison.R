@@ -50,23 +50,23 @@ for (v in vars) {
 }
 
 ## ----eval = requireNamespace("MatchIt", quietly = TRUE)-----------------------
-# if (requireNamespace("MatchIt", quietly = TRUE)) {
-#   library(MatchIt)
-# 
-#   # MatchIt: Propensity score matching (default)
-#   m_ps <- matchit(
-#     treated ~ age + education + prior_earnings + employed,
-#     data = combined,
-#     method = "nearest",
-#     distance = "glm"  # Propensity score via logistic regression
-#   )
-# 
-#   cat("MatchIt (propensity score, nearest neighbor):\n")
-#   cat("  Matched pairs:", sum(m_ps$weights[combined$treated == 1] > 0), "\n")
-# 
-#   # Extract matched data
-#   matched_ps <- match.data(m_ps)
-# }
+if (requireNamespace("MatchIt", quietly = TRUE)) {
+  library(MatchIt)
+
+  # MatchIt: Propensity score matching (default)
+  m_ps <- matchit(
+    treated ~ age + education + prior_earnings + employed,
+    data = combined,
+    method = "nearest",
+    distance = "glm"  # Propensity score via logistic regression
+  )
+
+  cat("MatchIt (propensity score, nearest neighbor):\n")
+  cat("  Matched pairs:", sum(m_ps$weights[combined$treated == 1] > 0), "\n")
+
+  # Extract matched data
+  matched_ps <- match.data(m_ps)
+}
 
 ## -----------------------------------------------------------------------------
 # couplr: Direct covariate matching
@@ -83,52 +83,52 @@ cat("  Matched pairs:", result_couplr$info$n_matched, "\n")
 cat("  Mean distance:", round(mean(result_couplr$pairs$distance), 4), "\n")
 
 ## ----eval = requireNamespace("MatchIt", quietly = TRUE), fig.width=9, fig.height=5, fig.alt="Side-by-side comparison of covariate balance achieved by MatchIt and couplr, showing standardized mean differences for age, education, prior_earnings, and employed"----
-# if (requireNamespace("MatchIt", quietly = TRUE)) {
-#   # MatchIt balance
-#   matched_treated_ps <- matched_ps |> filter(treated == 1)
-#   matched_control_ps <- matched_ps |> filter(treated == 0)
-# 
-#   matchit_balance <- tibble(
-#     variable = vars,
-#     std_diff = sapply(vars, function(v) {
-#       diff <- mean(matched_treated_ps[[v]]) - mean(matched_control_ps[[v]])
-#       pooled_sd <- sqrt((var(matched_treated_ps[[v]]) + var(matched_control_ps[[v]])) / 2)
-#       diff / pooled_sd
-#     }),
-#     method = "MatchIt"
-#   )
-# 
-#   # couplr balance
-#   couplr_balance <- balance_diagnostics(
-#     result_couplr, treatment, control, vars
-#   )
-# 
-#   couplr_balance_df <- couplr_balance$var_stats |>
-#     dplyr::select(variable, std_diff) |>
-#     mutate(method = "couplr")
-# 
-#   # Combine and plot
-#   balance_comparison <- bind_rows(matchit_balance, couplr_balance_df)
-# 
-#   ggplot(balance_comparison, aes(x = variable, y = abs(std_diff), fill = method)) +
-#     geom_col(position = "dodge") +
-#     geom_hline(yintercept = 0.1, linetype = "dashed", color = "#93c54b") +
-#     geom_hline(yintercept = 0.25, linetype = "dashed", color = "#f47c3c") +
-#     labs(
-#       title = "Covariate Balance: MatchIt vs couplr",
-#       subtitle = "Green line = 0.1 (excellent), Orange line = 0.25 (acceptable)",
-#       x = "Variable",
-#       y = "|Standardized Difference|",
-#       fill = "Method"
-#     ) +
-#     scale_fill_manual(values = c("MatchIt" = "#29abe0", "couplr" = "#93c54b")) +
-#     theme_minimal() +
-#     theme(
-#       plot.background = element_rect(fill = "transparent", color = NA),
-#       panel.background = element_rect(fill = "transparent", color = NA),
-#       legend.position = "bottom"
-#     )
-# }
+if (requireNamespace("MatchIt", quietly = TRUE)) {
+  # MatchIt balance
+  matched_treated_ps <- matched_ps |> filter(treated == 1)
+  matched_control_ps <- matched_ps |> filter(treated == 0)
+
+  matchit_balance <- tibble(
+    variable = vars,
+    std_diff = sapply(vars, function(v) {
+      diff <- mean(matched_treated_ps[[v]]) - mean(matched_control_ps[[v]])
+      pooled_sd <- sqrt((var(matched_treated_ps[[v]]) + var(matched_control_ps[[v]])) / 2)
+      diff / pooled_sd
+    }),
+    method = "MatchIt"
+  )
+
+  # couplr balance
+  couplr_balance <- balance_diagnostics(
+    result_couplr, treatment, control, vars
+  )
+
+  couplr_balance_df <- couplr_balance$var_stats |>
+    dplyr::select(variable, std_diff) |>
+    mutate(method = "couplr")
+
+  # Combine and plot
+  balance_comparison <- bind_rows(matchit_balance, couplr_balance_df)
+
+  ggplot(balance_comparison, aes(x = variable, y = abs(std_diff), fill = method)) +
+    geom_col(position = "dodge") +
+    geom_hline(yintercept = 0.1, linetype = "dashed", color = "#93c54b") +
+    geom_hline(yintercept = 0.25, linetype = "dashed", color = "#f47c3c") +
+    labs(
+      title = "Covariate Balance: MatchIt vs couplr",
+      subtitle = "Green line = 0.1 (excellent), Orange line = 0.25 (acceptable)",
+      x = "Variable",
+      y = "|Standardized Difference|",
+      fill = "Method"
+    ) +
+    scale_fill_manual(values = c("MatchIt" = "#29abe0", "couplr" = "#93c54b")) +
+    theme_minimal() +
+    theme(
+      plot.background = element_rect(fill = "transparent", color = NA),
+      panel.background = element_rect(fill = "transparent", color = NA),
+      legend.position = "bottom"
+    )
+}
 
 ## ----eval = requireNamespace("optmatch", quietly = TRUE)----------------------
 # if (requireNamespace("optmatch", quietly = TRUE)) {
@@ -266,10 +266,9 @@ cat("  Max |std diff|:", round(balance_dm$overall$max_abs_std_diff, 4), "\n")
 # 
 # # Stage 3: If balance insufficient, consider alternatives
 # if (balance$overall$max_abs_std_diff > 0.25) {
-#   # Try MatchIt with propensity scores
-#   library(MatchIt)
-#   combined <- bind_rows(treatment_data, control_data)
-#   m_ps <- matchit(treated ~ ., data = combined, method = "full")
+#   # Try full matching (variable-ratio groups)
+#   result_full <- full_match(treatment_data, control_data, vars = covariates,
+#                             auto_scale = TRUE)
 # }
 # 
 # # Stage 4: Analysis on matched data
@@ -277,9 +276,9 @@ cat("  Max |std diff|:", round(balance_dm$overall$max_abs_std_diff, 4), "\n")
 # model <- lm(outcome ~ treatment, data = matched_data)
 
 ## ----eval = FALSE-------------------------------------------------------------
-# # Use couplr for: initial exploration, large-scale matching, distance caching
-# # Use MatchIt for: propensity scores, full matching, published protocols
-# # Use optmatch for: optimal full matching with sparse distances
+# # Use couplr for: one-to-one matching, full matching, large-scale matching, distance caching
+# # Use MatchIt for: propensity scores, CEM, genetic matching, published protocols
+# # Use optmatch for: sparse distance matrices, RItools integration
 # # Use designmatch for: guaranteed balance constraints
 
 ## ----lalonde-style------------------------------------------------------------

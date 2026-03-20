@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-03-03" />
+<meta name="date" content="2026-03-20" />
 
 <title>Comparison with Alternatives</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Comparison with Alternatives</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-03-03</h4>
+<h4 class="date">2026-03-20</h4>
 
 
 
@@ -448,7 +448,14 @@ matches directly on covariates (multivariate distance).</p>
 <span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a></span>
 <span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>  <span class="co"># Extract matched data</span></span>
 <span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>  matched_ps <span class="ot">&lt;-</span> <span class="fu">match.data</span>(m_ps)</span>
-<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>}</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt; Attaching package: &#39;MatchIt&#39;</span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt; The following object is masked from &#39;package:couplr&#39;:</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="co">#&gt;     match_data</span></span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a><span class="co">#&gt; MatchIt (propensity score, nearest neighbor):</span></span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a><span class="co">#&gt;   Matched pairs: 200</span></span></code></pre></div>
 </div>
 <div id="couplr-approach" class="section level3">
 <h3>couplr Approach</h3>
@@ -516,7 +523,10 @@ matches directly on covariates (multivariate distance).</p>
 <span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a>      <span class="at">panel.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">&quot;transparent&quot;</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
 <span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a>      <span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span></span>
 <span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a>    )</span>
-<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a>}</span>
+<span id="cb4-47"><a href="#cb4-47" tabindex="-1"></a><span class="co">#&gt; Warning in ks.test.default(left_clean, right_clean): p-value will be</span></span>
+<span id="cb4-48"><a href="#cb4-48" tabindex="-1"></a><span class="co">#&gt; approximate in the presence of ties</span></span></code></pre></div>
+<p><img role="img" aria-label="Side-by-side comparison of covariate balance achieved by MatchIt and couplr, showing standardized mean differences for age, education, prior_earnings, and employed" src="data:image/png;base64,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" alt="Side-by-side comparison of covariate balance achieved by MatchIt and couplr, showing standardized mean differences for age, education, prior_earnings, and employed" /></p>
 </div>
 <div id="key-differences" class="section level3">
 <h3>Key Differences</h3>
@@ -542,7 +552,7 @@ matches directly on covariates (multivariate distance).</p>
 <tr class="even">
 <td><strong>Distance metric</strong></td>
 <td>PS logit, Mahalanobis</td>
-<td>Euclidean (scaled)</td>
+<td>Euclidean (scaled), Mahalanobis</td>
 </tr>
 <tr class="odd">
 <td><strong>Optimization</strong></td>
@@ -566,9 +576,29 @@ matches directly on covariates (multivariate distance).</p>
 <td>On multivariate distance</td>
 </tr>
 <tr class="odd">
+<td><strong>CEM</strong></td>
+<td><code>method = &quot;cem&quot;</code></td>
+<td><code>cem_match()</code></td>
+</tr>
+<tr class="even">
+<td><strong>Subclassification</strong></td>
+<td><code>method = &quot;subclass&quot;</code></td>
+<td><code>subclass_match()</code></td>
+</tr>
+<tr class="odd">
+<td><strong>Full matching</strong></td>
+<td><code>method = &quot;full&quot;</code></td>
+<td><code>full_match()</code></td>
+</tr>
+<tr class="even">
 <td><strong>Algorithms</strong></td>
 <td>10+ methods</td>
 <td>20+ LAP solvers</td>
+</tr>
+<tr class="odd">
+<td><strong>Interoperability</strong></td>
+<td>Native ecosystem</td>
+<td><code>as_matchit()</code> for cobalt/marginaleffects</td>
 </tr>
 </tbody>
 </table>
@@ -578,7 +608,8 @@ matches directly on covariates (multivariate distance).</p>
 <p><strong>MatchIt</strong>: - Propensity score methods are preferred
 (common in epidemiology)</p>
 <ul>
-<li><p>Need full matching, CEM, or genetic matching</p></li>
+<li><p>Need <strong>genetic matching</strong> (couplr does not support
+this)</p></li>
 <li><p>Following published protocols that specify MatchIt</p></li>
 <li><p>Familiar with propensity score theory</p></li>
 </ul>
@@ -591,6 +622,8 @@ scales)</p></li>
 <li><p>Need fine-grained control over distance computation</p></li>
 <li><p>Matching on continuous variables where Euclidean distance is
 natural</p></li>
+<li><p>Need CEM, subclassification, or full matching with LAP-based
+optimization</p></li>
 </ul>
 <hr />
 </div>
@@ -602,9 +635,10 @@ natural</p></li>
 <p>optmatch (Hansen &amp; Klopfer, 2006) specializes in optimal matching
 using network flow algorithms. It emphasizes full matching and variable
 ratio matching.</p>
-<p><strong>Key difference</strong>: optmatch excels at optimal full
-matching (variable ratios); couplr focuses on optimal one-to-one
-matching with 20+ algorithm choices.</p>
+<p><strong>Key difference</strong>: optmatch pioneered optimal full
+matching via network flow; couplr now also supports optimal full
+matching (via <code>full_match()</code>) alongside one-to-one matching
+with 20+ algorithm choices.</p>
 </div>
 <div id="optmatch-approach" class="section level3">
 <h3>optmatch Approach</h3>
@@ -652,8 +686,9 @@ achieve similar total distances. The key differences are in:</p>
 couplr uses separate data frames</p></li>
 <li><p><strong>Algorithm selection</strong>: optmatch uses RELAX-IV;
 couplr offers 20+ algorithms</p></li>
-<li><p><strong>Full matching</strong>: optmatch supports variable-ratio
-matching; couplr is one-to-one only</p></li>
+<li><p><strong>Full matching</strong>: Both packages support
+variable-ratio matching (<code>full_match()</code> in couplr,
+<code>fullmatch()</code> in optmatch)</p></li>
 </ol>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;optmatch&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="co"># Compare total distances</span></span>
@@ -681,7 +716,7 @@ matching; couplr is one-to-one only</p></li>
 <tr class="odd">
 <td><strong>Matching types</strong></td>
 <td>Full, pair, variable ratio</td>
-<td>One-to-one only</td>
+<td>One-to-one and full matching</td>
 </tr>
 <tr class="even">
 <td><strong>Algorithm</strong></td>
@@ -713,16 +748,17 @@ matching; couplr is one-to-one only</p></li>
 </div>
 <div id="when-to-use-each-1" class="section level3">
 <h3>When to Use Each</h3>
-<p><strong>optmatch</strong>: - Full matching or variable ratio matching
-needed</p>
+<p><strong>optmatch</strong>: - Integration with RItools for
+diagnostics</p>
 <ul>
-<li><p>Network flow formulation is preferred</p></li>
-<li><p>Integration with RItools for diagnostics</p></li>
+<li><p>Sparse distance matrix support for very large problems</p></li>
+<li><p>Established package with extensive literature references</p></li>
 </ul>
-<p><strong>couplr</strong>: - One-to-one matching is sufficient</p>
+<p><strong>couplr</strong>: - Need both one-to-one and full matching in
+one package</p>
 <ul>
-<li><p>Need algorithm flexibility (auction for n &gt; 1000, sparse
-methods, etc.)</p></li>
+<li><p>Need algorithm flexibility (20+ LAP solvers, greedy and optimal
+full matching)</p></li>
 <li><p>Large-scale problems requiring greedy approximations</p></li>
 <li><p>Distance caching for iterative analysis</p></li>
 </ul>
@@ -1106,10 +1142,26 @@ greedy modes.</p>
 </tr>
 <tr class="even">
 <td><strong>Full matching</strong></td>
+<td>Yes (optimal + greedy)</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
 <td>No</td>
+</tr>
+<tr class="odd">
+<td><strong>CEM</strong></td>
+<td>Yes (<code>cem_match()</code>)</td>
 <td>Yes</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td><strong>Subclassification</strong></td>
+<td>Yes (<code>subclass_match()</code>)</td>
 <td>Yes</td>
-<td>Yes</td>
+<td>No</td>
+<td>No</td>
 <td>No</td>
 </tr>
 <tr class="odd">
@@ -1130,7 +1182,7 @@ greedy modes.</p>
 </tr>
 <tr class="odd">
 <td><strong>Propensity scores</strong></td>
-<td>No (external)</td>
+<td>Yes (<code>ps_match()</code>)</td>
 <td>Yes</td>
 <td>Yes</td>
 <td>No</td>
@@ -1162,7 +1214,7 @@ greedy modes.</p>
 </tr>
 <tr class="odd">
 <td><strong>Balance constraints</strong></td>
-<td>No</td>
+<td>Yes (<code>cardinality_match()</code>)</td>
 <td>No</td>
 <td>No</td>
 <td>Yes</td>
@@ -1208,6 +1260,14 @@ greedy modes.</p>
 <td>No</td>
 <td>No</td>
 </tr>
+<tr class="odd">
+<td><strong>MatchIt interop</strong></td>
+<td>Yes (<code>as_matchit()</code>)</td>
+<td>Native</td>
+<td>No</td>
+<td>No</td>
+<td>No</td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -1219,7 +1279,8 @@ greedy modes.</p>
 <ol style="list-style-type: decimal">
 <li><p><strong>Direct covariate matching</strong> is preferred over
 propensity scores</p></li>
-<li><p><strong>Optimal one-to-one matching</strong> is the goal</p></li>
+<li><p><strong>Optimal one-to-one or full matching</strong> is the
+goal</p></li>
 <li><p><strong>Large datasets</strong> (n &gt; 5,000) with greedy or
 blocking options</p></li>
 <li><p><strong>Algorithm flexibility</strong> is needed (auction for
@@ -1237,8 +1298,8 @@ algorithms</p></li>
 <ol style="list-style-type: decimal">
 <li><p><strong>Propensity score matching</strong> is standard in your
 field</p></li>
-<li><p>Need <strong>full matching</strong> or <strong>CEM</strong>
-(coarsened exact matching)</p></li>
+<li><p>Need <strong>CEM</strong> (coarsened exact matching) or genetic
+matching</p></li>
 <li><p>Following a <strong>published protocol</strong> that specifies
 MatchIt</p></li>
 <li><p>Need <strong>genetic matching</strong> for automatic weight
@@ -1289,22 +1350,21 @@ required</p></li>
 <span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a></span>
 <span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a><span class="co"># Stage 3: If balance insufficient, consider alternatives</span></span>
 <span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a><span class="cf">if</span> (balance<span class="sc">$</span>overall<span class="sc">$</span>max_abs_std_diff <span class="sc">&gt;</span> <span class="fl">0.25</span>) {</span>
-<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a>  <span class="co"># Try MatchIt with propensity scores</span></span>
-<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a>  <span class="fu">library</span>(MatchIt)</span>
-<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a>  combined <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(treatment_data, control_data)</span>
-<span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a>  m_ps <span class="ot">&lt;-</span> <span class="fu">matchit</span>(treated <span class="sc">~</span> ., <span class="at">data =</span> combined, <span class="at">method =</span> <span class="st">&quot;full&quot;</span>)</span>
-<span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a>}</span>
-<span id="cb12-19"><a href="#cb12-19" tabindex="-1"></a></span>
-<span id="cb12-20"><a href="#cb12-20" tabindex="-1"></a><span class="co"># Stage 4: Analysis on matched data</span></span>
-<span id="cb12-21"><a href="#cb12-21" tabindex="-1"></a>matched_data <span class="ot">&lt;-</span> <span class="fu">join_matched</span>(matched, treatment_data, control_data)</span>
-<span id="cb12-22"><a href="#cb12-22" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">lm</span>(outcome <span class="sc">~</span> treatment, <span class="at">data =</span> matched_data)</span></code></pre></div>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a>  <span class="co"># Try full matching (variable-ratio groups)</span></span>
+<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a>  result_full <span class="ot">&lt;-</span> <span class="fu">full_match</span>(treatment_data, control_data, <span class="at">vars =</span> covariates,</span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a>                            <span class="at">auto_scale =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a>}</span>
+<span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a></span>
+<span id="cb12-19"><a href="#cb12-19" tabindex="-1"></a><span class="co"># Stage 4: Analysis on matched data</span></span>
+<span id="cb12-20"><a href="#cb12-20" tabindex="-1"></a>matched_data <span class="ot">&lt;-</span> <span class="fu">join_matched</span>(matched, treatment_data, control_data)</span>
+<span id="cb12-21"><a href="#cb12-21" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">lm</span>(outcome <span class="sc">~</span> treatment, <span class="at">data =</span> matched_data)</span></code></pre></div>
 </div>
 <div id="complementary-use" class="section level3">
 <h3>Complementary Use</h3>
 <p>Different packages excel at different tasks:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Use couplr for: initial exploration, large-scale matching, distance caching</span></span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="co"># Use MatchIt for: propensity scores, full matching, published protocols</span></span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="co"># Use optmatch for: optimal full matching with sparse distances</span></span>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># Use couplr for: one-to-one matching, full matching, large-scale matching, distance caching</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="co"># Use MatchIt for: propensity scores, CEM, genetic matching, published protocols</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="co"># Use optmatch for: sparse distance matrices, RItools integration</span></span>
 <span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co"># Use designmatch for: guaranteed balance constraints</span></span></code></pre></div>
 <hr />
 </div>

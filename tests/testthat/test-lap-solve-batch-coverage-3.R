@@ -8,6 +8,9 @@
 
 test_that("lap_solve_batch parallel execution with matrices", {
   skip_if_not_installed("parallel")
+  skip_on_cran()
+  skip_if(nzchar(Sys.getenv("_R_CHECK_LIMIT_CORES_")),
+          "parallel tests limited in check environments")
 
   # Need at least 4 problems to trigger parallel path
   costs <- lapply(1:5, function(i) matrix(runif(9), 3, 3))
@@ -35,6 +38,9 @@ test_that("lap_solve_batch with n_threads = NULL uses all cores", {
 
 test_that("lap_solve_batch parallel with grouped df", {
   skip_if_not_installed("parallel")
+  skip_on_cran()
+  skip_if(nzchar(Sys.getenv("_R_CHECK_LIMIT_CORES_")),
+          "parallel tests limited in check environments")
 
   df <- tibble::tibble(
     sim = rep(1:6, each = 9),

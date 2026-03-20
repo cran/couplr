@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-03-03" />
+<meta name="date" content="2026-03-20" />
 
 <title>Matching Workflows</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Matching Workflows</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-03-03</h4>
+<h4 class="date">2026-03-20</h4>
 
 
 
@@ -868,18 +868,18 @@ matters</p></li>
 <span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Optimal matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co">#&gt; Optimal matching:</span></span>
 <span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 210.33 seconds</span></span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 184.48 seconds</span></span>
 <span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_optimal<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.3368</span></span>
 <span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a></span>
 <span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a><span class="co">#&gt; Greedy matching:</span></span>
 <span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 1.59 seconds</span></span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 1.57 seconds</span></span>
 <span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_greedy<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.4667</span></span>
 <span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Speedup:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>] <span class="sc">/</span> time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">1</span>), <span class="st">&quot;x</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 132.3 x</span></span></code></pre></div>
+<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 117.5 x</span></span></code></pre></div>
 </div>
 <div id="greedy-strategies" class="section level3">
 <h3>Greedy Strategies</h3>
@@ -963,8 +963,8 @@ default):</p>
 <span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a><span class="fu">print</span>(comparison)</span>
 <span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt;          strategy time_sec mean_distance total_distance</span></span>
 <span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; elapsed    sorted     0.06        0.0912          18.24</span></span>
-<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; elapsed1 row_best     0.05        0.0968          19.36</span></span>
-<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.08        0.0912          18.24</span></span></code></pre></div>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; elapsed1 row_best     0.06        0.0968          19.36</span></span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.07        0.0912          18.24</span></span></code></pre></div>
 <p><strong>Recommendation:</strong></p>
 <ul>
 <li><p>Default to <code>strategy = &quot;row_best&quot;</code> for good
@@ -1929,6 +1929,479 @@ reason not to</td>
 <p><img role="img" aria-label="Flowchart showing recommended matching workflow with iterative refinement loop" src="data:image/png;base64,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" alt="Flowchart showing recommended matching workflow with iterative refinement loop" /></p>
 <hr />
 </div>
+<div id="advanced-matching-techniques" class="section level2">
+<h2>Advanced Matching Techniques</h2>
+<div id="full-matching-variable-ratio-groups" class="section level3">
+<h3>Full Matching (Variable-Ratio Groups)</h3>
+<p>Standard one-to-one matching discards unmatched units — a significant
+loss when control pools are large. Full matching assigns <em>every</em>
+unit to a matched group with variable ratios (1:k or k:1), maximizing
+sample size while preserving balance.</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" tabindex="-1"></a><span class="co"># Full matching: every unit gets assigned to a group</span></span>
+<span id="cb29-2"><a href="#cb29-2" tabindex="-1"></a>result_full <span class="ot">&lt;-</span> <span class="fu">full_match</span>(</span>
+<span id="cb29-3"><a href="#cb29-3" tabindex="-1"></a>  <span class="at">left =</span> left_data,</span>
+<span id="cb29-4"><a href="#cb29-4" tabindex="-1"></a>  <span class="at">right =</span> right_data,</span>
+<span id="cb29-5"><a href="#cb29-5" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
+<span id="cb29-6"><a href="#cb29-6" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;optimal&quot;</span>   <span class="co"># min-cost max-flow (default)</span></span>
+<span id="cb29-7"><a href="#cb29-7" tabindex="-1"></a>)</span>
+<span id="cb29-8"><a href="#cb29-8" tabindex="-1"></a></span>
+<span id="cb29-9"><a href="#cb29-9" tabindex="-1"></a>result_full</span>
+<span id="cb29-10"><a href="#cb29-10" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb29-11"><a href="#cb29-11" tabindex="-1"></a><span class="co">#&gt; Full Matching Result</span></span>
+<span id="cb29-12"><a href="#cb29-12" tabindex="-1"></a><span class="co">#&gt; ====================</span></span>
+<span id="cb29-13"><a href="#cb29-13" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb29-14"><a href="#cb29-14" tabindex="-1"></a><span class="co">#&gt;   Groups formed: 100</span></span>
+<span id="cb29-15"><a href="#cb29-15" tabindex="-1"></a><span class="co">#&gt;   Left units:  100 matched, 0 unmatched (of 100)</span></span>
+<span id="cb29-16"><a href="#cb29-16" tabindex="-1"></a><span class="co">#&gt;   Right units: 150 matched, 0 unmatched (of 150)</span></span>
+<span id="cb29-17"><a href="#cb29-17" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb29-18"><a href="#cb29-18" tabindex="-1"></a><span class="co">#&gt;   Right units per group: min=1, median=1, max=21</span></span></code></pre></div>
+<p>The <code>method</code> argument controls the algorithm:</p>
+<ul>
+<li><p><code>&quot;optimal&quot;</code> (default) — Solves a min-cost max-flow
+problem that minimizes total distance across all group assignments
+simultaneously. Uses Dijkstra’s algorithm with Johnson potentials.
+Guarantees the globally optimal solution.</p></li>
+<li><p><code>&quot;greedy&quot;</code> — A fast two-pass heuristic: (1) each left
+unit picks its nearest right unit, (2) remaining right units are
+assigned to their nearest matched left unit. Faster but not globally
+optimal.</p></li>
+</ul>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" tabindex="-1"></a><span class="co"># Compare optimal vs greedy</span></span>
+<span id="cb30-2"><a href="#cb30-2" tabindex="-1"></a>result_full_greedy <span class="ot">&lt;-</span> <span class="fu">full_match</span>(</span>
+<span id="cb30-3"><a href="#cb30-3" tabindex="-1"></a>  <span class="at">left =</span> left_data,</span>
+<span id="cb30-4"><a href="#cb30-4" tabindex="-1"></a>  <span class="at">right =</span> right_data,</span>
+<span id="cb30-5"><a href="#cb30-5" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
+<span id="cb30-6"><a href="#cb30-6" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;greedy&quot;</span></span>
+<span id="cb30-7"><a href="#cb30-7" tabindex="-1"></a>)</span>
+<span id="cb30-8"><a href="#cb30-8" tabindex="-1"></a></span>
+<span id="cb30-9"><a href="#cb30-9" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Optimal: &quot;</span>, result_full<span class="sc">$</span>info<span class="sc">$</span>n_groups, <span class="st">&quot;groups,&quot;</span>,</span>
+<span id="cb30-10"><a href="#cb30-10" tabindex="-1"></a>    result_full<span class="sc">$</span>info<span class="sc">$</span>n_unmatched_left, <span class="st">&quot;unmatched left,&quot;</span>,</span>
+<span id="cb30-11"><a href="#cb30-11" tabindex="-1"></a>    result_full<span class="sc">$</span>info<span class="sc">$</span>n_unmatched_right, <span class="st">&quot;unmatched right</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb30-12"><a href="#cb30-12" tabindex="-1"></a><span class="co">#&gt; Optimal:  100 groups, 0 unmatched left, 0 unmatched right</span></span>
+<span id="cb30-13"><a href="#cb30-13" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy:  &quot;</span>, result_full_greedy<span class="sc">$</span>info<span class="sc">$</span>n_groups, <span class="st">&quot;groups,&quot;</span>,</span>
+<span id="cb30-14"><a href="#cb30-14" tabindex="-1"></a>    result_full_greedy<span class="sc">$</span>info<span class="sc">$</span>n_unmatched_left, <span class="st">&quot;unmatched left,&quot;</span>,</span>
+<span id="cb30-15"><a href="#cb30-15" tabindex="-1"></a>    result_full_greedy<span class="sc">$</span>info<span class="sc">$</span>n_unmatched_right, <span class="st">&quot;unmatched right</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb30-16"><a href="#cb30-16" tabindex="-1"></a><span class="co">#&gt; Greedy:   100 groups, 0 unmatched left, 0 unmatched right</span></span></code></pre></div>
+<p>Full matching supports <code>min_controls</code> and
+<code>max_controls</code> to constrain group sizes, and
+<code>caliper</code> to exclude poor matches:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" tabindex="-1"></a><span class="co"># Constrain: each group gets 2-5 right units, caliper of 1.5</span></span>
+<span id="cb31-2"><a href="#cb31-2" tabindex="-1"></a>result_constrained <span class="ot">&lt;-</span> <span class="fu">full_match</span>(</span>
+<span id="cb31-3"><a href="#cb31-3" tabindex="-1"></a>  <span class="at">left =</span> left_data,</span>
+<span id="cb31-4"><a href="#cb31-4" tabindex="-1"></a>  <span class="at">right =</span> right_data,</span>
+<span id="cb31-5"><a href="#cb31-5" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
+<span id="cb31-6"><a href="#cb31-6" tabindex="-1"></a>  <span class="at">min_controls =</span> <span class="dv">2</span>,</span>
+<span id="cb31-7"><a href="#cb31-7" tabindex="-1"></a>  <span class="at">max_controls =</span> <span class="dv">5</span>,</span>
+<span id="cb31-8"><a href="#cb31-8" tabindex="-1"></a>  <span class="at">caliper =</span> <span class="fl">1.5</span></span>
+<span id="cb31-9"><a href="#cb31-9" tabindex="-1"></a>)</span>
+<span id="cb31-10"><a href="#cb31-10" tabindex="-1"></a></span>
+<span id="cb31-11"><a href="#cb31-11" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Groups:&quot;</span>, result_constrained<span class="sc">$</span>info<span class="sc">$</span>n_groups, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb31-12"><a href="#cb31-12" tabindex="-1"></a><span class="co">#&gt; Groups: 0</span></span>
+<span id="cb31-13"><a href="#cb31-13" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Unmatched left:&quot;</span>, result_constrained<span class="sc">$</span>info<span class="sc">$</span>n_unmatched_left, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb31-14"><a href="#cb31-14" tabindex="-1"></a><span class="co">#&gt; Unmatched left: 100</span></span>
+<span id="cb31-15"><a href="#cb31-15" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Unmatched right:&quot;</span>, result_constrained<span class="sc">$</span>info<span class="sc">$</span>n_unmatched_right, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb31-16"><a href="#cb31-16" tabindex="-1"></a><span class="co">#&gt; Unmatched right: 150</span></span></code></pre></div>
+<p>The output is an S3 object of class <code>full_matching_result</code>
+with a <code>groups</code> tibble containing <code>group_id</code>,
+<code>id</code>, <code>side</code>, and <code>weight</code>. Within each
+group, right-unit weights sum to the number of left units, enabling
+unbiased estimation:</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="fu">head</span>(result_full<span class="sc">$</span>groups, <span class="dv">10</span>)</span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 10 × 4</span></span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="co">#&gt;    group_id id    side  weight</span></span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a><span class="co">#&gt;       &lt;int&gt; &lt;chr&gt; &lt;chr&gt;  &lt;dbl&gt;</span></span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a><span class="co">#&gt;  1        1 1     left       1</span></span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="co">#&gt;  2        1 140   right      1</span></span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="co">#&gt;  3        2 2     left       1</span></span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a><span class="co">#&gt;  4        2 50    right      1</span></span>
+<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a><span class="co">#&gt;  5        3 3     left       1</span></span>
+<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a><span class="co">#&gt;  6        3 62    right      1</span></span>
+<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a><span class="co">#&gt;  7        4 4     left       1</span></span>
+<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a><span class="co">#&gt;  8        4 5     right      1</span></span>
+<span id="cb32-13"><a href="#cb32-13" tabindex="-1"></a><span class="co">#&gt;  9        5 5     left       1</span></span>
+<span id="cb32-14"><a href="#cb32-14" tabindex="-1"></a><span class="co">#&gt; 10        5 63    right      1</span></span></code></pre></div>
+<p><strong>When to use full matching vs one-to-one:</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th>Criterion</th>
+<th>One-to-one (<code>match_couples</code>)</th>
+<th>Full (<code>full_match</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Sample size</td>
+<td>Discards excess units</td>
+<td>Uses every unit</td>
+</tr>
+<tr class="even">
+<td>Estimand</td>
+<td>ATT (treatment on treated)</td>
+<td>ATT or ATE (with weights)</td>
+</tr>
+<tr class="odd">
+<td>Group structure</td>
+<td>Pairs (1:1)</td>
+<td>Variable-ratio groups</td>
+</tr>
+<tr class="even">
+<td>Balance</td>
+<td>Excellent within pairs</td>
+<td>Good overall (weighted)</td>
+</tr>
+<tr class="odd">
+<td>Precision</td>
+<td>Lower (smaller n)</td>
+<td>Higher (larger effective n)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="ratio-matching-k1" class="section level3">
+<h3>Ratio Matching (k:1)</h3>
+<p>Sometimes matching multiple controls per treated unit improves
+precision. Use the <code>ratio</code> parameter:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" tabindex="-1"></a><span class="co"># Match 2 controls per treated unit</span></span>
+<span id="cb33-2"><a href="#cb33-2" tabindex="-1"></a>result_2to1 <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
+<span id="cb33-3"><a href="#cb33-3" tabindex="-1"></a>  <span class="at">left =</span> left_data,</span>
+<span id="cb33-4"><a href="#cb33-4" tabindex="-1"></a>  <span class="at">right =</span> right_data,</span>
+<span id="cb33-5"><a href="#cb33-5" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
+<span id="cb33-6"><a href="#cb33-6" tabindex="-1"></a>  <span class="at">auto_scale =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb33-7"><a href="#cb33-7" tabindex="-1"></a>  <span class="at">ratio =</span> <span class="dv">2</span>,</span>
+<span id="cb33-8"><a href="#cb33-8" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span></span>
+<span id="cb33-9"><a href="#cb33-9" tabindex="-1"></a>)</span>
+<span id="cb33-10"><a href="#cb33-10" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
+<span id="cb33-11"><a href="#cb33-11" tabindex="-1"></a></span>
+<span id="cb33-12"><a href="#cb33-12" tabindex="-1"></a>result_2to1<span class="sc">$</span>pairs</span>
+<span id="cb33-13"><a href="#cb33-13" tabindex="-1"></a><span class="co">#&gt; # A tibble: 150 × 5</span></span>
+<span id="cb33-14"><a href="#cb33-14" tabindex="-1"></a><span class="co">#&gt;    left_id right_id distance .age_diff .income_diff</span></span>
+<span id="cb33-15"><a href="#cb33-15" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;   &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt;        &lt;dbl&gt;</span></span>
+<span id="cb33-16"><a href="#cb33-16" tabindex="-1"></a><span class="co">#&gt;  1 3       52        1.07     -11.6          5127. </span></span>
+<span id="cb33-17"><a href="#cb33-17" tabindex="-1"></a><span class="co">#&gt;  2 3       5         0.270     -2.96         1144. </span></span>
+<span id="cb33-18"><a href="#cb33-18" tabindex="-1"></a><span class="co">#&gt;  3 4       100       1.05     -10.8          7159. </span></span>
+<span id="cb33-19"><a href="#cb33-19" tabindex="-1"></a><span class="co">#&gt;  4 4       81        0.121      0.567        1820. </span></span>
+<span id="cb33-20"><a href="#cb33-20" tabindex="-1"></a><span class="co">#&gt;  5 5       3         0.690     -6.78         5721. </span></span>
+<span id="cb33-21"><a href="#cb33-21" tabindex="-1"></a><span class="co">#&gt;  6 5       71        0.469     -3.30         6065. </span></span>
+<span id="cb33-22"><a href="#cb33-22" tabindex="-1"></a><span class="co">#&gt;  7 6       30        1.08     -12.3          1426. </span></span>
+<span id="cb33-23"><a href="#cb33-23" tabindex="-1"></a><span class="co">#&gt;  8 6       25        0.231     -2.50         1139. </span></span>
+<span id="cb33-24"><a href="#cb33-24" tabindex="-1"></a><span class="co">#&gt;  9 7       143       0.735     -5.12         9559. </span></span>
+<span id="cb33-25"><a href="#cb33-25" tabindex="-1"></a><span class="co">#&gt; 10 7       94        0.00653    0.0728        -20.9</span></span>
+<span id="cb33-26"><a href="#cb33-26" tabindex="-1"></a><span class="co">#&gt; # ℹ 140 more rows</span></span></code></pre></div>
+<p>Higher ratios increase sample size at the cost of slightly worse
+individual match quality. A common choice is 2:1 or 3:1.</p>
+</div>
+<div id="with-replacement-matching" class="section level3">
+<h3>With-Replacement Matching</h3>
+<p>When controls are scarce relative to treated units, allowing
+replacement lets each control serve as a match for multiple treated
+units:</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" tabindex="-1"></a><span class="co"># Allow controls to be reused</span></span>
+<span id="cb34-2"><a href="#cb34-2" tabindex="-1"></a>result_wr <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
+<span id="cb34-3"><a href="#cb34-3" tabindex="-1"></a>  <span class="at">left =</span> left_data,</span>
+<span id="cb34-4"><a href="#cb34-4" tabindex="-1"></a>  <span class="at">right =</span> right_data,</span>
+<span id="cb34-5"><a href="#cb34-5" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
+<span id="cb34-6"><a href="#cb34-6" tabindex="-1"></a>  <span class="at">auto_scale =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb34-7"><a href="#cb34-7" tabindex="-1"></a>  <span class="at">replace =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb34-8"><a href="#cb34-8" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span></span>
+<span id="cb34-9"><a href="#cb34-9" tabindex="-1"></a>)</span>
+<span id="cb34-10"><a href="#cb34-10" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
+<span id="cb34-11"><a href="#cb34-11" tabindex="-1"></a></span>
+<span id="cb34-12"><a href="#cb34-12" tabindex="-1"></a><span class="co"># Some controls may appear multiple times</span></span>
+<span id="cb34-13"><a href="#cb34-13" tabindex="-1"></a>n_distinct_controls <span class="ot">&lt;-</span> <span class="fu">length</span>(<span class="fu">unique</span>(result_wr<span class="sc">$</span>pairs<span class="sc">$</span>right_id))</span>
+<span id="cb34-14"><a href="#cb34-14" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Unique controls used:&quot;</span>, n_distinct_controls, <span class="st">&quot;out of&quot;</span>, <span class="fu">nrow</span>(right_data), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb34-15"><a href="#cb34-15" tabindex="-1"></a><span class="co">#&gt; Unique controls used: 52 out of 150</span></span></code></pre></div>
+<p>With-replacement matching reduces bias (each treated unit gets its
+closest match) but increases variance.</p>
+</div>
+<div id="propensity-score-matching" class="section level3">
+<h3>Propensity Score Matching</h3>
+<p>Instead of matching directly on covariates, you can match on the
+estimated probability of treatment — the propensity score.
+<code>ps_match()</code> automates this:</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="co"># Combine data for propensity score estimation</span></span>
+<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a>combined <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a>  <span class="fu">transform</span>(left_data[, <span class="fu">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>)], <span class="at">treated =</span> <span class="dv">1</span><span class="dt">L</span>),</span>
+<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a>  <span class="fu">transform</span>(right_data[, <span class="fu">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>)], <span class="at">treated =</span> <span class="dv">0</span><span class="dt">L</span>)</span>
+<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a>)</span>
+<span id="cb35-6"><a href="#cb35-6" tabindex="-1"></a></span>
+<span id="cb35-7"><a href="#cb35-7" tabindex="-1"></a><span class="co"># Match on propensity scores (wider caliper for this example)</span></span>
+<span id="cb35-8"><a href="#cb35-8" tabindex="-1"></a>ps_result <span class="ot">&lt;-</span> <span class="fu">ps_match</span>(</span>
+<span id="cb35-9"><a href="#cb35-9" tabindex="-1"></a>  <span class="at">formula =</span> treated <span class="sc">~</span> age <span class="sc">+</span> income,</span>
+<span id="cb35-10"><a href="#cb35-10" tabindex="-1"></a>  <span class="at">data =</span> combined,</span>
+<span id="cb35-11"><a href="#cb35-11" tabindex="-1"></a>  <span class="at">treatment =</span> <span class="st">&quot;treated&quot;</span>,</span>
+<span id="cb35-12"><a href="#cb35-12" tabindex="-1"></a>  <span class="at">caliper_sd =</span> <span class="fl">0.5</span>,</span>
+<span id="cb35-13"><a href="#cb35-13" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span></span>
+<span id="cb35-14"><a href="#cb35-14" tabindex="-1"></a>)</span>
+<span id="cb35-15"><a href="#cb35-15" tabindex="-1"></a></span>
+<span id="cb35-16"><a href="#cb35-16" tabindex="-1"></a>ps_result</span>
+<span id="cb35-17"><a href="#cb35-17" tabindex="-1"></a><span class="co">#&gt; Matching Result</span></span>
+<span id="cb35-18"><a href="#cb35-18" tabindex="-1"></a><span class="co">#&gt; ===============</span></span>
+<span id="cb35-19"><a href="#cb35-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb35-20"><a href="#cb35-20" tabindex="-1"></a><span class="co">#&gt; Method: lap </span></span>
+<span id="cb35-21"><a href="#cb35-21" tabindex="-1"></a><span class="co">#&gt; Pairs matched: 99 </span></span>
+<span id="cb35-22"><a href="#cb35-22" tabindex="-1"></a><span class="co">#&gt; Unmatched (left): 1 </span></span>
+<span id="cb35-23"><a href="#cb35-23" tabindex="-1"></a><span class="co">#&gt; Unmatched (right): 51 </span></span>
+<span id="cb35-24"><a href="#cb35-24" tabindex="-1"></a><span class="co">#&gt; Total distance: 9.8133 </span></span>
+<span id="cb35-25"><a href="#cb35-25" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb35-26"><a href="#cb35-26" tabindex="-1"></a><span class="co">#&gt; Matched pairs:</span></span>
+<span id="cb35-27"><a href="#cb35-27" tabindex="-1"></a><span class="co">#&gt; # A tibble: 99 × 4</span></span>
+<span id="cb35-28"><a href="#cb35-28" tabindex="-1"></a><span class="co">#&gt;    left_id right_id distance .logit_ps_diff</span></span>
+<span id="cb35-29"><a href="#cb35-29" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;   &lt;chr&gt;       &lt;dbl&gt;          &lt;dbl&gt;</span></span>
+<span id="cb35-30"><a href="#cb35-30" tabindex="-1"></a><span class="co">#&gt;  1 1       139       0.285          0.285  </span></span>
+<span id="cb35-31"><a href="#cb35-31" tabindex="-1"></a><span class="co">#&gt;  2 2       117       0.123          0.123  </span></span>
+<span id="cb35-32"><a href="#cb35-32" tabindex="-1"></a><span class="co">#&gt;  3 3       100       0.0141         0.0141 </span></span>
+<span id="cb35-33"><a href="#cb35-33" tabindex="-1"></a><span class="co">#&gt;  4 4       103       0.246          0.246  </span></span>
+<span id="cb35-34"><a href="#cb35-34" tabindex="-1"></a><span class="co">#&gt;  5 5       133       0.221          0.221  </span></span>
+<span id="cb35-35"><a href="#cb35-35" tabindex="-1"></a><span class="co">#&gt;  6 6       148       0.00931        0.00931</span></span>
+<span id="cb35-36"><a href="#cb35-36" tabindex="-1"></a><span class="co">#&gt;  7 7       111       0.102          0.102  </span></span>
+<span id="cb35-37"><a href="#cb35-37" tabindex="-1"></a><span class="co">#&gt;  8 8       124       0.351          0.351  </span></span>
+<span id="cb35-38"><a href="#cb35-38" tabindex="-1"></a><span class="co">#&gt;  9 9       128       0.0692         0.0692 </span></span>
+<span id="cb35-39"><a href="#cb35-39" tabindex="-1"></a><span class="co">#&gt; 10 10      110       0.0131         0.0131 </span></span>
+<span id="cb35-40"><a href="#cb35-40" tabindex="-1"></a><span class="co">#&gt; # ℹ 89 more rows</span></span></code></pre></div>
+<p>The function fits a logistic regression, transforms scores to the
+logit scale, and calls <code>match_couples()</code> with a caliper
+constraint. The default caliper is 0.2 SD of logit(PS) (Rosenbaum and
+Rubin recommendation); we use 0.5 here for this small simulated dataset.
+You can also supply a pre-fitted model via the <code>ps_model</code>
+argument.</p>
+</div>
+<div id="cardinality-matching" class="section level3">
+<h3>Cardinality Matching</h3>
+<p>Standard matching minimizes total distance. Cardinality matching
+instead maximizes the number of matched pairs while enforcing strict
+balance constraints:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="co"># Maximize pairs subject to balance threshold</span></span>
+<span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a>card_result <span class="ot">&lt;-</span> <span class="fu">cardinality_match</span>(</span>
+<span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a>  <span class="at">left =</span> left_data,</span>
+<span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a>  <span class="at">right =</span> right_data,</span>
+<span id="cb36-5"><a href="#cb36-5" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
+<span id="cb36-6"><a href="#cb36-6" tabindex="-1"></a>  <span class="at">max_std_diff =</span> <span class="fl">0.1</span>,  <span class="co"># Excellent balance threshold</span></span>
+<span id="cb36-7"><a href="#cb36-7" tabindex="-1"></a>  <span class="at">auto_scale =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb36-8"><a href="#cb36-8" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span></span>
+<span id="cb36-9"><a href="#cb36-9" tabindex="-1"></a>)</span>
+<span id="cb36-10"><a href="#cb36-10" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
+<span id="cb36-11"><a href="#cb36-11" tabindex="-1"></a></span>
+<span id="cb36-12"><a href="#cb36-12" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Pairs matched:&quot;</span>, card_result<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb36-13"><a href="#cb36-13" tabindex="-1"></a><span class="co">#&gt; Pairs matched: 81</span></span>
+<span id="cb36-14"><a href="#cb36-14" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Pruning iterations:&quot;</span>, card_result<span class="sc">$</span>info<span class="sc">$</span>pruning_iterations, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb36-15"><a href="#cb36-15" tabindex="-1"></a><span class="co">#&gt; Pruning iterations: 2</span></span>
+<span id="cb36-16"><a href="#cb36-16" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Pairs removed:&quot;</span>, card_result<span class="sc">$</span>info<span class="sc">$</span>pairs_removed, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb36-17"><a href="#cb36-17" tabindex="-1"></a><span class="co">#&gt; Pairs removed: 19</span></span></code></pre></div>
+<p>This is useful when you need strict balance guarantees and are
+willing to sacrifice some sample size.</p>
+</div>
+<div id="coarsened-exact-matching-cem" class="section level3">
+<h3>Coarsened Exact Matching (CEM)</h3>
+<p>CEM coarsens continuous variables into bins, then performs exact
+matching within strata. This avoids model dependence — results don’t
+rely on a distance function or propensity score model:</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a>cem_result <span class="ot">&lt;-</span> <span class="fu">cem_match</span>(</span>
+<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a>  <span class="at">left =</span> left_data,</span>
+<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a>  <span class="at">right =</span> right_data,</span>
+<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
+<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a>  <span class="at">n_bins =</span> <span class="st">&quot;sturges&quot;</span>   <span class="co"># automatic bin width; also &quot;fd&quot;, &quot;scott&quot;, or an integer</span></span>
+<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a>)</span>
+<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a></span>
+<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a>cem_result</span>
+<span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a><span class="co">#&gt; Coarsened Exact Matching Result</span></span>
+<span id="cb37-11"><a href="#cb37-11" tabindex="-1"></a><span class="co">#&gt; ===============================</span></span>
+<span id="cb37-12"><a href="#cb37-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb37-13"><a href="#cb37-13" tabindex="-1"></a><span class="co">#&gt;   Strata: 69 total, 32 matched</span></span>
+<span id="cb37-14"><a href="#cb37-14" tabindex="-1"></a><span class="co">#&gt;   Left:   81 matched, 19 pruned</span></span>
+<span id="cb37-15"><a href="#cb37-15" tabindex="-1"></a><span class="co">#&gt;   Right:  103 matched, 47 pruned</span></span>
+<span id="cb37-16"><a href="#cb37-16" tabindex="-1"></a><span class="co">#&gt;   Variables: age, income</span></span>
+<span id="cb37-17"><a href="#cb37-17" tabindex="-1"></a></span>
+<span id="cb37-18"><a href="#cb37-18" tabindex="-1"></a><span class="co"># Strata summary: how many units in each coarsened cell</span></span>
+<span id="cb37-19"><a href="#cb37-19" tabindex="-1"></a><span class="fu">head</span>(cem_result<span class="sc">$</span>strata_summary)</span>
+<span id="cb37-20"><a href="#cb37-20" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 4</span></span>
+<span id="cb37-21"><a href="#cb37-21" tabindex="-1"></a><span class="co">#&gt;   stratum               n_left n_right matched</span></span>
+<span id="cb37-22"><a href="#cb37-22" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;                  &lt;int&gt;   &lt;int&gt; &lt;lgl&gt;  </span></span>
+<span id="cb37-23"><a href="#cb37-23" tabindex="-1"></a><span class="co">#&gt; 1 (25,30]|(3e+04,4e+04]      0       1 FALSE  </span></span>
+<span id="cb37-24"><a href="#cb37-24" tabindex="-1"></a><span class="co">#&gt; 2 (25,30]|(4e+04,5e+04]      0       1 FALSE  </span></span>
+<span id="cb37-25"><a href="#cb37-25" tabindex="-1"></a><span class="co">#&gt; 3 (25,30]|(5e+04,6e+04]      2       0 FALSE  </span></span>
+<span id="cb37-26"><a href="#cb37-26" tabindex="-1"></a><span class="co">#&gt; 4 (25,30]|(6e+04,7e+04]      1       2 TRUE   </span></span>
+<span id="cb37-27"><a href="#cb37-27" tabindex="-1"></a><span class="co">#&gt; 5 (30,35]|(1e+05, Inf]       1       0 FALSE  </span></span>
+<span id="cb37-28"><a href="#cb37-28" tabindex="-1"></a><span class="co">#&gt; 6 (30,35]|(2e+04,3e+04]      0       2 FALSE</span></span></code></pre></div>
+<p>You can supply custom cutpoints per variable with the
+<code>cutpoints</code> argument, or pass categorical grouping variables
+with <code>grouping</code>. Each matched unit receives a weight
+inversely proportional to the stratum size, ensuring balance across
+strata.</p>
+</div>
+<div id="subclassification" class="section level3">
+<h3>Subclassification</h3>
+<p>Subclassification (stratification on the propensity score) divides
+the sample into strata of similar PS, then computes within-stratum
+effects. Unlike one-to-one matching, no units are discarded:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="co"># Combine data</span></span>
+<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a>combined <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a>  <span class="fu">transform</span>(left_data[, <span class="fu">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>)], <span class="at">treated =</span> <span class="dv">1</span><span class="dt">L</span>),</span>
+<span id="cb38-4"><a href="#cb38-4" tabindex="-1"></a>  <span class="fu">transform</span>(right_data[, <span class="fu">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>)], <span class="at">treated =</span> <span class="dv">0</span><span class="dt">L</span>)</span>
+<span id="cb38-5"><a href="#cb38-5" tabindex="-1"></a>)</span>
+<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a></span>
+<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a>sub_result <span class="ot">&lt;-</span> <span class="fu">subclass_match</span>(</span>
+<span id="cb38-8"><a href="#cb38-8" tabindex="-1"></a>  <span class="at">formula =</span> treated <span class="sc">~</span> age <span class="sc">+</span> income,</span>
+<span id="cb38-9"><a href="#cb38-9" tabindex="-1"></a>  <span class="at">data =</span> combined,</span>
+<span id="cb38-10"><a href="#cb38-10" tabindex="-1"></a>  <span class="at">treatment =</span> <span class="st">&quot;treated&quot;</span>,</span>
+<span id="cb38-11"><a href="#cb38-11" tabindex="-1"></a>  <span class="at">n_subclasses =</span> <span class="dv">5</span>,</span>
+<span id="cb38-12"><a href="#cb38-12" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="st">&quot;ATT&quot;</span></span>
+<span id="cb38-13"><a href="#cb38-13" tabindex="-1"></a>)</span>
+<span id="cb38-14"><a href="#cb38-14" tabindex="-1"></a></span>
+<span id="cb38-15"><a href="#cb38-15" tabindex="-1"></a>sub_result</span>
+<span id="cb38-16"><a href="#cb38-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb38-17"><a href="#cb38-17" tabindex="-1"></a><span class="co">#&gt; Subclassification Result</span></span>
+<span id="cb38-18"><a href="#cb38-18" tabindex="-1"></a><span class="co">#&gt; ========================</span></span>
+<span id="cb38-19"><a href="#cb38-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb38-20"><a href="#cb38-20" tabindex="-1"></a><span class="co">#&gt;   Estimand: ATT</span></span>
+<span id="cb38-21"><a href="#cb38-21" tabindex="-1"></a><span class="co">#&gt;   Subclasses: 5</span></span>
+<span id="cb38-22"><a href="#cb38-22" tabindex="-1"></a><span class="co">#&gt;   Treated (left):  100</span></span>
+<span id="cb38-23"><a href="#cb38-23" tabindex="-1"></a><span class="co">#&gt;   Control (right): 150</span></span>
+<span id="cb38-24"><a href="#cb38-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb38-25"><a href="#cb38-25" tabindex="-1"></a><span class="co">#&gt;   Subclass summary:</span></span>
+<span id="cb38-26"><a href="#cb38-26" tabindex="-1"></a><span class="co">#&gt; # A tibble: 5 × 7</span></span>
+<span id="cb38-27"><a href="#cb38-27" tabindex="-1"></a><span class="co">#&gt;   subclass n_treated n_control mean_ps ps_range_low ps_range_high has_overlap</span></span>
+<span id="cb38-28"><a href="#cb38-28" tabindex="-1"></a><span class="co">#&gt;      &lt;int&gt;     &lt;int&gt;     &lt;int&gt;   &lt;dbl&gt;        &lt;dbl&gt;         &lt;dbl&gt; &lt;lgl&gt;      </span></span>
+<span id="cb38-29"><a href="#cb38-29" tabindex="-1"></a><span class="co">#&gt; 1        1         6        44   0.192       0.0902         0.251 TRUE       </span></span>
+<span id="cb38-30"><a href="#cb38-30" tabindex="-1"></a><span class="co">#&gt; 2        2        15        35   0.296       0.257          0.348 TRUE       </span></span>
+<span id="cb38-31"><a href="#cb38-31" tabindex="-1"></a><span class="co">#&gt; 3        3        20        30   0.391       0.350          0.435 TRUE       </span></span>
+<span id="cb38-32"><a href="#cb38-32" tabindex="-1"></a><span class="co">#&gt; 4        4        32        18   0.491       0.438          0.537 TRUE       </span></span>
+<span id="cb38-33"><a href="#cb38-33" tabindex="-1"></a><span class="co">#&gt; 5        5        27        23   0.630       0.542          0.843 TRUE</span></span>
+<span id="cb38-34"><a href="#cb38-34" tabindex="-1"></a><span class="fu">head</span>(sub_result<span class="sc">$</span>subclass_summary)</span>
+<span id="cb38-35"><a href="#cb38-35" tabindex="-1"></a><span class="co">#&gt; # A tibble: 5 × 7</span></span>
+<span id="cb38-36"><a href="#cb38-36" tabindex="-1"></a><span class="co">#&gt;   subclass n_treated n_control mean_ps ps_range_low ps_range_high has_overlap</span></span>
+<span id="cb38-37"><a href="#cb38-37" tabindex="-1"></a><span class="co">#&gt;      &lt;int&gt;     &lt;int&gt;     &lt;int&gt;   &lt;dbl&gt;        &lt;dbl&gt;         &lt;dbl&gt; &lt;lgl&gt;      </span></span>
+<span id="cb38-38"><a href="#cb38-38" tabindex="-1"></a><span class="co">#&gt; 1        1         6        44   0.192       0.0902         0.251 TRUE       </span></span>
+<span id="cb38-39"><a href="#cb38-39" tabindex="-1"></a><span class="co">#&gt; 2        2        15        35   0.296       0.257          0.348 TRUE       </span></span>
+<span id="cb38-40"><a href="#cb38-40" tabindex="-1"></a><span class="co">#&gt; 3        3        20        30   0.391       0.350          0.435 TRUE       </span></span>
+<span id="cb38-41"><a href="#cb38-41" tabindex="-1"></a><span class="co">#&gt; 4        4        32        18   0.491       0.438          0.537 TRUE       </span></span>
+<span id="cb38-42"><a href="#cb38-42" tabindex="-1"></a><span class="co">#&gt; 5        5        27        23   0.630       0.542          0.843 TRUE</span></span></code></pre></div>
+</div>
+<div id="ecosystem-integration" class="section level3">
+<h3>Ecosystem Integration</h3>
+<p>All couplr result types can be converted to a unified analysis-ready
+format or to MatchIt-class objects for interoperability with cobalt and
+marginaleffects.</p>
+<p><strong><code>match_data()</code></strong> produces a single data
+frame with <code>treatment</code>, <code>weights</code>,
+<code>subclass</code>, and <code>distance</code> columns — ready for
+downstream modelling:</p>
+<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a>md <span class="ot">&lt;-</span> couplr<span class="sc">::</span><span class="fu">match_data</span>(result, left_data, right_data)</span>
+<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="fu">head</span>(md)</span>
+<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 9</span></span>
+<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a><span class="co">#&gt;      id   age income education group     treatment weights subclass distance</span></span>
+<span id="cb39-5"><a href="#cb39-5" tabindex="-1"></a><span class="co">#&gt;   &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;     &lt;chr&gt;         &lt;int&gt;   &lt;dbl&gt;    &lt;int&gt;    &lt;dbl&gt;</span></span>
+<span id="cb39-6"><a href="#cb39-6" tabindex="-1"></a><span class="co">#&gt; 1     1  39.4 49344. MA        treatment         1       1        1 0.00324 </span></span>
+<span id="cb39-7"><a href="#cb39-7" tabindex="-1"></a><span class="co">#&gt; 2     2  42.7 63853. MA        treatment         1       1        2 0.00455 </span></span>
+<span id="cb39-8"><a href="#cb39-8" tabindex="-1"></a><span class="co">#&gt; 3     3  60.6 56300. MA        treatment         1       1        3 0.000900</span></span>
+<span id="cb39-9"><a href="#cb39-9" tabindex="-1"></a><span class="co">#&gt; 4     4  45.7 54787. HS        treatment         1       1        4 0.00685 </span></span>
+<span id="cb39-10"><a href="#cb39-10" tabindex="-1"></a><span class="co">#&gt; 5     5  46.3 45726. HS        treatment         1       1        5 0.00447 </span></span>
+<span id="cb39-11"><a href="#cb39-11" tabindex="-1"></a><span class="co">#&gt; 6     6  62.2 59325. MA        treatment         1       1        6 0.00389</span></span></code></pre></div>
+<p><strong><code>as_matchit()</code></strong> constructs a
+<code>matchit</code>-class object, enabling direct use with
+<code>cobalt::bal.tab()</code>, <code>cobalt::love.plot()</code>, and
+<code>marginaleffects::avg_comparisons()</code>:</p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a>mi <span class="ot">&lt;-</span> <span class="fu">as_matchit</span>(result, left_data, right_data)</span>
+<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a></span>
+<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a><span class="co"># cobalt balance table</span></span>
+<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a>cobalt<span class="sc">::</span><span class="fu">bal.tab</span>(mi)</span>
+<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a></span>
+<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a><span class="co"># marginaleffects</span></span>
+<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a>marginaleffects<span class="sc">::</span><span class="fu">avg_comparisons</span>(model, <span class="at">vcov =</span> <span class="st">&quot;HC3&quot;</span>, <span class="at">newdata =</span> <span class="fu">match.data</span>(mi))</span></code></pre></div>
+<hr />
+</div>
+</div>
+<div id="sensitivity-analysis" class="section level2">
+<h2>Sensitivity Analysis</h2>
+<p>After matching, a natural question is: <em>how much hidden bias would
+be needed to invalidate the results?</em> Rosenbaum bounds address this
+by computing p-values under varying degrees of unobserved
+confounding.</p>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="co"># Simulate a modest treatment effect (small enough that hidden bias matters)</span></span>
+<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">99</span>)</span>
+<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a>n_sa <span class="ot">&lt;-</span> <span class="dv">50</span></span>
+<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a>left_sa <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a>  <span class="at">id =</span> <span class="dv">1</span><span class="sc">:</span>n_sa,</span>
+<span id="cb41-6"><a href="#cb41-6" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">rnorm</span>(n_sa, <span class="dv">5</span>, <span class="dv">2</span>),</span>
+<span id="cb41-7"><a href="#cb41-7" tabindex="-1"></a>  <span class="at">outcome =</span> <span class="fu">rnorm</span>(n_sa, <span class="at">mean =</span> <span class="fl">1.0</span>, <span class="at">sd =</span> <span class="dv">2</span>)</span>
+<span id="cb41-8"><a href="#cb41-8" tabindex="-1"></a>)</span>
+<span id="cb41-9"><a href="#cb41-9" tabindex="-1"></a>right_sa <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb41-10"><a href="#cb41-10" tabindex="-1"></a>  <span class="at">id =</span> (n_sa <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>(<span class="dv">2</span> <span class="sc">*</span> n_sa),</span>
+<span id="cb41-11"><a href="#cb41-11" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">rnorm</span>(n_sa, <span class="dv">5</span>, <span class="dv">2</span>),</span>
+<span id="cb41-12"><a href="#cb41-12" tabindex="-1"></a>  <span class="at">outcome =</span> <span class="fu">rnorm</span>(n_sa, <span class="at">mean =</span> <span class="fl">0.3</span>, <span class="at">sd =</span> <span class="dv">2</span>)</span>
+<span id="cb41-13"><a href="#cb41-13" tabindex="-1"></a>)</span>
+<span id="cb41-14"><a href="#cb41-14" tabindex="-1"></a></span>
+<span id="cb41-15"><a href="#cb41-15" tabindex="-1"></a><span class="co"># Match on covariate x</span></span>
+<span id="cb41-16"><a href="#cb41-16" tabindex="-1"></a>result_sa <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
+<span id="cb41-17"><a href="#cb41-17" tabindex="-1"></a>  <span class="at">left =</span> left_sa,</span>
+<span id="cb41-18"><a href="#cb41-18" tabindex="-1"></a>  <span class="at">right =</span> right_sa,</span>
+<span id="cb41-19"><a href="#cb41-19" tabindex="-1"></a>  <span class="at">vars =</span> <span class="st">&quot;x&quot;</span>,</span>
+<span id="cb41-20"><a href="#cb41-20" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span></span>
+<span id="cb41-21"><a href="#cb41-21" tabindex="-1"></a>)</span>
+<span id="cb41-22"><a href="#cb41-22" tabindex="-1"></a></span>
+<span id="cb41-23"><a href="#cb41-23" tabindex="-1"></a><span class="co"># How robust is the result to hidden bias?</span></span>
+<span id="cb41-24"><a href="#cb41-24" tabindex="-1"></a>sa <span class="ot">&lt;-</span> <span class="fu">sensitivity_analysis</span>(</span>
+<span id="cb41-25"><a href="#cb41-25" tabindex="-1"></a>  <span class="at">result =</span> result_sa,</span>
+<span id="cb41-26"><a href="#cb41-26" tabindex="-1"></a>  <span class="at">left =</span> left_sa,</span>
+<span id="cb41-27"><a href="#cb41-27" tabindex="-1"></a>  <span class="at">right =</span> right_sa,</span>
+<span id="cb41-28"><a href="#cb41-28" tabindex="-1"></a>  <span class="at">outcome_var =</span> <span class="st">&quot;outcome&quot;</span>,</span>
+<span id="cb41-29"><a href="#cb41-29" tabindex="-1"></a>  <span class="at">gamma =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="at">by =</span> <span class="fl">0.25</span>)</span>
+<span id="cb41-30"><a href="#cb41-30" tabindex="-1"></a>)</span>
+<span id="cb41-31"><a href="#cb41-31" tabindex="-1"></a></span>
+<span id="cb41-32"><a href="#cb41-32" tabindex="-1"></a>sa</span>
+<span id="cb41-33"><a href="#cb41-33" tabindex="-1"></a><span class="co">#&gt; Rosenbaum Sensitivity Analysis</span></span>
+<span id="cb41-34"><a href="#cb41-34" tabindex="-1"></a><span class="co">#&gt; ==============================</span></span>
+<span id="cb41-35"><a href="#cb41-35" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb41-36"><a href="#cb41-36" tabindex="-1"></a><span class="co">#&gt; Matched pairs: 50 </span></span>
+<span id="cb41-37"><a href="#cb41-37" tabindex="-1"></a><span class="co">#&gt; Alternative: greater </span></span>
+<span id="cb41-38"><a href="#cb41-38" tabindex="-1"></a><span class="co">#&gt; Test statistic (T+): 850.0 </span></span>
+<span id="cb41-39"><a href="#cb41-39" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb41-40"><a href="#cb41-40" tabindex="-1"></a><span class="co">#&gt; Gamma    p (upper bound)</span></span>
+<span id="cb41-41"><a href="#cb41-41" tabindex="-1"></a><span class="co">#&gt; -----    ---------------</span></span>
+<span id="cb41-42"><a href="#cb41-42" tabindex="-1"></a><span class="co">#&gt; 1.00     0.0204 *</span></span>
+<span id="cb41-43"><a href="#cb41-43" tabindex="-1"></a><span class="co">#&gt; 1.25     0.0852</span></span>
+<span id="cb41-44"><a href="#cb41-44" tabindex="-1"></a><span class="co">#&gt; 1.50     0.2026</span></span>
+<span id="cb41-45"><a href="#cb41-45" tabindex="-1"></a><span class="co">#&gt; 1.75     0.3510</span></span>
+<span id="cb41-46"><a href="#cb41-46" tabindex="-1"></a><span class="co">#&gt; 2.00     0.5020</span></span>
+<span id="cb41-47"><a href="#cb41-47" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb41-48"><a href="#cb41-48" tabindex="-1"></a><span class="co">#&gt; * significant at alpha = 0.05</span></span>
+<span id="cb41-49"><a href="#cb41-49" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb41-50"><a href="#cb41-50" tabindex="-1"></a><span class="co">#&gt; Insensitive to hidden bias up to Gamma = 1.00</span></span>
+<span id="cb41-51"><a href="#cb41-51" tabindex="-1"></a><span class="co">#&gt; To explain away the effect, hidden bias would need Gamma &gt;= 1.25</span></span></code></pre></div>
+<p>The <strong>critical gamma</strong> (<span class="math inline">\(\Gamma\)</span>) is the smallest value at which
+the upper-bound p-value crosses 0.05. A larger critical gamma means the
+finding is more robust: a critical gamma of 1.75, for example, means an
+unobserved confounder would need to change the odds of treatment by a
+factor of 1.75 to explain away the result.</p>
+<hr />
+</div>
+<div id="visualizing-results-with-autoplot" class="section level2">
+<h2>Visualizing Results with autoplot</h2>
+<p>If <code>ggplot2</code> is available, <code>autoplot()</code> methods
+produce publication-ready plots:</p>
+<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;ggplot2&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a>  <span class="fu">library</span>(ggplot2)</span>
+<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a></span>
+<span id="cb42-4"><a href="#cb42-4" tabindex="-1"></a>  <span class="co"># Distance distribution</span></span>
+<span id="cb42-5"><a href="#cb42-5" tabindex="-1"></a>  <span class="fu">autoplot</span>(result, <span class="at">type =</span> <span class="st">&quot;histogram&quot;</span>)</span>
+<span id="cb42-6"><a href="#cb42-6" tabindex="-1"></a>}</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAqAAAAGACAMAAABFpiBcAAABF1BMVEUAAAAAADoAAGYAOjoAOmYAOpAAZpAAZrY6AAA6ADo6AGY6OgA6OmY6ZmY6ZpA6ZrY6kLY6kNtGgrRNTU1NTW5NTY5NbqtNjshmAABmADpmOgBmOjpmOmZmZjpmkJBmkLZmkNtmtpBmtttmtv9uTU1uTW5uTY5ubqtuq+SOTU2OTW6OTY6OyP+QOgCQZgCQZjqQZmaQkDqQkLaQtpCQttuQ27aQ2/+rbk2rbm6rbo6ryKur5P+2ZgC2Zjq2kDq2tpC2ttu225C229u22/+2/9u2///Ijk3I///bkDrbkGbbtmbbtpDb27bb29vb/7bb///kq27k////tmb/yI7/25D/27b/29v/5Kv//7b//8j//9v//+T////U3lfZAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAMb0lEQVR4nO3cCVsbxwGHcQnblRynSagwJrRN2+AD26inC4lRkqYuSLbbCIRcHez3/xydmT0ldKylEfvf9P09jy0B0kiY1zOzK6ASAMIqRT8BYBEChTQChTQChTQChTQChTQChTQChbQVA219+iq69v7X29kP9H9zlr4xbt7rTl+bpVNxPn1z45YTw32k4ZfHcz7y/kGlctc+WPBhP3rY9Fpre869UIRVA61sheX065WJL2hna/VAK5WD6VtODPexz3FeaT33WFWT73DPXrOPkV7r35/XNQqwaqDVB+GXv3OnnifQxcI7jd/Wq9NtrBFob95dx83qq2D8faVm/2d80TXXtrPXglZt1YeEf6sGuvUX1964+ZUL9J1ZNKu/N2+aaci8/a5euXvsAv1p377fpWr+/PDAveVuUP1dMy4hzrBn7uuiHv/JDPd1Olw4ejA1wl2Xc7I2R3eKjO3o6R3CGdJNkn33jKNn1J2+xhSqZeVAf3Rfxv4nP9a3kzX6ICqqFy2h4+bd/XDlDiNI1vHo9tOBxqlEt4yHi0cPMiPED2H3GPGDxR9z+nW3X4jvkAk0iB6rZt5ZCz+Zs/RalDZErBzov5rhcmjno3Fz641Noha2ZtbQ4+Cdmw0rZkp6a0KMsqt1TW02DLPIfmjeCNQGYm/Zr3/ezQ4Xj56OkHkIO2m+Nx9M75SOmd7hho6pNpxLg071OL0WRJlCw8qBnnVMe8O9g+hL+58f/lyvREX1422pScsdf8SBxm/13F5vKqZo2DDQO1/9M/uRaPR0hOQh4rLsyh3fKRwqXLPjO0x7Z5/snEA7N7bCKMzqgfbMl7EX7ejCdTYNNFpn451dbWKfV4sKGN/Yg8aBBi072mdvoo8ko6cjJA/Ri1ZuM2Jyp+xDx3eYXOLH31XcbnN2oL1kn4DCrR7ocG/bHvDaL6356v/yr//4aW/dQNNbvd8PW7IfSUdfHGhyp+xDzwzUrPyuR/sppJ9MEC/uBCpk9UDtgVI93MeFuSSbxswSPzvQeUt8chRv/fuPppO093APmgaaLPETMbk7ZR86vkPWcD862J99FE+gStYItFf9bVSjiadrT/eYL2/HHU+bv/p72SQnA519kDR+W3eHRPe6vcoX3WD8vRnFDpeOnh0veQgzlBnLbDmSO4XPcH6grWSP2bJnP7+z/13Sa+xBpawRqFk1owON+GyODTQ5zRSdXJoV6I3TTFOvJEXjRcOlo2dGiB8iXuOTJxG/NOAqmxlotKWthJ9CZfqVJI7ipawRqJl1DqIDDXuy/O4rV+2+PbFjz8N/PX+JD0/U/2FvMtDqZ8lr8e6c++fdIBwuGX16BLdQ981H79hryZ2c6DzojEDjbav9FNzQyWvx4TXOgyop8LuZogOTDVk9M15JUlJIoP36L8ws2drssUhv1Z0kr8UrKSTQqe3ihqz4fXNMoFKKWeInt4sbMv/7QRfi+0Gl8B31kEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkLYw0MHTdhBcNBqNh+1g9Lyxe3lbzwqILAr0yoYZnB/Z69cnR8HFo1t6UkBsQaDnO6/NDHr9zal9Y/SyHU6owG1ausSbpb3ROAoGzy6D0YvT23paQGhpoIMnp3YWvdolUBRg+UGSdX7EDIpC5A30I/agv5q2/rPE/62lgdq1/frb9vXJYd6jeAKFP7nOg+6YpT3/eVAChT8beCWJQOEPgUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIa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" /><!-- --></p>
+<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;ggplot2&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb43-2"><a href="#cb43-2" tabindex="-1"></a>  <span class="co"># Balance diagnostics love plot</span></span>
+<span id="cb43-3"><a href="#cb43-3" tabindex="-1"></a>  bal <span class="ot">&lt;-</span> <span class="fu">balance_diagnostics</span>(result, left_data, right_data, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>))</span>
+<span id="cb43-4"><a href="#cb43-4" tabindex="-1"></a>  <span class="fu">autoplot</span>(bal, <span class="at">type =</span> <span class="st">&quot;love&quot;</span>)</span>
+<span id="cb43-5"><a href="#cb43-5" tabindex="-1"></a>}</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;ggplot2&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a>  <span class="co"># Sensitivity analysis curve</span></span>
+<span id="cb44-3"><a href="#cb44-3" tabindex="-1"></a>  <span class="fu">autoplot</span>(sa)</span>
+<span id="cb44-4"><a href="#cb44-4" tabindex="-1"></a>}</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+<p>All <code>autoplot()</code> methods return <code>ggplot</code>
+objects, so you can add layers, themes, and labels as needed.</p>
+<hr />
+</div>
 <div id="see-also" class="section level2">
 <h2>See Also</h2>
 <ul>
@@ -1943,7 +2416,13 @@ solutions</p></li>
 <li><p><code>vignette(&quot;pixel-morphing&quot;)</code> - Large-scale
 approximation strategies</p></li>
 <li><p><code>?match_couples</code>, <code>?greedy_couples</code>,
-<code>?balance_diagnostics</code>, <code>?matchmaker</code></p></li>
+<code>?full_match</code>, <code>?balance_diagnostics</code>,
+<code>?matchmaker</code></p></li>
+<li><p><code>?ps_match</code>, <code>?cardinality_match</code>,
+<code>?sensitivity_analysis</code>, <code>?cem_match</code>,
+<code>?subclass_match</code></p></li>
+<li><p><code>?match_data</code>, <code>?as_matchit</code> — ecosystem
+integration</p></li>
 </ul>
 </div>
 

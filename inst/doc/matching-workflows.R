@@ -810,3 +810,208 @@ ggplot() +
         panel.background = element_rect(fill = "transparent", color = NA)) +
   coord_cartesian(xlim = c(0, 8), ylim = c(1.5, 6.5))
 
+## ----full-matching------------------------------------------------------------
+# Full matching: every unit gets assigned to a group
+result_full <- full_match(
+  left = left_data,
+  right = right_data,
+  vars = c("age", "income"),
+  method = "optimal"   # min-cost max-flow (default)
+)
+
+result_full
+
+## ----full-matching-comparison-------------------------------------------------
+# Compare optimal vs greedy
+result_full_greedy <- full_match(
+  left = left_data,
+  right = right_data,
+  vars = c("age", "income"),
+  method = "greedy"
+)
+
+cat("Optimal: ", result_full$info$n_groups, "groups,",
+    result_full$info$n_unmatched_left, "unmatched left,",
+    result_full$info$n_unmatched_right, "unmatched right\n")
+cat("Greedy:  ", result_full_greedy$info$n_groups, "groups,",
+    result_full_greedy$info$n_unmatched_left, "unmatched left,",
+    result_full_greedy$info$n_unmatched_right, "unmatched right\n")
+
+## ----full-matching-constraints------------------------------------------------
+# Constrain: each group gets 2-5 right units, caliper of 1.5
+result_constrained <- full_match(
+  left = left_data,
+  right = right_data,
+  vars = c("age", "income"),
+  min_controls = 2,
+  max_controls = 5,
+  caliper = 1.5
+)
+
+cat("Groups:", result_constrained$info$n_groups, "\n")
+cat("Unmatched left:", result_constrained$info$n_unmatched_left, "\n")
+cat("Unmatched right:", result_constrained$info$n_unmatched_right, "\n")
+
+## ----full-matching-weights----------------------------------------------------
+head(result_full$groups, 10)
+
+## ----ratio-matching-----------------------------------------------------------
+# Match 2 controls per treated unit
+result_2to1 <- match_couples(
+  left = left_data,
+  right = right_data,
+  vars = c("age", "income"),
+  auto_scale = TRUE,
+  ratio = 2,
+  method = "hungarian"
+)
+
+result_2to1$pairs
+
+## ----replacement-matching-----------------------------------------------------
+# Allow controls to be reused
+result_wr <- match_couples(
+  left = left_data,
+  right = right_data,
+  vars = c("age", "income"),
+  auto_scale = TRUE,
+  replace = TRUE,
+  method = "hungarian"
+)
+
+# Some controls may appear multiple times
+n_distinct_controls <- length(unique(result_wr$pairs$right_id))
+cat("Unique controls used:", n_distinct_controls, "out of", nrow(right_data), "\n")
+
+## ----ps-matching--------------------------------------------------------------
+# Combine data for propensity score estimation
+combined <- rbind(
+  transform(left_data[, c("id", "age", "income")], treated = 1L),
+  transform(right_data[, c("id", "age", "income")], treated = 0L)
+)
+
+# Match on propensity scores (wider caliper for this example)
+ps_result <- ps_match(
+  formula = treated ~ age + income,
+  data = combined,
+  treatment = "treated",
+  caliper_sd = 0.5,
+  method = "hungarian"
+)
+
+ps_result
+
+## ----cardinality-matching-----------------------------------------------------
+# Maximize pairs subject to balance threshold
+card_result <- cardinality_match(
+  left = left_data,
+  right = right_data,
+  vars = c("age", "income"),
+  max_std_diff = 0.1,  # Excellent balance threshold
+  auto_scale = TRUE,
+  method = "hungarian"
+)
+
+cat("Pairs matched:", card_result$info$n_matched, "\n")
+cat("Pruning iterations:", card_result$info$pruning_iterations, "\n")
+cat("Pairs removed:", card_result$info$pairs_removed, "\n")
+
+## ----cem-matching-------------------------------------------------------------
+cem_result <- cem_match(
+  left = left_data,
+  right = right_data,
+  vars = c("age", "income"),
+  n_bins = "sturges"   # automatic bin width; also "fd", "scott", or an integer
+)
+
+cem_result
+
+# Strata summary: how many units in each coarsened cell
+head(cem_result$strata_summary)
+
+## ----subclass-matching--------------------------------------------------------
+# Combine data
+combined <- rbind(
+  transform(left_data[, c("id", "age", "income")], treated = 1L),
+  transform(right_data[, c("id", "age", "income")], treated = 0L)
+)
+
+sub_result <- subclass_match(
+  formula = treated ~ age + income,
+  data = combined,
+  treatment = "treated",
+  n_subclasses = 5,
+  estimand = "ATT"
+)
+
+sub_result
+head(sub_result$subclass_summary)
+
+## ----match-data-example-------------------------------------------------------
+md <- couplr::match_data(result, left_data, right_data)
+head(md)
+
+## ----as-matchit-example, eval=FALSE-------------------------------------------
+# mi <- as_matchit(result, left_data, right_data)
+# 
+# # cobalt balance table
+# cobalt::bal.tab(mi)
+# 
+# # marginaleffects
+# marginaleffects::avg_comparisons(model, vcov = "HC3", newdata = match.data(mi))
+
+## ----sensitivity-analysis-----------------------------------------------------
+# Simulate a modest treatment effect (small enough that hidden bias matters)
+set.seed(99)
+n_sa <- 50
+left_sa <- data.frame(
+  id = 1:n_sa,
+  x = rnorm(n_sa, 5, 2),
+  outcome = rnorm(n_sa, mean = 1.0, sd = 2)
+)
+right_sa <- data.frame(
+  id = (n_sa + 1):(2 * n_sa),
+  x = rnorm(n_sa, 5, 2),
+  outcome = rnorm(n_sa, mean = 0.3, sd = 2)
+)
+
+# Match on covariate x
+result_sa <- match_couples(
+  left = left_sa,
+  right = right_sa,
+  vars = "x",
+  method = "hungarian"
+)
+
+# How robust is the result to hidden bias?
+sa <- sensitivity_analysis(
+  result = result_sa,
+  left = left_sa,
+  right = right_sa,
+  outcome_var = "outcome",
+  gamma = seq(1, 2, by = 0.25)
+)
+
+sa
+
+## ----autoplot-examples, fig.width=7, fig.height=4-----------------------------
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  library(ggplot2)
+
+  # Distance distribution
+  autoplot(result, type = "histogram")
+}
+
+## ----autoplot-balance, fig.width=7, fig.height=4------------------------------
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  # Balance diagnostics love plot
+  bal <- balance_diagnostics(result, left_data, right_data, vars = c("age", "income"))
+  autoplot(bal, type = "love")
+}
+
+## ----autoplot-sensitivity, fig.width=7, fig.height=4--------------------------
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  # Sensitivity analysis curve
+  autoplot(sa)
+}
+
