@@ -489,6 +489,8 @@ test_that("pixel_morph_animate resizes mismatched images", {
 
 test_that("pixel_morph_animate saves webp format", {
   skip_if_not_installed("magick")
+  webp_ok <- tryCatch({ magick::coder_info("webp"); TRUE }, error = function(e) FALSE)
+  skip_if(!webp_ok, "ImageMagick lacks WebP support")
 
   imgA <- system.file("extdata/icons/circleA_40.png", package = "couplr")
   imgB <- system.file("extdata/icons/circleB_40.png", package = "couplr")

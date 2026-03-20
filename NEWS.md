@@ -1,3 +1,14 @@
+# couplr 1.2.1
+
+## Bug Fixes
+
+* Fixed CRAN check failure on Fedora clang: WebP format tests now use
+  `magick::coder_info("webp")` instead of `magick::magick_config()$webp` to
+  detect WebP support, avoiding false positives when ImageMagick headers claim
+  WebP support but the encoder delegate is missing at runtime.
+* `pixel_morph_animate()` now gives a clear error message when `format = "webp"`
+  is requested on a system without WebP support, instead of a cryptic C++ error.
+
 # couplr 1.2.0
 
 ## New Features

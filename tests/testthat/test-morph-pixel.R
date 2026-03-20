@@ -240,6 +240,9 @@ test_that("pixel_morph_animate can save to file", {
 })
 
 test_that("pixel_morph_animate handles webp format", {
+  skip_if_not_installed("magick")
+  webp_ok <- tryCatch({ magick::coder_info("webp"); TRUE }, error = function(e) FALSE)
+  skip_if(!webp_ok, "ImageMagick lacks WebP support")
   imgs <- get_test_images()
   outfile <- tempfile(fileext = ".webp")
 

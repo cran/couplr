@@ -868,18 +868,18 @@ matters</p></li>
 <span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Optimal matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co">#&gt; Optimal matching:</span></span>
 <span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 184.48 seconds</span></span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 186.57 seconds</span></span>
 <span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_optimal<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.3368</span></span>
 <span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a></span>
 <span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a><span class="co">#&gt; Greedy matching:</span></span>
 <span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 1.57 seconds</span></span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 1.53 seconds</span></span>
 <span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_greedy<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.4667</span></span>
 <span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Speedup:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>] <span class="sc">/</span> time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">1</span>), <span class="st">&quot;x</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 117.5 x</span></span></code></pre></div>
+<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 121.9 x</span></span></code></pre></div>
 </div>
 <div id="greedy-strategies" class="section level3">
 <h3>Greedy Strategies</h3>
@@ -964,7 +964,7 @@ default):</p>
 <span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt;          strategy time_sec mean_distance total_distance</span></span>
 <span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; elapsed    sorted     0.06        0.0912          18.24</span></span>
 <span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; elapsed1 row_best     0.06        0.0968          19.36</span></span>
-<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.07        0.0912          18.24</span></span></code></pre></div>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.08        0.0912          18.24</span></span></code></pre></div>
 <p><strong>Recommendation:</strong></p>
 <ul>
 <li><p>Default to <code>strategy = &quot;row_best&quot;</code> for good

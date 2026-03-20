@@ -414,6 +414,12 @@ pixel_morph_animate <- function(imgA,
       unlink(temp_files)
 
     } else if (format == "webp") {
+      webp_ok <- tryCatch({ magick::coder_info("webp"); TRUE },
+                           error = function(e) FALSE)
+      if (!webp_ok) {
+        stop("WebP format requires ImageMagick built with WebP support. ",
+             "Use format = \"gif\" instead, or install ImageMagick with WebP.")
+      }
       magick::image_write(animation, path = outfile, format = "webp")
 
     } else if (format == "gif") {
