@@ -131,23 +131,23 @@ if (requireNamespace("MatchIt", quietly = TRUE)) {
 }
 
 ## ----eval = requireNamespace("optmatch", quietly = TRUE)----------------------
-# if (requireNamespace("optmatch", quietly = TRUE)) {
-#   library(optmatch)
-# 
-#   # Create distance matrix
-#   dist_mat <- match_on(
-#     treated ~ age + education + prior_earnings + employed,
-#     data = combined,
-#     method = "mahalanobis"
-#   )
-# 
-#   # Optimal pair matching
-#   m_opt <- pairmatch(dist_mat, data = combined)
-# 
-#   n_matched <- sum(!is.na(m_opt)) / 2
-#   cat("optmatch (optimal pair matching):\n")
-#   cat("  Matched pairs:", n_matched, "\n")
-# }
+if (requireNamespace("optmatch", quietly = TRUE)) {
+  library(optmatch)
+
+  # Create distance matrix
+  dist_mat <- match_on(
+    treated ~ age + education + prior_earnings + employed,
+    data = combined,
+    method = "mahalanobis"
+  )
+
+  # Optimal pair matching
+  m_opt <- pairmatch(dist_mat, data = combined)
+
+  n_matched <- sum(!is.na(m_opt)) / 2
+  cat("optmatch (optimal pair matching):\n")
+  cat("  Matched pairs:", n_matched, "\n")
+}
 
 ## -----------------------------------------------------------------------------
 # couplr with Mahalanobis-like scaling
@@ -163,12 +163,12 @@ cat("\ncouplr (optimal pair matching):\n")
 cat("  Matched pairs:", result_couplr_maha$info$n_matched, "\n")
 
 ## ----eval = requireNamespace("optmatch", quietly = TRUE)----------------------
-# if (requireNamespace("optmatch", quietly = TRUE)) {
-#   # Compare total distances
-#   # (Note: Direct comparison is complex due to different distance scaling)
-#   cat("\nBoth packages find globally optimal one-to-one assignments.\n")
-#   cat("Total distance differences arise from distance metric choices.\n")
-# }
+if (requireNamespace("optmatch", quietly = TRUE)) {
+  # Compare total distances
+  # (Note: Direct comparison is complex due to different distance scaling)
+  cat("\nBoth packages find globally optimal one-to-one assignments.\n")
+  cat("Total distance differences arise from distance metric choices.\n")
+}
 
 ## ----eval = requireNamespace("designmatch", quietly = TRUE)-------------------
 # if (requireNamespace("designmatch", quietly = TRUE)) {

@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-03-20" />
+<meta name="date" content="2026-05-18" />
 
 <title>Troubleshooting Guide</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Troubleshooting Guide</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-03-20</h4>
+<h4 class="date">2026-05-18</h4>
 
 
 
@@ -402,7 +402,7 @@ and provides step-by-step solutions.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># This fails: all assignments have Inf cost</span></span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>cost <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="cn">Inf</span>, <span class="cn">Inf</span>, <span class="cn">Inf</span>, <span class="cn">Inf</span>, <span class="cn">Inf</span>, <span class="cn">Inf</span>, <span class="dv">2</span>, <span class="dv">3</span>), <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">lap_solve</span>(cost)</span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co">#&gt; Error in `lap_solve_bruteforce()`:</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">#&gt; ! Infeasible given forbidden edges</span></span></code></pre></div>
 <p>Error message: “No feasible assignment found” or total cost is
 Inf.</p>
@@ -604,12 +604,12 @@ weighted</p></li>
 <span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 7</span></span>
 <span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a><span class="co">#&gt;   Variable `Mean Left` `Mean Right` `Mean Diff` `Std Diff` `Var Ratio` `KS Stat`</span></span>
 <span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a><span class="co">#&gt; 1 age             31.5         31.6      -0.084     -0.018        1.03     0.13 </span></span>
-<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a><span class="co">#&gt; 2 income       53974.       51903.     2071.         0.283        1.11     0.217</span></span>
+<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a><span class="co">#&gt; 1 age             31.5         31.5      -0.008     -0.002        1.01     0.13 </span></span>
+<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a><span class="co">#&gt; 2 income       53958.       51791.     2167.         0.296        1.07     0.217</span></span>
 <span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a><span class="co">#&gt; Overall Balance:</span></span>
-<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a><span class="co">#&gt;   Mean |Std Diff|: 0.151 (Good)</span></span>
-<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="co">#&gt;   Max |Std Diff|: 0.283</span></span>
+<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a><span class="co">#&gt;   Mean |Std Diff|: 0.149 (Good)</span></span>
+<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="co">#&gt;   Max |Std Diff|: 0.296</span></span>
 <span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a><span class="co">#&gt;   Vars with |Std Diff| &gt; 0.25: 50.0%</span></span>
 <span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a><span class="co">#&gt; Balance Interpretation:</span></span>
@@ -702,7 +702,7 @@ complexity. For n = 5,000, this means ~125 billion operations.</p>
 <span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a>})</span>
 <span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a></span>
 <span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy matching (n=500):&quot;</span>, <span class="fu">round</span>(time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">2</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="co">#&gt; Greedy matching (n=500): 0.36 seconds</span></span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="co">#&gt; Greedy matching (n=500): 0.23 seconds</span></span>
 <span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Quality (mean distance):&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_greedy<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a><span class="co">#&gt; Quality (mean distance): 0.2886</span></span></code></pre></div>
 <p><strong>2. Use blocking to divide the problem:</strong></p>
@@ -958,10 +958,10 @@ matching variables cause issues.</p>
 <div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="co"># Check if Rtools is properly configured</span></span>
 <span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a><span class="fu">Sys.which</span>(<span class="st">&quot;make&quot;</span>)</span>
 <span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a><span class="co">#&gt;                               make </span></span>
-<span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a><span class="co">#&gt; &quot;C:\\rtools45\\usr\\bin\\make.exe&quot;</span></span>
+<span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a><span class="co">#&gt; &quot;c:\\rtools45\\usr\\bin\\make.exe&quot;</span></span>
 <span id="cb36-5"><a href="#cb36-5" tabindex="-1"></a><span class="fu">Sys.which</span>(<span class="st">&quot;g++&quot;</span>)</span>
 <span id="cb36-6"><a href="#cb36-6" tabindex="-1"></a><span class="co">#&gt;                                          g++ </span></span>
-<span id="cb36-7"><a href="#cb36-7" tabindex="-1"></a><span class="co">#&gt; &quot;C:\\rtools45\\X86_64~1.POS\\bin\\G__~1.EXE&quot;</span></span></code></pre></div>
+<span id="cb36-7"><a href="#cb36-7" tabindex="-1"></a><span class="co">#&gt; &quot;c:\\rtools45\\X86_64~1.POS\\bin\\G__~1.EXE&quot;</span></span></code></pre></div>
 <p>Make sure Rtools is installed and PATH is configured correctly.</p>
 <hr />
 </div>

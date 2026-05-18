@@ -29,14 +29,13 @@
 #' }
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' left <- data.frame(id = 1:5, age = c(25, 35, 45, 55, 65))
 #' right <- data.frame(id = 6:15, age = runif(10, 20, 70))
 #' result <- match_couples(left, right, vars = "age")
 #' mi <- as_matchit(result, left, right)
-#' if (requireNamespace("cobalt", quietly = TRUE)) {
-#'   cobalt::bal.tab(mi)
-#' }
+#' # Now use with cobalt:
+#' cobalt::bal.tab(mi)
 #' }
 #'
 #' @export

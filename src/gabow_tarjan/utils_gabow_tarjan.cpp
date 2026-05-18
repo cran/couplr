@@ -10,8 +10,158 @@
 #include <queue>
 #include <map>
 #include <algorithm>
+#include <limits>
 // stdexcept removed - use LAP_ERROR() instead
 // #include <iostream>  // Removed for CRAN compliance (no std::cerr allowed)
+
+#ifdef COUPLR_GT_DEBUG
+#define DEBUG_ASSERT_FEASIBLE(cost, rm, cm, yu, yv, msg)                       \
+    do {                                                                        \
+        if (!check_one_feasible((cost), (rm), (cm), (yu), (yv))) {              \
+            LAP_ERROR(msg);                                                     \
+        }                                                                       \
+    } while (0)
+#else
+#define DEBUG_ASSERT_FEASIBLE(cost, rm, cm, yu, yv, msg) ((void)0)
+#endif
+
+// ---------------------------------------------------------------------------
+// Optional profiling instrumentation. Enable by building with
+//   PKG_CPPFLAGS += -DCOUPLR_GT_PROFILE
+// and the package will print a per-solve breakdown to stdout. Release builds
+// compile every PROF_* call to a no-op. Counters are process-scoped (not
+// thread-local); the R single-threaded execution model makes that fine.
+// ---------------------------------------------------------------------------
+#ifdef COUPLR_GT_PROFILE
+#include <chrono>
+namespace {
+struct GtProfile {
+    long long total_ns           = 0;
+    long long step1_ns           = 0;
+    long long step2_ns           = 0;
+    long long enqueue_ns         = 0;
+    long long bucket_loop_ns     = 0;
+    long long eq_build_ns        = 0;
+    long long eq_update_ns       = 0;
+    long long step1_calls        = 0;
+    long long step1_paths        = 0;
+    long long step2_calls        = 0;
+    long long step2_enqueue_edges= 0;
+    long long step2_bucket_pops  = 0;
+    long long eq_builds          = 0;
+    long long eq_updates         = 0;
+    long long match_gt_calls     = 0;
+    long long scale_match_calls  = 0;
+
+    void reset() { *this = GtProfile{}; }
+    void print() const {
+        auto ms = [](long long ns) { return ns / 1e6; };
+        Rcpp::Rcout << "[GT_PROFILE]"
+                    << "  total=" << ms(total_ns) << " ms"
+                    << "  step1=" << ms(step1_ns) << " (" << step1_calls
+                    << " calls, " << step1_paths << " paths)"
+                    << "  step2=" << ms(step2_ns) << " (" << step2_calls
+                    << " calls)"
+                    << "    enqueue=" << ms(enqueue_ns) << " ("
+                    << step2_enqueue_edges << " edges)"
+                    << "    bucket=" << ms(bucket_loop_ns) << " ("
+                    << step2_bucket_pops << " pops)"
+                    << "  eq_build=" << ms(eq_build_ns) << " ("
+                    << eq_builds << ")"
+                    << "  eq_update=" << ms(eq_update_ns) << " ("
+                    << eq_updates << ")"
+                    << "  match_gt=" << match_gt_calls
+                    << "  scale_match=" << scale_match_calls
+                    << "\n";
+    }
+};
+inline GtProfile& gt_prof() {
+    static GtProfile p;
+    return p;
+}
+struct PrTimer {
+    long long& target;
+    std::chrono::steady_clock::time_point t0;
+    explicit PrTimer(long long& tgt)
+        : target(tgt), t0(std::chrono::steady_clock::now()) {}
+    ~PrTimer() {
+        auto t1 = std::chrono::steady_clock::now();
+        target += std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0)
+                      .count();
+    }
+};
+}  // namespace
+#define PROF_TIMER(field) PrTimer pr_timer_##field(gt_prof().field)
+#define PROF_INC(field, by) (gt_prof().field += (by))
+#define PROF_RESET() (gt_prof().reset())
+#define PROF_PRINT() (gt_prof().print())
+#else
+#define PROF_TIMER(field) ((void)0)
+#define PROF_INC(field, by) ((void)0)
+#define PROF_RESET() ((void)0)
+#define PROF_PRINT() ((void)0)
+#endif
+
+// Step 2 bucket-array silent drop is built into Gabow & Tarjan 1989.
+// Page 9 of the paper, on the Q[1..bn] array (b = a + 2 = 5 in the paper's
+// scaling notation): "an edge vw with v in V0 cap F, w not in F does not
+// get entered in this data structure if cl(vw) - y(v) - y(w) + A(v) > bn."
+// Inequality (3) on p.7 proves Delta cannot reach a value larger than bn
+// within one Hungarian search, so any edge with r > bn is unreachable in
+// this search by construction; not entering it is correct, not a wart.
+//
+// Phase 5's earlier fuzz (1000 instances, n in [3,200], max_cost up to 1e9)
+// measured ~86% drop rate with 0 cost mismatches vs JV. That observation
+// is consistent with the paper -- the drops are unreachable edges that
+// become eligible in later bit-scaling phases. dev_notes/phase5_fuzz.R
+// stays as the regression check for "drops never cause cost mismatch".
+//
+// Phase 7's bucket_bound = max(1, 6*n + 2) is slightly looser than the
+// paper's bn = 5n; the extra n + 2 is a conservative safety margin and
+// still drops only edges the paper would also drop.
+
+namespace {
+
+// O(n) check: is every row unmatched?
+bool gt_matching_is_empty(const MatchVec& row_match) {
+    for (int j : row_match) {
+        if (j != NIL) return false;
+    }
+    return true;
+}
+
+// Canonical 1-feasible dual init for an empty matching:
+//   y_u[i] = 0
+//   y_v[j] = min over rows of (c(i, j) + 1) for finite edges, or 0 if all forbidden
+//
+// This is the tightest 1-feasible setting when no edge is matched. It is the
+// only setup that is robust to costs with c < -1 (where the zero duals fail
+// the upper bound y_u + y_v <= c + 1). Called once at the start of match_gt
+// / hungarian_step_one_feasible whenever the matching arrives empty; caller-
+// supplied duals are overwritten because there is no matched edge whose value
+// they would be carrying. Cost: O(n m), runs once per entry, not per Step 2.
+void gt_init_empty_duals(const CostMatrix& cost,
+                         DualVec& y_u,
+                         DualVec& y_v) {
+    const int n = static_cast<int>(cost.size());
+    const int m = n > 0 ? static_cast<int>(cost[0].size()) : 0;
+    for (int i = 0; i < n; ++i) {
+        y_u[i] = 0;
+    }
+    for (int j = 0; j < m; ++j) {
+        long long min_val = BIG_INT;
+        for (int i = 0; i < n; ++i) {
+            long long c_ij = cost[i][j];
+            if (c_ij < BIG_INT) {
+                long long val = c_ij + 1;
+                if (val < min_val) min_val = val;
+            }
+        }
+        y_v[j] = (min_val < BIG_INT) ? min_val : 0;
+    }
+}
+
+}  // namespace
 
 // ============================================================================
 // Module A: Cost-length & 1-feasibility utilities
@@ -113,6 +263,8 @@ build_equality_graph(const CostMatrix& cost,
                      const DualVec& y_u,
                      const DualVec& y_v)
 {
+    PROF_TIMER(eq_build_ns);
+    PROF_INC(eq_builds, 1);
     const int n = static_cast<int>(cost.size());
     const int m = n > 0 ? static_cast<int>(cost[0].size()) : 0;
 
@@ -141,56 +293,92 @@ build_equality_graph(const CostMatrix& cost,
 /**
  * Incrementally update equality graph after dual variable changes
  *
- * After Step 1, only columns on augmenting paths have y_v decreased.
- * This function updates the equality graph by checking only the affected
- * columns against all rows, achieving O(|affected_cols| × n) complexity
- * instead of O(nm).
+ * Handles two callers:
+ *   - Step 1 augment + col-decrement: only y_v on path cols changes. Pass
+ *     affected_rows = {} and affected_cols = path cols. Each existing eligible
+ *     edge to an affected col is rechecked; no new edges become eligible
+ *     because y_v only decreases (and for rows not on the path, cl is
+ *     unchanged), so the routine performs deletions only on those columns.
+ *   - Step 2 Hungarian search: y_u changes on rows in S, y_v on cols in T,
+ *     and row_match changes along the augmenting path (all path rows in S,
+ *     all path cols in T). For rows in S, every edge (i, *) may have flipped
+ *     eligibility, so eq_graph[i] is rebuilt from scratch over all m cols.
+ *     For rows not in S, cl(i, j) is unchanged for every j (row_match[i] is
+ *     untouched, and col_match[j] only moves between rows in S, never to a
+ *     row outside S), so it suffices to prune edges to cols in T whose
+ *     y_v dropped, same as the Step 1 case.
  *
  * @param eq_graph Existing equality graph to update (modified in place)
  * @param cost Cost matrix
  * @param row_match Current matching
  * @param y_u Dual variables for rows
- * @param y_v Dual variables for columns (updated since last graph build)
- * @param affected_cols List of column indices whose y_v decreased
+ * @param y_v Dual variables for columns
+ * @param affected_rows Row indices whose y_u changed (or whose row_match
+ *                      changed). Their adjacency lists are rebuilt entirely.
+ * @param affected_cols Column indices whose y_v decreased. For non-affected
+ *                      rows, edges to these cols are pruned if no longer
+ *                      eligible.
  */
 void update_equality_graph_incremental(std::vector<std::vector<int>>& eq_graph,
                                         const CostMatrix& cost,
                                         const MatchVec& row_match,
                                         const DualVec& y_u,
                                         const DualVec& y_v,
+                                        const std::vector<int>& affected_rows,
                                         const std::vector<int>& affected_cols)
 {
+    PROF_TIMER(eq_update_ns);
+    PROF_INC(eq_updates, 1);
     const int n = static_cast<int>(cost.size());
     const int m = n > 0 ? static_cast<int>(cost[0].size()) : 0;
 
-    // For each affected column, check all rows for new eligible edges
-    for (int j : affected_cols) {
-        if (j < 0 || j >= m) continue;
+    if (affected_rows.empty() && affected_cols.empty()) return;
 
-        for (int i = 0; i < n; ++i) {
+    std::vector<bool> in_affected_rows(n, false);
+    for (int i : affected_rows) {
+        if (i >= 0 && i < n) in_affected_rows[i] = true;
+    }
+
+    // Full rebuild for rows whose y_u (and possibly row_match) changed.
+    for (int i : affected_rows) {
+        if (i < 0 || i >= n) continue;
+        auto& adj_list = eq_graph[i];
+        adj_list.clear();
+        for (int j = 0; j < m; ++j) {
             long long c_ij = cost[i][j];
-
-            // Skip forbidden edges
-            if (c_ij >= BIG_INT) {
-                continue;
-            }
-
+            if (c_ij >= BIG_INT) continue;
             bool in_matching = (row_match[i] == j);
-            bool is_elig = is_eligible(c_ij, in_matching, y_u[i], y_v[j]);
-
-            // Check if (i,j) is already in eq_graph[i]
-            auto& adj_list = eq_graph[i];
-            auto it = std::find(adj_list.begin(), adj_list.end(), j);
-            bool already_present = (it != adj_list.end());
-
-            if (is_elig && !already_present) {
-                // Edge became eligible: add it
+            if (is_eligible(c_ij, in_matching, y_u[i], y_v[j])) {
                 adj_list.push_back(j);
-            } else if (!is_elig && already_present) {
-                // Edge no longer eligible: remove it
-                adj_list.erase(it);
             }
         }
+    }
+
+    if (affected_cols.empty()) return;
+
+    std::vector<bool> affected_col_mask(m, false);
+    for (int j : affected_cols) {
+        if (j >= 0 && j < m) affected_col_mask[j] = true;
+    }
+
+    // Prune eligible edges to affected cols for rows that were not rebuilt.
+    for (int i = 0; i < n; ++i) {
+        if (in_affected_rows[i]) continue;
+        auto& adj_list = eq_graph[i];
+        adj_list.erase(
+            std::remove_if(adj_list.begin(), adj_list.end(),
+                           [&](int j) {
+                               if (j < 0 || j >= m || !affected_col_mask[j]) {
+                                   return false;
+                               }
+                               long long c_ij = cost[i][j];
+                               if (c_ij >= BIG_INT) {
+                                   return true;
+                               }
+                               bool in_matching = (row_match[i] == j);
+                               return !is_eligible(c_ij, in_matching, y_u[i], y_v[j]);
+                           }),
+            adj_list.end());
     }
 }
 
@@ -257,14 +445,7 @@ find_one_augmenting_path_eq(const std::vector<std::vector<int>>& eq_graph,
                             const std::vector<bool>& banned_col)
 {
     const int n = static_cast<int>(eq_graph.size());
-    
-    // Determine number of columns
-    int m = 0;
-    for (const auto& nbrs : eq_graph) {
-        for (int j : nbrs) {
-            if (j + 1 > m) m = j + 1;
-        }
-    }
+    const int m = static_cast<int>(col_match.size());
     
     std::vector<bool> visited_row(n, false);
     std::vector<bool> visited_col(m, false);
@@ -334,11 +515,24 @@ find_one_augmenting_path_eq(const std::vector<std::vector<int>>& eq_graph,
 }
 
 /**
- * Find maximal set of vertex-disjoint augmenting paths
- * 
- * Repeatedly finds augmenting paths and marks vertices as banned
- * to ensure paths are vertex-disjoint.
- * 
+ * Find a maximal set of vertex-disjoint shortest augmenting paths in the
+ * equality graph (Hopcroft-Karp style).
+ *
+ * Two-phase Hopcroft-Karp structure:
+ *   1. BFS from all free rows assigns levels. Rows at even levels, cols at
+ *      odd levels. Cols reach via eligible edges; rows reach via matched
+ *      edges (col_match[j] -> next_row at col_level + 1). BFS stops one
+ *      layer past the first free col discovered, so every leveled vertex
+ *      lies on a shortest augmenting path.
+ *   2. DFS from free rows along level-increasing edges only, using
+ *      visited_col + next_edge[i] to keep total DFS work O(E) per call.
+ *      Each row that fails to find a path has its level demoted (`row_level
+ *      = INF`) so later DFS roots don't redescend it.
+ *
+ * Restricting Step 1 to shortest paths bounds the number of times match_gt
+ * loops Step 1 / Step 2 per scaling phase — the paper's O(sqrt(n)) HK round
+ * count, modulo dual changes from Step 2 reshaping the eligibility graph.
+ *
  * @param eq_graph Equality graph (adjacency lists of eligible edges)
  * @param row_match Current matching from rows
  * @param col_match Current matching from columns
@@ -349,67 +543,113 @@ find_maximal_augmenting_paths(const std::vector<std::vector<int>>& eq_graph,
                               const MatchVec& row_match,
                               const MatchVec& col_match)
 {
-    // OPTIMIZED: Single DFS pass - O(m) instead of O(sqrt(n) * m)
-    // Paper approach: Find ALL maximal paths in ONE traversal (like Hopcroft-Karp)
-
     const int n = static_cast<int>(eq_graph.size());
+    const int m = static_cast<int>(col_match.size());
 
-    // Determine number of columns
-    int m = 0;
-    for (const auto& nbrs : eq_graph) {
-        for (int j : nbrs) {
-            if (j + 1 > m) m = j + 1;
+    constexpr int INF_LEVEL = std::numeric_limits<int>::max();
+    std::vector<int> row_level(n, INF_LEVEL);
+    std::vector<int> col_level(m, INF_LEVEL);
+
+    // ---- Phase 1: BFS to assign levels. ------------------------------------
+    std::queue<int> bfs_q;
+    for (int i = 0; i < n; ++i) {
+        if (row_match[i] == NIL) {
+            row_level[i] = 0;
+            bfs_q.push(i);
         }
     }
 
-    std::vector<bool> visited_row(n, false);
-    std::vector<bool> visited_col(m, false);
-    std::vector<std::pair<int,int>> current_path;
-    std::vector<std::vector<std::pair<int,int>>> all_paths;
+    int free_col_level = INF_LEVEL;  // Shortest augmenting-path length (cols).
+    while (!bfs_q.empty()) {
+        int i = bfs_q.front();
+        bfs_q.pop();
 
-    // DFS from a single row to find an augmenting path
-    std::function<bool(int)> dfs = [&](int i) -> bool {
-        if (visited_row[i]) return false;
-        visited_row[i] = true;
+        // Don't expand beyond the shortest free-col layer.
+        if (row_level[i] >= free_col_level) continue;
 
-        // Try all eligible edges from row i
         for (int j : eq_graph[i]) {
-            if (visited_col[j]) continue;
+            if (j < 0 || j >= m) continue;
+            if (col_level[j] != INF_LEVEL) continue;
 
-            visited_col[j] = true;
-            current_path.emplace_back(i, j);
-
-            // If j is free, we found an augmenting path!
+            col_level[j] = row_level[i] + 1;
             if (col_match[j] == NIL) {
-                all_paths.push_back(current_path);
-                // Don't clear path yet - keep it for potential reuse
-                return true;
-            }
-
-            // Otherwise, follow matched edge to continue DFS
-            int i2 = col_match[j];
-            if (i2 != NIL && !visited_row[i2]) {
-                if (dfs(i2)) {
-                    return true;
+                // Free col reached. Record the layer and keep draining the
+                // queue at this level so all shortest paths are discoverable.
+                if (free_col_level == INF_LEVEL) {
+                    free_col_level = col_level[j];
+                }
+            } else {
+                int next_row = col_match[j];
+                if (next_row >= 0 && next_row < n &&
+                    row_level[next_row] == INF_LEVEL) {
+                    row_level[next_row] = col_level[j] + 1;
+                    bfs_q.push(next_row);
                 }
             }
-
-            // Backtrack
-            current_path.pop_back();
-            // Don't unmark visited_col[j] - ensures vertex-disjoint paths
         }
+    }
 
-        return false;
-    };
+    std::vector<std::vector<std::pair<int,int>>> all_paths;
+    if (free_col_level == INF_LEVEL) {
+        // No augmenting path exists at this point in the eligibility graph.
+        return all_paths;
+    }
 
-    // Try DFS from each free row
-    for (int i = 0; i < n; ++i) {
-        if (row_match[i] == NIL && !visited_row[i]) {
-            current_path.clear();
-            if (dfs(i)) {
-                // Successfully found a path
-                // visited arrays ensure next search finds vertex-disjoint path
+    // ---- Phase 2: DFS along level-increasing edges. -----------------------
+    std::vector<bool> visited_col(m, false);
+    std::vector<size_t> next_edge(n, 0);
+
+    for (int root = 0; root < n; ++root) {
+        if (row_match[root] != NIL || row_level[root] != 0) continue;
+
+        std::vector<int> path_rows;
+        std::vector<std::pair<int,int>> path_edges;
+        path_rows.push_back(root);
+
+        while (!path_rows.empty()) {
+            int i = path_rows.back();
+            bool advanced = false;
+
+            while (next_edge[i] < eq_graph[i].size()) {
+                int j = eq_graph[i][next_edge[i]++];
+                if (j < 0 || j >= m) continue;
+                // Level filter: only follow edges into the next layer.
+                if (col_level[j] != row_level[i] + 1) continue;
+                if (visited_col[j]) continue;
+
+                visited_col[j] = true;
+                path_edges.emplace_back(i, j);
+
+                if (col_match[j] == NIL) {
+                    all_paths.push_back(path_edges);
+                    path_rows.clear();
+                    path_edges.clear();
+                    advanced = true;
+                    break;
+                }
+
+                int next_row = col_match[j];
+                if (next_row >= 0 && next_row < n &&
+                    row_level[next_row] == col_level[j] + 1) {
+                    path_rows.push_back(next_row);
+                    advanced = true;
+                    break;
+                }
+
+                // Matched edge doesn't ascend to the right level (target row
+                // either past the path-length cap or already exhausted by a
+                // prior failed DFS). Back out and try the next edge.
+                path_edges.pop_back();
             }
+
+            if (advanced) continue;
+
+            // No further progress from row i. Demote it so later DFS roots
+            // don't redescend through here.
+            row_level[i] = INF_LEVEL;
+            if (path_edges.empty()) break;
+            path_edges.pop_back();
+            path_rows.pop_back();
         }
     }
 
@@ -421,208 +661,273 @@ find_maximal_augmenting_paths(const std::vector<std::vector<int>>& eq_graph,
 // ============================================================================
 
 /**
- * Build cost-length matrix from cost matrix and current matching
- * 
- * @param cost Original cost matrix
- * @param row_match Current matching from rows
- * @return Cost-length matrix where cl(i,j) = c(i,j) if (i,j) matched, c(i,j)+1 otherwise
- */
-CostMatrix build_cl_matrix(const CostMatrix& cost,
-                           const MatchVec& row_match)
-{
-    const int n = static_cast<int>(cost.size());
-    const int m = n > 0 ? static_cast<int>(cost[0].size()) : 0;
-    
-    CostMatrix C_cl(n, std::vector<long long>(m));
-    
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            long long c_ij = cost[i][j];
-            
-            // Forbidden edges remain forbidden
-            if (c_ij >= BIG_INT) {
-                C_cl[i][j] = BIG_INT;
-            } else {
-                bool in_matching = (row_match[i] == j);
-                C_cl[i][j] = cost_length(c_ij, in_matching);
-            }
-        }
-    }
-    
-    return C_cl;
-}
-
-/**
- * Hungarian/Dijkstra search on cost-length matrix
- * 
+ * Hungarian/Dijkstra search on cost-length (computed inline from cost + matching).
+ *
  * Performs a Hungarian search to find an augmenting path, maintaining
  * 1-feasibility. Updates duals and matching if a path is found.
- * 
- * @param C_cl Cost-length matrix
+ *
+ * cl(i, j) is derived on the fly:
+ *   cl(i, j) = cost[i][j] + 1   if (i, j) is not in the matching
+ *   cl(i, j) = cost[i][j]       if (i, j) is in the matching
+ * Forbidden edges (cost[i][j] >= BIG_INT) are skipped.
+ *
+ * @param cost Cost matrix (BIG_INT for forbidden edges)
  * @param row_match Current matching from rows (modified in place)
  * @param col_match Current matching from columns (modified in place)
  * @param y_u Dual variables for rows (modified in place)
  * @param y_v Dual variables for columns (modified in place)
  * @return true if augmenting path found and applied, false otherwise
  */
-/**
- * Hungarian/Dijkstra search on cost-length matrix
- * 
- * Performs a Hungarian search to find an augmenting path, maintaining
- * 1-feasibility. Updates duals and matching if a path is found.
- * 
- * @param C_cl Cost-length matrix
- * @param row_match Current matching from rows (modified in place)
- * @param col_match Current matching from columns (modified in place)
- * @param y_u Dual variables for rows (modified in place)
- * @param y_v Dual variables for columns (modified in place)
- * @return true if augmenting path found and applied, false otherwise
- */
-bool hungarian_search_cl(const CostMatrix& C_cl,
+bool hungarian_search_cl(const CostMatrix& cost,
                          MatchVec& row_match,
                          MatchVec& col_match,
                          DualVec& y_u,
-                         DualVec& y_v)
+                         DualVec& y_v,
+                         std::vector<int>* affected_rows_out,
+                         std::vector<int>* affected_cols_out)
 {
-    const int n = static_cast<int>(C_cl.size());
-    const int m = n > 0 ? static_cast<int>(C_cl[0].size()) : 0;
+    PROF_TIMER(step2_ns);
+    PROF_INC(step2_calls, 1);
+    const int n = static_cast<int>(cost.size());
+    const int m = n > 0 ? static_cast<int>(cost[0].size()) : 0;
     if (n == 0 || m == 0) return false;
+    if (affected_rows_out) affected_rows_out->clear();
+    if (affected_cols_out) affected_cols_out->clear();
 
-    // ---------------------------------------------------------------------
-    // PRE-STEP: make duals feasible w.r.t. C_cl on matched edges
-    // For a matched edge (i,j), if y_u[i] + y_v[j] > C_cl[i][j],
-    // decrease y_u[i] so that y_u[i] + y_v[j] == C_cl[i][j].
-    // This preserves 1-feasibility w.r.t the original cost c and
-    // ensures Hungarian starts from a dual-feasible state on C_cl.
-    // ---------------------------------------------------------------------
+    // Inline cost-length helper: cl(i, j) for a known cost[i][j] value.
+    // Caller must have already checked c_ij < BIG_INT.
+    auto cl_of = [&](int i, int j, long long c_ij) -> long long {
+        return (row_match[i] == j) ? c_ij : (c_ij + 1);
+    };
+
+    // Invariant: every matched edge entering Step 2 is tight, i.e. y_u[i] +
+    // y_v[j] == cost[i][j]. Step 1's augment+col-decrement maintains this; the
+    // augment loop below maintains it across Step 2 by decrementing y_v on
+    // every newly-matched col, mirroring Step 1. Under COUPLR_GT_DEBUG we
+    // assert it; in release we rely on it (the old defensive y_u -= 1 fix-up
+    // would have masked stale eq_graph entries on rows that PRE-STEPed but did
+    // not enter S, breaking the Phase 2 incremental update).
+#ifdef COUPLR_GT_DEBUG
     for (int i = 0; i < n; ++i) {
         int j = row_match[i];
-        if (j == NIL) continue;
-        if (j < 0 || j >= m) continue;
-        long long ccl = C_cl[i][j];
-        if (ccl >= BIG_INT) continue;  // should not happen for a matched edge
-        long long sum_duals = y_u[i] + y_v[j];
-        if (sum_duals > ccl) {
-            long long diff = sum_duals - ccl;  // in a 1-feasible state this is 0 or 1
-            y_u[i] -= diff;
+        if (j == NIL || j < 0 || j >= m) continue;
+        long long c_ij = cost[i][j];
+        if (c_ij >= BIG_INT) continue;
+        if (y_u[i] + y_v[j] != c_ij) {
+            LAP_ERROR("Matched edge not tight entering hungarian_search_cl "
+                      "(y_u[i] + y_v[j] != cost[i][j])");
         }
     }
+#endif
 
     // ---------------------------------------------------------------------
-    // Standard Hungarian search on C_cl, starting from a free row
-    // This finds exactly one augmenting path and updates (row_match, col_match, y_u, y_v).
+    // Paper Step 2: Hungarian forest with lazy dual offset A and bucket array Q.
+    // When a row v enters the forest, save y(v) and A(v). An edge vw with
+    // w outside the forest becomes eligible when
+    //   A = cl(vw) - y(v) - y(w) + A(v).
+    // Buckets Q[r] store exactly those edge candidates.
     // ---------------------------------------------------------------------
 
-    // Find a free row to start from
-    int start_row = -1;
+    // Phase 7 (flat bucket): the bucket structure used to be
+    //   std::vector<std::vector<BucketEdge>> Q[bucket_bound+1]
+    // i.e. ~1500 separate inner vectors, each with its own heap allocation,
+    // pushed to in random-by-r order. Profile (dev_notes/phase7_profile.R)
+    // showed ~57% of total time was in enqueue_edges_from_row's push_back.
+    // Flat-bucket: one contiguous arena `entries` plus an intrusive linked
+    // list keyed by r. bucket_head[r] is the index in `entries` of the most
+    // recently pushed edge for r; each entry's `next` is the index of the
+    // prior push (or -1). Push = append to entries + relink bucket_head[r].
+    // Pop = follow bucket_head[r] into entries. Eliminates per-bucket heap
+    // allocations; A/B over n in {64..384} measured 11-19% speedup on dense.
+    struct BucketEdge {
+        int row;
+        int col;
+        int next;  // index in `entries` of prior push for same r, or -1
+    };
+
+    const long long bucket_bound = std::max(1, 6 * n + 2);
+    std::vector<int> bucket_head(static_cast<size_t>(bucket_bound) + 1, -1);
+    std::vector<BucketEdge> entries;
+    // Reserve a starting capacity that holds a moderate Step 2 without
+    // realloc. Anything larger grows by std::vector's normal doubling, which
+    // is amortized O(1) and trivial in absolute cost (memcpy of an entire
+    // 13.5K-entry arena is ~30 microseconds).
+    entries.reserve(static_cast<size_t>(std::max(64, n + m)));
+
+    long long A = 0;
+    long long next_bucket = 0;
+    bool has_free_root = false;
+
+    std::vector<bool> in_S(n, false);
+    std::vector<bool> in_T(m, false);
+    std::vector<int> parent_row(n, NIL);
+    std::vector<int> reached_by_row(m, NIL);
+
+    std::vector<long long> saved_y_u(n, 0);
+    std::vector<long long> saved_y_v(m, 0);
+    std::vector<long long> enter_A_u(n, 0);
+    std::vector<long long> enter_A_v(m, 0);
+
+    auto enqueue_edges_from_row = [&](int i) {
+        PROF_TIMER(enqueue_ns);
+        for (int j = 0; j < m; ++j) {
+            if (in_T[j]) {
+                continue;
+            }
+            long long c_ij = cost[i][j];
+            if (c_ij >= BIG_INT) {
+                continue;
+            }
+            long long ccl = cl_of(i, j, c_ij);
+
+            long long r = ccl - saved_y_u[i] - y_v[j] + enter_A_u[i];
+            if (r < A) {
+                r = A;
+            }
+            if (r > bucket_bound) {
+                // Paper p.9: edges with r > bn are not entered into Q.
+                // Inequality (3) bounds Delta within one Hungarian search by
+                // bn, so any r > bn edge is unreachable in this search.
+                continue;
+            }
+            // Phase 7: flat bucket array. Append to the arena; link the new
+            // entry as the new head of bucket r.
+            int idx = static_cast<int>(entries.size());
+            entries.push_back({i, j, bucket_head[static_cast<size_t>(r)]});
+            bucket_head[static_cast<size_t>(r)] = idx;
+            PROF_INC(step2_enqueue_edges, 1);
+        }
+    };
+
+    auto materialize_forest_duals = [&]() {
+        for (int i = 0; i < n; ++i) {
+            if (in_S[i]) {
+                y_u[i] = saved_y_u[i] + (A - enter_A_u[i]);
+            }
+        }
+        for (int j = 0; j < m; ++j) {
+            if (in_T[j]) {
+                y_v[j] = saved_y_v[j] - (A - enter_A_v[j]);
+            }
+        }
+    };
+
     for (int i = 0; i < n; ++i) {
         if (row_match[i] == NIL) {
-            start_row = i;
-            break;
+            has_free_root = true;
+            in_S[i] = true;
+            parent_row[i] = NIL;
+            saved_y_u[i] = y_u[i];
+            enter_A_u[i] = A;
+            enqueue_edges_from_row(i);
         }
     }
-    if (start_row == -1) {
-        // Matching already perfect
+
+    if (!has_free_root) {
         return false;
     }
 
-    std::vector<bool> in_S(n, false);          // rows in alternating tree
-    std::vector<bool> in_T(m, false);          // cols in alternating tree
-    std::vector<long long> slack(m, BIG_INT);  // slack[j] = min reduced cost
-    std::vector<int> slack_row(m, -1);         // row achieving slack[j]
-    std::vector<int> parent(n, -1);            // parent[i] = previous row in path to row i
-
-    // Initialize with the root free row in S
-    in_S[start_row] = true;
-    for (int j = 0; j < m; ++j) {
-        long long reduced = C_cl[start_row][j] - y_u[start_row] - y_v[j];
-        slack[j] = reduced;
-        slack_row[j] = start_row;
-    }
-
-    // Main loop: grow alternating tree until augmenting path found
-    //
-    // OPTIMIZED: Process ONE column per iteration (standard Hungarian approach)
-    // This gives O(n²) per augmenting path instead of O(n³)
-    //
-    // Each iteration:
-    //   1. Find minimum slack column j* among columns not in T - O(m)
-    //   2. Perform dual adjustment by delta = slack[j*] - O(n+m)
-    //   3. Add j* to T (now tight since slack[j*] = 0 after adjustment)
-    //   4. If j* is free, we found augmenting path - done
-    //   5. Otherwise, add matched row to S and update slack - O(m)
-    //
-    // Total: O(m) per iteration, O(n) iterations = O(nm) = O(n²) for square
-
+    const long long bucket_count = static_cast<long long>(bucket_head.size());
     while (true) {
-        // 1) Find minimum slack column not in T
-        long long delta = BIG_INT;
-        int j_min = -1;
-        for (int j = 0; j < m; ++j) {
-            if (!in_T[j] && slack[j] < delta) {
-                delta = slack[j];
-                j_min = j;
+        while (true) {
+            while (next_bucket < bucket_count &&
+                   bucket_head[static_cast<size_t>(next_bucket)] == -1) {
+                ++next_bucket;
             }
-        }
+            if (next_bucket >= bucket_count) {
+                return false;
+            }
 
-        if (j_min == -1 || delta == BIG_INT) {
-            // No augmenting path can be found
-            return false;
-        }
+            A = next_bucket;
+            int head_idx = bucket_head[static_cast<size_t>(next_bucket)];
+            BucketEdge popped = entries[static_cast<size_t>(head_idx)];
+            bucket_head[static_cast<size_t>(next_bucket)] = popped.next;
+            int i = popped.row;
+            int j = popped.col;
+            PROF_INC(step2_bucket_pops, 1);
 
-        // 2) Dual adjustment: make column j_min tight
-        if (delta > 0) {
-            for (int i = 0; i < n; ++i) {
-                if (in_S[i]) {
-                    y_u[i] += delta;
+            if (i < 0 || i >= n || j < 0 || j >= m || !in_S[i] || in_T[j]) {
+                continue;
+            }
+            long long c_ij = cost[i][j];
+            if (c_ij >= BIG_INT) {
+                continue;
+            }
+            long long ccl = cl_of(i, j, c_ij);
+
+            long long current_y_i = saved_y_u[i] + (A - enter_A_u[i]);
+            long long reduced = ccl - current_y_i - y_v[j];
+            if (reduced > 0) {
+                long long r = A + reduced;
+                if (r <= bucket_bound) {
+                    int idx = static_cast<int>(entries.size());
+                    entries.push_back({i, j,
+                                       bucket_head[static_cast<size_t>(r)]});
+                    bucket_head[static_cast<size_t>(r)] = idx;
                 }
+                // else: paper-bounded re-enqueue drop (see file-top comment).
+                continue;
             }
-            for (int j = 0; j < m; ++j) {
-                if (in_T[j]) {
-                    y_v[j] -= delta;
-                } else {
-                    slack[j] -= delta;
+
+            in_T[j] = true;
+            reached_by_row[j] = i;
+            saved_y_v[j] = y_v[j];
+            enter_A_v[j] = A;
+
+            if (col_match[j] == NIL) {
+                materialize_forest_duals();
+
+                // Augment along the path back to the free row. For every
+                // newly-matched col, decrement y_v by 1: materialize leaves
+                // sum(path edge) = cl_pre = c + 1 for an edge that was
+                // unmatched before, but cl_new = c after augment. Decrementing
+                // y_v by 1 restores tightness (sum = c) on the matched edge,
+                // and preserves 1-feasibility on every other edge incident
+                // to the same col (those are all unmatched, so the upper
+                // bound y_u + y_v <= c + 1 can only get easier when y_v
+                // drops). Same pattern as Step 1's apply_step1 y_v -= 1 pass.
+                int col = j;
+                int row = reached_by_row[col];
+                while (row != NIL) {
+                    int prev_col = row_match[row];
+                    row_match[row] = col;
+                    col_match[col] = row;
+                    y_v[col] -= 1;
+                    int prev_row = parent_row[row];
+                    if (prev_row == NIL) {
+                        break;
+                    }
+                    col = prev_col;
+                    row = prev_row;
                 }
-            }
-        }
 
-        // 3) Add column j_min to T (now tight since slack[j_min] == 0)
-        in_T[j_min] = true;
-
-        // 4) If j_min is free, we found an augmenting path
-        if (col_match[j_min] == NIL) {
-            // Reconstruct and flip the augmenting path
-            int j = j_min;
-            int i = slack_row[j];
-            while (true) {
-                int j_prev = row_match[i];
-                row_match[i] = j;
-                col_match[j] = i;
-                if (i == start_row) {
-                    break;
-                }
-                i = parent[i];
-                j = j_prev;
-            }
-            return true;
-        }
-
-        // 5) Extend tree: add matched row i2 to S
-        int i2 = col_match[j_min];
-        if (!in_S[i2]) {
-            in_S[i2] = true;
-            parent[i2] = slack_row[j_min];  // parent[row] = previous row that reached it
-
-            // Update slack using this new row - O(m)
-            for (int jj = 0; jj < m; ++jj) {
-                if (!in_T[jj]) {
-                    long long val = C_cl[i2][jj] - y_u[i2] - y_v[jj];
-                    if (val < slack[jj]) {
-                        slack[jj] = val;
-                        slack_row[jj] = i2;
+                // Emit S and T for the caller's incremental equality-graph
+                // update. Every row in S had y_u changed; every col in T had
+                // y_v changed. Path rows/cols are subsets of S/T. The free
+                // col we just augmented to was marked in_T just above.
+                if (affected_rows_out) {
+                    for (int ii = 0; ii < n; ++ii) {
+                        if (in_S[ii]) affected_rows_out->push_back(ii);
                     }
                 }
+                if (affected_cols_out) {
+                    for (int jj = 0; jj < m; ++jj) {
+                        if (in_T[jj]) affected_cols_out->push_back(jj);
+                    }
+                }
+                return true;
             }
+
+            int next_row = col_match[j];
+            if (next_row != NIL && !in_S[next_row]) {
+                in_S[next_row] = true;
+                parent_row[next_row] = i;
+                saved_y_u[next_row] = y_u[next_row];
+                enter_A_u[next_row] = A;
+                enqueue_edges_from_row(next_row);
+            }
+
+            break;
         }
     }
 }
@@ -630,167 +935,42 @@ bool hungarian_step_one_feasible(const CostMatrix& cost,
                                  MatchVec& row_match,
                                  MatchVec& col_match,
                                  DualVec& y_u,
-                                 DualVec& y_v)
+                                 DualVec& y_v,
+                                 std::vector<int>* affected_rows_out,
+                                 std::vector<int>* affected_cols_out)
 {
     const int n = static_cast<int>(cost.size());
     if (n == 0) return false;
     const int m = static_cast<int>(cost[0].size());
     if (m == 0) return false;
-    
-    // -------------------------------------------------------------------------
-    // CRITICAL: Dual initialization/repair step
-    // If current duals are not 1-feasible for the original costs, we must
-    // repair them. Otherwise, cost-length reduced costs can be negative,
-    // causing the Hungarian search to fail or hang.
-    // -------------------------------------------------------------------------
-    
-    if (!check_one_feasible(cost, row_match, col_match, y_u, y_v)) {
-        // =====================================================================
-        // ERROR: Module H produced infeasible input!
-        // =====================================================================
-        // DEBUG: std::cerr << "ERROR: hungarian_step_one_feasible received infeasible input!\n";
-        // DEBUG: std::cerr << "This indicates Module H is not maintaining 1-feasibility across scales.\n";
-        
-        // Report violation details
-        long long worst_unmatched = 0;
-        long long worst_matched_lower = 0;
-        long long worst_matched_upper = 0;
-        
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < m; ++j) {
-                if (cost[i][j] < BIG_INT) {
-                    long long sum_duals = y_u[i] + y_v[j];
-                    bool matched = (row_match[i] == j && col_match[j] == i);
-                    
-                    // Check y_u[i] + y_v[j] <= c[i][j] + 1
-                    long long violation_upper = sum_duals - (cost[i][j] + 1);
-                    if (violation_upper > 0) {
-                        worst_unmatched = std::max(worst_unmatched, violation_upper);
-                        if (matched) {
-                            worst_matched_upper = std::max(worst_matched_upper, violation_upper);
-                        }
-                    }
-                    
-                    // For matched edges: check y_u[i] + y_v[j] >= c[i][j]
-                    if (matched) {
-                        long long violation_lower = cost[i][j] - sum_duals;
-                        if (violation_lower > 0) {
-                            worst_matched_lower = std::max(worst_matched_lower, violation_lower);
-                        }
-                    }
-                }
-            }
-        }
-        
-        // DEBUG: std::cerr << "  Worst violation (y_u+y_v > c+1): " << worst_unmatched << "\n";
-        // DEBUG: std::cerr << "  Worst violation on matched (y_u+y_v < c): " << worst_matched_lower << "\n";
-        // DEBUG: std::cerr << "  Worst violation on matched (y_u+y_v > c+1): " << worst_matched_upper << "\n";
-        // DEBUG: std::cerr << "  Attempting repair...\n";
-        
-        // =====================================================================
-        // REPAIR LOGIC (defensive programming - should not be needed!)
-        // =====================================================================
-        
-        bool matching_empty = true;
-        for (int i = 0; i < n; ++i) {
-            if (row_match[i] != NIL) {
-                matching_empty = false;
-                break;
-            }
-        }
-        
-        if (matching_empty) {
-            // Initialize duals to ensure 1-feasibility for empty matching
-            // Set all row duals to 0
-            for (int i = 0; i < n; ++i) {
-                y_u[i] = 0;
-            }
-            
-            // Set each column dual to min over rows of (c(i,j) + 1)
-            for (int j = 0; j < m; ++j) {
-                long long min_val = BIG_INT;
-                for (int i = 0; i < n; ++i) {
-                    long long c_ij = cost[i][j];
-                    if (c_ij < BIG_INT) {  // finite edge
-                        long long val = c_ij + 1;
-                        if (val < min_val) {
-                            min_val = val;
-                        }
-                    }
-                }
-                y_v[j] = (min_val < BIG_INT) ? min_val : 0;
-            }
-        } else {
-            // Non-empty matching with non-feasible duals
-            // Strategy: 
-            // 1. First enforce all upper bounds y_u + y_v <= c + 1 by decreasing duals
-            // 2. Then enforce matched edge lower bounds y_u + y_v >= c by increasing duals
-            // 3. If step 2 created new upper bound violations, iterate
-            
-            const int MAX_REPAIR_ITERS = 20;
-            for (int iter = 0; iter < MAX_REPAIR_ITERS; ++iter) {
-                bool any_violation = false;
-                
-                // Step 1: Fix all upper bound violations
-                // For each edge, if y_u[i] + y_v[j] > c[i][j] + 1, decrease one dual
-                for (int i = 0; i < n; ++i) {
-                    for (int j = 0; j < m; ++j) {
-                        long long c_ij = cost[i][j];
-                        if (c_ij >= BIG_INT) continue;
-                        
-                        long long sum_duals = y_u[i] + y_v[j];
-                        long long upper_bound = c_ij + 1;
-                        
-                        if (sum_duals > upper_bound) {
-                            any_violation = true;
-                            long long excess = sum_duals - upper_bound;
-                            
-                            // Prefer to decrease column dual for matched edges to preserve
-                            // lower bound, otherwise decrease row dual
-                            bool is_matched = (row_match[i] == j);
-                            if (is_matched && y_v[j] >= excess) {
-                                y_v[j] -= excess;
-                            } else {
-                                y_u[i] -= excess;
-                            }
-                        }
-                    }
-                }
-                
-                // Step 2: Fix lower bound violations for matched edges
-                // For matched edge (i,j), ensure y_u[i] + y_v[j] >= c[i][j]
-                for (int i = 0; i < n; ++i) {
-                    int j = row_match[i];
-                    if (j != NIL && j >= 0 && j < m) {
-                        long long c_ij = cost[i][j];
-                        if (c_ij >= BIG_INT) continue;
-                        
-                        long long sum_duals = y_u[i] + y_v[j];
-                        if (sum_duals < c_ij) {
-                            any_violation = true;
-                            long long deficit = c_ij - sum_duals;
-                            
-                            // Increase both duals proportionally to minimize impact on other edges
-                            long long half_deficit = deficit / 2;
-                            long long remainder = deficit - half_deficit;
-                            y_u[i] += half_deficit + remainder;
-                            y_v[j] += half_deficit;
-                        }
-                    }
-                }
-                
-                if (!any_violation) {
-                    break;  // Converged
-                }
-            }
-        }
+
+    // Empty-matching entry path: caller's duals carry no matched-edge value;
+    // initialize to the canonical 1-feasible y_u = 0, y_v = min_i(c + 1). This
+    // is the only init step kept from the old defensive block; it costs O(nm)
+    // once and is required for correctness when c contains values < -1. The
+    // 20-iter dual-repair loop for non-empty matchings is gone — caller is
+    // expected to deliver a 1-feasible state.
+    const bool was_empty = gt_matching_is_empty(row_match);
+    if (was_empty) {
+        gt_init_empty_duals(cost, y_u, y_v);
     }
-    
-    // Build cost-length matrix
-    CostMatrix C_cl = build_cl_matrix(cost, row_match);
-    
-    // Perform Hungarian search
-    return hungarian_search_cl(C_cl, row_match, col_match, y_u, y_v);
+
+    DEBUG_ASSERT_FEASIBLE(cost, row_match, col_match, y_u, y_v,
+        "1-feasibility violated entering hungarian_step_one_feasible");
+
+    bool ok = hungarian_search_cl(cost, row_match, col_match, y_u, y_v,
+                                  affected_rows_out, affected_cols_out);
+
+    // gt_init_empty_duals rewrote every y_v, so the equality graph must be
+    // rebuilt for every row regardless of which rows entered S. Signal this
+    // to the caller by populating affected_rows_out with all rows.
+    if (ok && was_empty && affected_rows_out) {
+        affected_rows_out->clear();
+        affected_rows_out->reserve(static_cast<size_t>(n));
+        for (int i = 0; i < n; ++i) affected_rows_out->push_back(i);
+    }
+
+    return ok;
 }
 
 // ============================================================================
@@ -839,6 +1019,8 @@ bool apply_step1(const CostMatrix& cost,
                 std::vector<std::vector<int>>* eq_graph,
                 std::vector<int>* affected_cols_out)
 {
+    PROF_TIMER(step1_ns);
+    PROF_INC(step1_calls, 1);
     // 1. Build equality graph of eligible edges (or use provided one)
     std::vector<std::vector<int>> local_eq_graph;
     std::vector<std::vector<int>>& graph_ref = eq_graph ? *eq_graph : local_eq_graph;
@@ -854,6 +1036,7 @@ bool apply_step1(const CostMatrix& cost,
     if (paths.empty()) {
         return false;
     }
+    PROF_INC(step1_paths, static_cast<long long>(paths.size()));
 
     // 3. Augment paths individually and track columns used
     // OPTIMIZED: Augment each path individually for efficiency
@@ -920,6 +1103,7 @@ void match_gt(const CostMatrix& cost,
              int max_iters,
              bool check_feasible)
 {
+    PROF_INC(match_gt_calls, 1);
     const int n = static_cast<int>(cost.size());
     const int m = n > 0 ? static_cast<int>(cost[0].size()) : 0;
     
@@ -937,131 +1121,55 @@ void match_gt(const CostMatrix& cost,
         y_v.assign(m, 0);
     }
     
-    // =========================================================================
-    // NORMALIZATION PHASE: Handle inconsistent matchings and non-feasible duals
-    // =========================================================================
-    
-    // Step 1: Make row_match and col_match consistent
-    // Treat row_match as authoritative, rebuild col_match from it
+    // -------------------------------------------------------------------------
+    // NORMALIZATION: rebuild col_match from row_match (O(n+m)).
+    // The caller is responsible for delivering a 1-feasible (cost, duals,
+    // matching) triple; that invariant is asserted under COUPLR_GT_DEBUG. The
+    // previous O(nm) check_one_feasible + discard/restart block has been
+    // removed (Phase 1 of gt-speedup.md).
+    // -------------------------------------------------------------------------
     for (int j = 0; j < m; ++j) {
         col_match[j] = NIL;
     }
-    
+
     for (int i = 0; i < n; ++i) {
         int j = row_match[i];
         if (j != NIL && j >= 0 && j < m) {
-            // Check for conflicts (multiple rows trying to match same column)
             if (col_match[j] != NIL) {
-                // Conflict: column j already claimed by another row
-                // Drop this row's match
+                // Conflict: column j already claimed by another row. Drop this match.
                 row_match[i] = NIL;
             } else {
-                // No conflict: establish the match
                 col_match[j] = i;
             }
         } else if (j != NIL) {
-            // Invalid column index: clear it
             row_match[i] = NIL;
         }
     }
-    
-    // Step 2: Check 1-feasibility of current state
-    bool is_feasible = check_one_feasible(cost, row_match, col_match, y_u, y_v);
-    
-    if (!is_feasible) {
-        // =====================================================================
-        // ERROR: match_gt received infeasible input!
-        // =====================================================================
-        // DEBUG: std::cerr << "ERROR: match_gt received infeasible input!\n";
-        // DEBUG: std::cerr << "This indicates Module H or scale_match is not properly initializing state.\n";
-        
-        // Report violation details
-        long long worst_unmatched = 0;
-        long long worst_matched_lower = 0;
-        long long worst_matched_upper = 0;
-        int n_violations = 0;
-        
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < m; ++j) {
-                if (cost[i][j] < BIG_INT) {
-                    long long sum_duals = y_u[i] + y_v[j];
-                    bool matched = (row_match[i] == j && col_match[j] == i);
-                    
-                    // Check y_u[i] + y_v[j] <= c[i][j] + 1
-                    long long violation_upper = sum_duals - (cost[i][j] + 1);
-                    if (violation_upper > 0) {
-                        worst_unmatched = std::max(worst_unmatched, violation_upper);
-                        n_violations++;
-                        if (matched) {
-                            worst_matched_upper = std::max(worst_matched_upper, violation_upper);
-                        }
-                    }
-                    
-                    // For matched edges: check y_u[i] + y_v[j] >= c[i][j]
-                    if (matched) {
-                        long long violation_lower = cost[i][j] - sum_duals;
-                        if (violation_lower > 0) {
-                            worst_matched_lower = std::max(worst_matched_lower, violation_lower);
-                            n_violations++;
-                        }
-                    }
-                }
-            }
-        }
-        
-        // DEBUG: std::cerr << "  Total violations: " << n_violations << "\n";
-        // DEBUG: std::cerr << "  Worst violation (y_u+y_v > c+1): " << worst_unmatched << "\n";
-        // DEBUG: std::cerr << "  Worst violation on matched (y_u+y_v < c): " << worst_matched_lower << "\n";
-        // DEBUG: std::cerr << "  Worst violation on matched (y_u+y_v > c+1): " << worst_matched_upper << "\n";
-        // DEBUG: std::cerr << "  Resetting to canonical empty matching...\n";
-        
-        // =====================================================================
-        // RESET LOGIC (defensive programming - should not be needed!)
-        // =====================================================================
-        
-        // State is not 1-feasible: discard the matching and duals,
-        // restart from canonical empty matching with 1-feasible duals
-        
-        // Clear matching
-        for (int i = 0; i < n; ++i) {
-            row_match[i] = NIL;
-        }
-        for (int j = 0; j < m; ++j) {
-            col_match[j] = NIL;
-        }
-        
-        // Initialize duals canonically for empty matching
-        // Row duals: all zero
-        for (int i = 0; i < n; ++i) {
-            y_u[i] = 0;
-        }
-        
-        // Column duals: y_v[j] = min_i(c(i,j) + 1) over finite edges
-        for (int j = 0; j < m; ++j) {
-            long long min_val = BIG_INT;
-            for (int i = 0; i < n; ++i) {
-                long long c_ij = cost[i][j];
-                if (c_ij < BIG_INT) {
-                    long long val = c_ij + 1;
-                    if (val < min_val) {
-                        min_val = val;
-                    }
-                }
-            }
-            y_v[j] = (min_val < BIG_INT) ? min_val : 0;
-        }
+
+    // Empty-matching entry path: canonical 1-feasible dual init (O(nm) once,
+    // required for correctness when c contains values < -1). For non-empty
+    // matchings the caller must supply 1-feasible duals.
+    if (gt_matching_is_empty(row_match)) {
+        gt_init_empty_duals(cost, y_u, y_v);
     }
-    
-    // At this point:
-    // - row_match and col_match are consistent
-    // - The state is 1-feasible
-    // - Ready to run the main Gabow-Tarjan loop
+
+    DEBUG_ASSERT_FEASIBLE(cost, row_match, col_match, y_u, y_v,
+        "1-feasibility violated entering match_gt");
+
+    if (is_perfect(row_match)) {
+        return;
+    }
 
 
-    // OPTIMIZATION: Incremental equality graph updates
-    // Build initial equality graph once, then update incrementally after each Step 1
+    // Build initial equality graph once. From here on it is maintained
+    // incrementally: Step 1 mutates only y_v on path cols; Step 2 mutates
+    // y_u on rows that entered S and y_v on cols that entered T. The
+    // post-Step-2 full O(nm) rebuild has been replaced (Phase 2 of
+    // gt-speedup.md).
     std::vector<std::vector<int>> eq_graph = build_equality_graph(cost, row_match, y_u, y_v);
+    std::vector<int> affected_rows;
     std::vector<int> affected_cols;
+    const std::vector<int> no_affected_rows;
 
     int it = 0;
     while (!is_perfect(row_match)) {
@@ -1077,32 +1185,30 @@ void match_gt(const CostMatrix& cost,
             }
         }
 
-        // Step 1: Maximal vertex-disjoint augmenting paths on eligible edges
-        // Use incremental updates: pass existing eq_graph and get affected columns
+        // Step 1: maximal vertex-disjoint augmenting paths on eligible edges.
         bool found_paths = apply_step1(cost, row_match, col_match, y_u, y_v,
                                        &eq_graph, &affected_cols);
 
-        // If Step 1 found paths, update the equality graph incrementally
-        // (only check rows against columns whose y_v decreased)
         if (found_paths && !affected_cols.empty()) {
-            update_equality_graph_incremental(eq_graph, cost, row_match, y_u, y_v, affected_cols);
+            update_equality_graph_incremental(eq_graph, cost, row_match, y_u, y_v,
+                                              no_affected_rows, affected_cols);
         }
 
-        // Check if matching is now perfect
         if (is_perfect(row_match)) {
             break;
         }
-        
-        // Step 2: Only run if Step 1 found no paths
-        // If Step 1 found paths, loop back to try Step 1 again
+
+        // Step 2: only when Step 1 found no paths. One Hungarian search to
+        // extract an augmenting path on the cost-length graph; emits the
+        // forest's S/T as affected_rows/affected_cols for the eq-graph patch.
         if (!found_paths) {
-            // Hungarian search on cost-length to find one augmenting path
-            if (!hungarian_step_one_feasible(cost, row_match, col_match, y_u, y_v)) {
+            if (!hungarian_step_one_feasible(cost, row_match, col_match, y_u, y_v,
+                                             &affected_rows, &affected_cols)) {
                 LAP_ERROR("No augmenting path in Step 2 (no perfect matching)");
             }
 
-            // After Step 2, duals may have changed significantly: rebuild equality graph
-            eq_graph = build_equality_graph(cost, row_match, y_u, y_v);
+            update_equality_graph_incremental(eq_graph, cost, row_match, y_u, y_v,
+                                              affected_rows, affected_cols);
         }
 
         // Optional: Check 1-feasibility after Step 2 (debug only)
@@ -1126,7 +1232,7 @@ void match_gt(const CostMatrix& cost,
  * with local duals, then updates the global duals and matching.
  * 
  * Supports rectangular matrices:
- * - If n > m (more rows than cols): pads with dummy columns (cost = BIG_INT)
+ * - If n > m (more rows than cols): pads with zero-cost dummy columns
  * - If n <= m: works directly on the matrix
  * 
  * Algorithm:
@@ -1146,7 +1252,9 @@ void scale_match(const CostMatrix& cost,
                 MatchVec& row_match,
                 MatchVec& col_match,
                 DualVec& y_u,
-                DualVec& y_v) {
+                DualVec& y_v,
+                bool enable_6n_prune) {
+    PROF_INC(scale_match_calls, 1);
     const int n = static_cast<int>(cost.size());
     const int m = (n > 0 ? static_cast<int>(cost[0].size()) : 0);
     
@@ -1174,7 +1282,22 @@ void scale_match(const CostMatrix& cost,
     
     // 1. Build c'(i,j) = c(i,j) - y_u[i] - y_v[j]
     //    Forbidden edges (cost >= BIG_INT) remain BIG_INT
-    //    Padding columns (j >= m) get BIG_INT
+    //    Padding columns (j >= m) are zero-cost dummy assignments
+    //
+    //    Paper p.9 pruning heuristic: any edge with c'(i,j) >= 6n cannot be in
+    //    the optimum matching for this scale, provided scale_match's input
+    //    obeys the paper's entry conditions (every edge cost >= -1; a perfect
+    //    matching exists with cost <= 3n). The bit-scaling outer loop in
+    //    solve_gabow_tarjan_inner guarantees this -- between scales, Step 1's
+    //    dual update yields y(v) + y(w) >= c(vw) - 3 on matched edges and the
+    //    (n+1) scaling keeps cost values aligned. Standalone callers
+    //    (e.g. tests passing raw costs) cannot guarantee the precondition, so
+    //    enable_6n_prune defaults to false. Setting cost_prime cells to
+    //    BIG_INT excludes them from build_equality_graph,
+    //    update_equality_graph_incremental, and enqueue_edges_from_row
+    //    (all already have BIG_INT skips). Padding columns (j >= m, value 0)
+    //    sit well below the threshold.
+    const long long prune_threshold = 6LL * static_cast<long long>(n_work);
     CostMatrix cost_prime(n_work, std::vector<long long>(m_work, BIG_INT));
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
@@ -1183,30 +1306,31 @@ void scale_match(const CostMatrix& cost,
                 // Forbidden edge stays forbidden
                 cost_prime[i][j] = BIG_INT;
             } else {
-                // Subtract global duals
-                cost_prime[i][j] = c_ij - y_u[i] - y_v[j];
+                long long cp = c_ij - y_u[i] - y_v[j];
+                cost_prime[i][j] =
+                    (enable_6n_prune && cp >= prune_threshold) ? BIG_INT : cp;
             }
         }
-        // Dummy columns (if any) stay as BIG_INT
         for (int j = m; j < m_work; ++j) {
-            cost_prime[i][j] = BIG_INT;
+            cost_prime[i][j] = 0;
         }
     }
     
-    // 2. Local matching and duals for match_gt on cost_prime
-    //    Start with current matching state
-    MatchVec row_loc = row_match;
-    MatchVec col_loc = col_match;
-    
-    // Ensure row_loc and col_loc are properly sized for working dimensions
-    row_loc.resize(n_work, NIL);
-    col_loc.resize(m_work, NIL);
-    
-    // Local duals start at zero
+    // 2. Local matching and duals for match_gt on cost_prime.
+    //
+    //    Phase 1 note: match_gt no longer carries an O(nm) discard/restart
+    //    block. With y_u_loc = y_v_loc = 0 a non-empty inherited matching is
+    //    not generally 1-feasible on cost_prime (matched-edge lower bound
+    //    fails when reduced cost > 0), so we start match_gt from an empty
+    //    matching here. The previous code path also discarded the matching
+    //    every phase via match_gt's check_one_feasible; this just makes that
+    //    explicit and cheap. Phase 4 (drop cost_prime) restores a real
+    //    bit-scaling warm start.
+    MatchVec row_loc(n_work, NIL);
+    MatchVec col_loc(m_work, NIL);
     DualVec y_u_loc(n_work, 0);
     DualVec y_v_loc(m_work, 0);
-    
-    // Run inner Gabow-Tarjan solver on transformed costs
+
     match_gt(cost_prime, row_loc, col_loc, y_u_loc, y_v_loc,
              /*max_iters=*/1000,
              /*check_feasible=*/false);
@@ -1261,7 +1385,7 @@ long long find_max_cost(const CostMatrix& cost) {
  * 
  * CRITICAL FIXES APPLIED:
  * 1. Multiply by (n+1) BEFORE bit-scaling (as per paper)
- * 2. Don't reuse matching across scales - start fresh each time
+ * 2. Reuse matching across scales so each phase warm-starts from the previous one
  * 3. Maintain 1-feasibility strictly throughout
  * 
  * Algorithm:
@@ -1272,7 +1396,7 @@ long long find_max_cost(const CostMatrix& cost) {
  * 5. At each scale s:
  *    a. Update costs: c(e) ← 2c(e) + (bit s of ĉ(e))
  *    b. Update duals: y(v) ← 2y(v) - 1
- *    c. Run scale_match with FRESH matching to get 1-optimal solution
+ *    c. Run scale_match from the current matching to get 1-optimal solution
  * 6. Adjust duals back for original costs
  * 
  * The (n+1) scaling is ESSENTIAL: it ensures that a 1-optimal matching for
@@ -1289,9 +1413,11 @@ void solve_gabow_tarjan_inner(const CostMatrix& cost,
                               MatchVec& col_match,
                               DualVec& y_u,
                               DualVec& y_v) {
+    PROF_RESET();
+    PROF_TIMER(total_ns);
     const int n = static_cast<int>(cost.size());
     const int m = (n > 0 ? static_cast<int>(cost[0].size()) : 0);
-    
+
     if (n == 0 || m == 0) {
         row_match.clear();
         col_match.clear();
@@ -1399,12 +1525,15 @@ void solve_gabow_tarjan_inner(const CostMatrix& cost,
             y_v[j] = 2 * y_v[j] - 1;
         }
         
-        // Step 2: Find 1-optimal matching with scale_match
-        // CRITICAL: Start with FRESH matching each time (don't reuse)
-        row_match.assign(n, NIL);
-        col_match.assign(m, NIL);
-        
-        scale_match(c_current, row_match, col_match, y_u, y_v);
+        // Step 2: Find 1-optimal matching with scale_match.
+        // Carrying the previous phase's matching is the scaling warm start.
+        // enable_6n_prune=true: paper p.9 heuristic. The bit-scaling loop
+        // guarantees the paper's entry conditions (perfect matching of cost
+        // <= 3n in scale_match's transformed costs), so the >= 6n pruning is
+        // safe and strips edges that cannot belong to any optimum for this
+        // scale.
+        scale_match(c_current, row_match, col_match, y_u, y_v,
+                    /*enable_6n_prune=*/true);
     }
     
     // Step 7: Adjust duals back for original costs
@@ -1416,4 +1545,21 @@ void solve_gabow_tarjan_inner(const CostMatrix& cost,
     for (int j = 0; j < m; ++j) {
         y_v[j] = y_v[j] / static_cast<long long>(n + 1);
     }
+
+#ifdef COUPLR_GT_PROFILE
+    // PROF_TIMER(total_ns) destructor hasn't run yet; sample the elapsed time
+    // for the print, then let the destructor finalize total_ns.
+    {
+        auto& p = gt_prof();
+        // Approximate: print the running totals (total_ns finalized just after).
+        // We use a print here so the line appears once per solve in benchmarks.
+        long long saved_total = p.total_ns;
+        p.total_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                         std::chrono::steady_clock::now() -
+                         pr_timer_total_ns.t0)
+                         .count();
+        p.print();
+        p.total_ns = saved_total;
+    }
+#endif
 }

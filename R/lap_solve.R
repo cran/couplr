@@ -17,8 +17,9 @@
 #'   **General-purpose solvers:**
 #'   \itemize{
 #'     \item `"auto"` — Automatic selection based on problem characteristics (default)
-#'     \item `"jv"` — 'Jonker-Volgenant', fast general-purpose O(n³)
-#'     \item `"hungarian"` — Classic 'Hungarian' algorithm O(n³)
+#'     \item `"jv"` — 'Jonker-Volgenant', fast general-purpose O(n^3) with warm-start
+#'     \item `"hungarian"` — Classic 'Hungarian' (shortest augmenting path) O(n^3)
+#'     \item `"munkres"` — Matrix-form 'Kuhn-Munkres' O(n^4), reference implementation
 #'   }
 #'
 #'   **Auction-based solvers:**
@@ -41,7 +42,7 @@
 #'   **Advanced solvers:**
 #'   \itemize{
 #'     \item `"csa"` — 'Goldberg-Kennedy' cost-scaling, often fastest for medium-large
-#'     \item `"gabow_tarjan"` — 'Gabow-Tarjan' bit-scaling with complementary slackness O(n³ log C)
+#'     \item `"gabow_tarjan"` — 'Gabow-Tarjan' bit-scaling with complementary slackness O(n^3 log C)
 #'     \item `"cycle_cancel"` — Cycle-canceling with 'Karp' algorithm
 #'     \item `"csflow"` — Cost-scaling network flow
 #'     \item `"network_simplex"` — 'Network simplex' with spanning tree representation
@@ -93,7 +94,7 @@
 #'
 #' @export
 assignment <- function(cost, maximize = FALSE,
-                       method = c("auto","jv","hungarian","auction","auction_gs","auction_scaled",
+                       method = c("auto","jv","hungarian","munkres","auction","auction_gs","auction_scaled",
                                   "sap","ssp","csflow","hk01","bruteforce",
                                   "ssap_bucket","cycle_cancel","gabow_tarjan","lapmod","csa",
                                   "ramshaw_tarjan","push_relabel","orlin","network_simplex"),
@@ -123,51 +124,39 @@ assignment <- function(cost, maximize = FALSE,
   if (any(is.nan(cost))) stop("NaN not allowed in `cost`")
 
   if (method == "auto") {
-    # Check for special cost structures first
+    # Check for special cost structures. Use range() to bail out early on the
+    # typical case (non-binary, non-constant) without a full unique/sort scan;
+    # this matters at n>=1000 where the matrix has >=1M entries.
     hk01_candidate <- function(M) {
-      x <- as.numeric(M[is.finite(M)]); if (!length(x)) return(FALSE)
-      ux <- sort(unique(round(x, 12)))
-      if (length(ux) == 1L) return(TRUE)
-      if (length(ux) == 2L && all(ux %in% c(0,1))) return(TRUE)
-      FALSE
+      r <- suppressWarnings(range(M, na.rm = TRUE, finite = TRUE))
+      if (!all(is.finite(r))) return(FALSE)
+      if (r[1] == r[2]) return(TRUE)           # constant
+      if (r[1] != 0 || r[2] != 1) return(FALSE) # outside {0,1} envelope
+      # range is exactly [0,1]; confirm there are no intermediate values
+      x <- M[is.finite(M)]
+      length(unique(x)) == 2L
     }
 
-    # Strategy based on comprehensive benchmarks:
-    # - n≤8: bruteforce (exact enumeration for very small problems)
-    # - 8<n≤50: hungarian (exact dual solutions for small-medium)
-    # - 50<n≤75: jv (fast general-purpose solver)
-    # - n>75: auction_scaled (fastest for large problems)
+    # Strategy based on comprehensive benchmarks (post LAPJV warm-start):
+    # - n<=8: bruteforce (exact enumeration for very small problems)
+    # - dense square / near-square: jv (fastest at every size since warm-start)
     # Special cases override size-based selection:
     # - Binary/constant costs: hk01 (specialized algorithm)
-    # - Sparse/rectangular: sap (handles sparsity well)
+    # - Sparse (>50% NA/Inf): lapmod for large, sap for small
+    # - Very rectangular (m >= 3n): sap (handles rectangular well)
 
     if (n <= 8 && m <= 8) {
       method <- "bruteforce"
     } else if (hk01_candidate(cost)) {
       method <- "hk01"
     } else {
-      # Count NA and Inf as sparse entries
       na_rate <- mean(is.na(cost) | is.infinite(cost))
-      # Sparse or very rectangular problems
       if (na_rate > 0.5) {
-        # Large sparse: use LAPMOD (sparse JV variant)
-        if (n > 100) {
-          method <- "lapmod"
-        } else {
-          method <- "sap"
-        }
+        method <- if (n > 100) "lapmod" else "sap"
       } else if (m >= 3 * n) {
-        # Very rectangular: SAP handles this well
         method <- "sap"
-      } else if (n <= 50) {
-        # Small-medium: Hungarian provides exact dual solutions
-        method <- "hungarian"
-      } else if (n <= 75) {
-        # Medium: JV is fast and reliable
-        method <- "jv"
       } else {
-        # Large: auction_scaled is fastest (benchmarks show it beats JV)
-        method <- "auction_scaled"
+        method <- "jv"
       }
     }
   }
@@ -185,6 +174,7 @@ assignment <- function(cost, maximize = FALSE,
     "bruteforce"    = lap_solve_bruteforce(work, maximize),
     "jv"            = lap_solve_jv(work, maximize),
     "hungarian"     = lap_solve_hungarian(work, maximize),
+    "munkres"       = lap_solve_munkres(work, maximize),
     "auction"       = lap_solve_auction(work, maximize, auction_eps),
     "auction_gs"    = lap_solve_auction_gs(work, maximize, auction_eps),
     "auction_scaled"= lap_solve_auction_scaled(work, maximize),
@@ -735,7 +725,10 @@ lap_solve_orlin <- function(cost, maximize = FALSE) {
   # Orlin-Ahuja epsilon-scaling algorithm with hybrid auction/SSP
   # O(sqrt(n) * m * log(nC)) complexity
   work <- if (maximize) -cost else cost
-  work[is.na(work)] <- Inf
+  # Treat NA *and* non-finite (e.g. -Inf produced by negating +Inf in maximize
+  # mode) as forbidden. The plain `is.na(work)` check missed -Inf and let
+  # forbidden cells slip into the solver as extreme-cost real edges.
+  work[!is.finite(work)] <- Inf
 
   result <- oa_solve(work, alpha = 5.0, auction_rounds = 10)
 
@@ -756,7 +749,10 @@ lap_solve_orlin <- function(cost, maximize = FALSE) {
 lap_solve_network_simplex_wrapper <- function(cost, maximize = FALSE) {
   # Network simplex for minimum-cost flow on assignment network
   work <- if (maximize) -cost else cost
-  work[is.na(work)] <- Inf
+  # Treat NA *and* non-finite (e.g. -Inf produced by negating +Inf in maximize
+  # mode) as forbidden. The plain `is.na(work)` check missed -Inf and let
+  # forbidden cells slip into the solver as extreme-cost real edges.
+  work[!is.finite(work)] <- Inf
 
   result <- lap_solve_network_simplex(work)
 
