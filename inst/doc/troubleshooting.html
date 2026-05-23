@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-05-18" />
+<meta name="date" content="2026-05-20" />
 
 <title>Troubleshooting Guide</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Troubleshooting Guide</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-05-18</h4>
+<h4 class="date">2026-05-20</h4>
 
 
 
@@ -582,41 +582,49 @@ weighted</p></li>
 <span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span></span>
 <span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>)</span>
 <span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a></span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Original matches:&quot;</span>, result<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt; Original matches: 100</span></span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;With caliper:&quot;</span>, result_strict<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt; With caliper: 23</span></span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a></span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>balance_strict <span class="ot">&lt;-</span> <span class="fu">balance_diagnostics</span>(result_strict, left, right, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>))</span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="fu">print</span>(balance_strict)</span>
-<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="co">#&gt; Balance Diagnostics for Matched Pairs</span></span>
-<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="co">#&gt; ======================================</span></span>
-<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="co">#&gt; Matching Summary:</span></span>
-<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="co">#&gt;   Method: lap</span></span>
-<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a><span class="co">#&gt;   Matched pairs: 23</span></span>
-<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="co">#&gt;   Unmatched left: 0 (of 100)</span></span>
-<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="co">#&gt;   Unmatched right: 77 (of 100)</span></span>
-<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a><span class="co">#&gt; Variable-level Balance:</span></span>
-<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 7</span></span>
-<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a><span class="co">#&gt;   Variable `Mean Left` `Mean Right` `Mean Diff` `Std Diff` `Var Ratio` `KS Stat`</span></span>
-<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a><span class="co">#&gt; 1 age             31.5         31.5      -0.008     -0.002        1.01     0.13 </span></span>
-<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a><span class="co">#&gt; 2 income       53958.       51791.     2167.         0.296        1.07     0.217</span></span>
-<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a><span class="co">#&gt; Overall Balance:</span></span>
-<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a><span class="co">#&gt;   Mean |Std Diff|: 0.149 (Good)</span></span>
-<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="co">#&gt;   Max |Std Diff|: 0.296</span></span>
-<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a><span class="co">#&gt;   Vars with |Std Diff| &gt; 0.25: 50.0%</span></span>
-<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a><span class="co">#&gt; Balance Interpretation:</span></span>
-<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| &lt; 0.10: Excellent balance</span></span>
-<span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| 0.10-0.25: Good balance</span></span>
-<span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| 0.25-0.50: Acceptable balance</span></span>
-<span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| &gt; 0.50: Poor balance</span></span></code></pre></div>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt; Warning: 99.2% of pairs are forbidden!</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co">#&gt;   Only 0 valid pairs for 100 left units - the matching pool is shallow!</span></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt;   Your constraints might be critically strict.</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co">#&gt;   Consider:</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt;     - Relaxing max_distance threshold</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt;     - Widening calipers</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co">#&gt;     - Using fewer/broader blocks</span></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="co">#&gt;     - Checking if your data actually overlaps</span></span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a></span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Original matches:&quot;</span>, result<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="co">#&gt; Original matches: 100</span></span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;With caliper:&quot;</span>, result_strict<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="co">#&gt; With caliper: 20</span></span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a>balance_strict <span class="ot">&lt;-</span> <span class="fu">balance_diagnostics</span>(result_strict, left, right, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>))</span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="fu">print</span>(balance_strict)</span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="co">#&gt; Balance Diagnostics for Matched Pairs</span></span>
+<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a><span class="co">#&gt; ======================================</span></span>
+<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a><span class="co">#&gt; Matching Summary:</span></span>
+<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a><span class="co">#&gt;   Method: lap</span></span>
+<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a><span class="co">#&gt;   Matched pairs: 20</span></span>
+<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a><span class="co">#&gt;   Unmatched left: 0 (of 100)</span></span>
+<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a><span class="co">#&gt;   Unmatched right: 80 (of 100)</span></span>
+<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a><span class="co">#&gt; Variable-level Balance:</span></span>
+<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 7</span></span>
+<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a><span class="co">#&gt;   Variable `Mean Left` `Mean Right` `Mean Diff` `Std Diff` `Var Ratio` `KS Stat`</span></span>
+<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt;</span></span>
+<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a><span class="co">#&gt; 1 age             31.2         31.2        0.04      0.009       1.03        0.1</span></span>
+<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a><span class="co">#&gt; 2 income       53160.       51959.      1201.        0.16        0.998       0.2</span></span>
+<span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a><span class="co">#&gt; Overall Balance:</span></span>
+<span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a><span class="co">#&gt;   Mean |Std Diff|: 0.085 (Excellent)</span></span>
+<span id="cb8-44"><a href="#cb8-44" tabindex="-1"></a><span class="co">#&gt;   Max |Std Diff|: 0.160</span></span>
+<span id="cb8-45"><a href="#cb8-45" tabindex="-1"></a><span class="co">#&gt;   Vars with |Std Diff| &gt; 0.25: 0.0%</span></span>
+<span id="cb8-46"><a href="#cb8-46" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb8-47"><a href="#cb8-47" tabindex="-1"></a><span class="co">#&gt; Balance Interpretation:</span></span>
+<span id="cb8-48"><a href="#cb8-48" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| &lt; 0.10: Excellent balance</span></span>
+<span id="cb8-49"><a href="#cb8-49" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| 0.10-0.25: Good balance</span></span>
+<span id="cb8-50"><a href="#cb8-50" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| 0.25-0.50: Acceptable balance</span></span>
+<span id="cb8-51"><a href="#cb8-51" tabindex="-1"></a><span class="co">#&gt;   |Std Diff| &gt; 0.50: Poor balance</span></span></code></pre></div>
 <p><strong>3. Use blocking on problematic variable:</strong></p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># Block on income tertiles to ensure exact balance</span></span>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>left<span class="sc">$</span>income_cat <span class="ot">&lt;-</span> <span class="fu">cut</span>(left<span class="sc">$</span>income, <span class="at">breaks =</span> <span class="dv">3</span>, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;low&quot;</span>, <span class="st">&quot;mid&quot;</span>, <span class="st">&quot;high&quot;</span>))</span>
@@ -745,8 +753,32 @@ complexity. For n = 5,000, this means ~125 billion operations.</p>
 <span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a></span>
 <span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co"># Fast: reuse cached distances</span></span>
 <span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>result1 <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(dist_cache, <span class="at">max_distance =</span> <span class="fl">0.3</span>, <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span>)</span>
-<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>result2 <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(dist_cache, <span class="at">max_distance =</span> <span class="fl">0.5</span>, <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span>)</span>
-<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>result3 <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(dist_cache, <span class="at">max_distance =</span> <span class="fl">1.0</span>, <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span>)</span></code></pre></div>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="co">#&gt; Warning: 97.9% of pairs are forbidden!</span></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co">#&gt;   Only 9000 valid pairs for 500 left units - the matching pool is shallow!</span></span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a><span class="co">#&gt;   Your constraints might be critically strict.</span></span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a><span class="co">#&gt;   Consider:</span></span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a><span class="co">#&gt;     - Relaxing max_distance threshold</span></span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a><span class="co">#&gt;     - Widening calipers</span></span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="co">#&gt;     - Using fewer/broader blocks</span></span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="co">#&gt;     - Checking if your data actually overlaps</span></span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a>result2 <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(dist_cache, <span class="at">max_distance =</span> <span class="fl">0.5</span>, <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span>)</span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a><span class="co">#&gt; Warning: 94.1% of pairs are forbidden!</span></span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a><span class="co">#&gt;   Only 22500 valid pairs for 500 left units - the matching pool is shallow!</span></span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a><span class="co">#&gt;   Your constraints might be critically strict.</span></span>
+<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a><span class="co">#&gt;   Consider:</span></span>
+<span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a><span class="co">#&gt;     - Relaxing max_distance threshold</span></span>
+<span id="cb15-24"><a href="#cb15-24" tabindex="-1"></a><span class="co">#&gt;     - Widening calipers</span></span>
+<span id="cb15-25"><a href="#cb15-25" tabindex="-1"></a><span class="co">#&gt;     - Using fewer/broader blocks</span></span>
+<span id="cb15-26"><a href="#cb15-26" tabindex="-1"></a><span class="co">#&gt;     - Checking if your data actually overlaps</span></span>
+<span id="cb15-27"><a href="#cb15-27" tabindex="-1"></a>result3 <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(dist_cache, <span class="at">max_distance =</span> <span class="fl">1.0</span>, <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span>)</span>
+<span id="cb15-28"><a href="#cb15-28" tabindex="-1"></a><span class="co">#&gt; Warning: 78.5% of pairs are forbidden!</span></span>
+<span id="cb15-29"><a href="#cb15-29" tabindex="-1"></a><span class="co">#&gt;   Only 84000 valid pairs for 500 left units - the matching pool is shallow!</span></span>
+<span id="cb15-30"><a href="#cb15-30" tabindex="-1"></a><span class="co">#&gt;   Your constraints might be concerningly strict.</span></span>
+<span id="cb15-31"><a href="#cb15-31" tabindex="-1"></a><span class="co">#&gt;   Consider:</span></span>
+<span id="cb15-32"><a href="#cb15-32" tabindex="-1"></a><span class="co">#&gt;     - Relaxing max_distance threshold</span></span>
+<span id="cb15-33"><a href="#cb15-33" tabindex="-1"></a><span class="co">#&gt;     - Widening calipers</span></span>
+<span id="cb15-34"><a href="#cb15-34" tabindex="-1"></a><span class="co">#&gt;     - Using fewer/broader blocks</span></span>
+<span id="cb15-35"><a href="#cb15-35" tabindex="-1"></a><span class="co">#&gt;     - Checking if your data actually overlaps</span></span></code></pre></div>
 <hr />
 </div>
 </div>

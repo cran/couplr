@@ -152,7 +152,11 @@ assignment <- function(cost, maximize = FALSE,
     } else {
       na_rate <- mean(is.na(cost) | is.infinite(cost))
       if (na_rate > 0.5) {
-        method <- if (n > 100) "lapmod" else "sap"
+        # Sparse: lapmod handles forbidden edges natively at every size.
+        # The previous fallback to "sap" for n <= 100 has a worst-case stall on
+        # near-square highly-sparse matrices (e.g. propensity-score matching
+        # with tight calipers), so always use lapmod when sparse.
+        method <- "lapmod"
       } else if (m >= 3 * n) {
         method <- "sap"
       } else {

@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-05-18" />
+<meta name="date" content="2026-05-20" />
 
 <title>Quick Start</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Quick Start</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-05-18</h4>
+<h4 class="date">2026-05-20</h4>
 
 
 
@@ -642,11 +642,19 @@ pairings. Use <code>max_distance</code> to set a caliper:</p>
 <span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>  <span class="at">max_distance =</span> <span class="fl">0.5</span>  <span class="co"># reject pairs more different than this</span></span>
 <span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>)</span>
 <span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
-<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a></span>
-<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Without caliper:&quot;</span>, result_loose<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;pairs</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co">#&gt; Without caliper: 50 pairs</span></span>
-<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;With caliper:&quot;</span>, result_strict<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;pairs</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="co">#&gt; With caliper: 40 pairs</span></span></code></pre></div>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt; Warning: 94.9% of pairs are forbidden!</span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="co">#&gt;   Only 0 valid pairs for 50 left units - the matching pool is shallow!</span></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co">#&gt;   Your constraints might be critically strict.</span></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="co">#&gt;   Consider:</span></span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="co">#&gt;     - Relaxing max_distance threshold</span></span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a><span class="co">#&gt;     - Widening calipers</span></span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="co">#&gt;     - Using fewer/broader blocks</span></span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="co">#&gt;     - Checking if your data actually overlaps</span></span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Without caliper:&quot;</span>, result_loose<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;pairs</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a><span class="co">#&gt; Without caliper: 50 pairs</span></span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;With caliper:&quot;</span>, result_strict<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;pairs</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="co">#&gt; With caliper: 37 pairs</span></span></code></pre></div>
 <p>Stricter calipers mean fewer but better matches.</p>
 <hr />
 </div>
