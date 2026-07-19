@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <limits>
 #include <tuple>
+#include <cstddef>
 
 namespace lap {
 
@@ -93,7 +94,7 @@ SinkhornResult solve_sinkhorn(
 
     // Compute K = exp(-lambda * C)
     // Use numerical stabilization for large lambda
-    std::vector<double> K(n * m);
+    std::vector<double> K(static_cast<std::size_t>(n) * m);
 
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
@@ -102,7 +103,7 @@ SinkhornResult solve_sinkhorn(
                 // Treat NA/Inf as very high cost (very low probability)
                 cij = 1e10;
             }
-            K[i * m + j] = std::exp(-lambda * cij);
+            K[static_cast<std::size_t>(i) * m + j] = std::exp(-lambda * cij);
         }
     }
 
@@ -161,7 +162,7 @@ SinkhornResult solve_sinkhorn(
 
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < m; ++j) {
-            double pij = u[i] * K[i * m + j] * v[j];
+            double pij = u[i] * K[static_cast<std::size_t>(i) * m + j] * v[j];
             P[i][j] = pij;
             double cij = cost.at(i, j);
             if (std::isfinite(cij)) {
@@ -181,7 +182,9 @@ SinkhornResult solve_sinkhorn(
     result.u = std::move(u);
     result.v = std::move(v);
     result.converged = converged;
-    result.iterations = iter + 1;
+    // On convergence `iter` is the 0-based iteration at break (count = iter+1);
+    // on non-convergence the loop ran the full max_iter (iter == max_iter).
+    result.iterations = converged ? (iter + 1) : iter;
     result.lambda = lambda;
 
     return result;

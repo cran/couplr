@@ -1,5 +1,7 @@
 # couplr
 
+*matching two groups into pairs*
+
 [![CRAN status](https://www.r-pkg.org/badges/version/couplr)](https://CRAN.R-project.org/package=couplr)
 [![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/couplr)](https://cran.r-project.org/package=couplr)
 [![Monthly downloads](https://cranlogs.r-pkg.org/badges/couplr)](https://cran.r-project.org/package=couplr)
@@ -7,287 +9,160 @@
 [![Coverage](https://codecov.io/gh/gcol33/couplr/graph/badge.svg?flag=r)](https://app.codecov.io/gh/gcol33/couplr)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Optimal Pairing and Matching via Linear Assignment**
+**Optimal one-to-one matching by linear assignment, solved exactly in C++.**
 
-The `couplr` package provides high-level functions for **optimal one-to-one matching** between two groups. Whether you need to pair treatment and control units, assign workers to tasks, or align images pixel-by-pixel, `couplr` offers fast, deterministic solutions with automatic preprocessing and balance diagnostics.
-
-## Quick Start
+Hand `couplr` two groups and it returns the pairing that minimizes total covariate
+distance across the whole sample. The assignment is solved exactly on `RcppEigen`,
+so the pairing is the global optimum and comes back identical on every run and every
+machine.
 
 ```r
 library(couplr)
 
-# Match treatment and control groups on covariates
-result <- match_couples(
-  treated, control,
-  vars = c("age", "income", "education"),
-  auto_scale = TRUE
-)
+# match treatment and control on covariates, in a single call
+result <- match_couples(treated, control, vars = c("age", "income"), auto_scale = TRUE)
 
-# Check covariate balance
-balance_diagnostics(result, treated, control, vars = c("age", "income", "education"))
-
-# Get analysis-ready dataset
-matched_data <- join_matched(result, treated, control)
+# analysis-ready paired data
+join_matched(result, treated, control)
 ```
 
-## Statement of Need
+## Optimal and deterministic
 
-Optimal matching is central to experimental design, causal inference, and resource allocation. Existing R packages (MatchIt, optmatch) focus on propensity score workflows, requiring users to estimate scores before matching. This adds complexity and can obscure the direct relationship between covariates and match quality.
+`match_couples()` evaluates the pairing as a whole and returns the assignment with the
+lowest total covariate distance. Because the solve is exact, the total distance is the
+global minimum, and the same input gives the same pairing every time, with no dependence
+on row order or a random seed.
 
-This package addresses **direct covariate matching**: selecting optimal pairs based on observed variables without intermediate modeling. It provides:
+When a control pool grows too large to solve exactly, `method = "greedy"` trades the
+optimality guarantee for speed while keeping the same scaling, constraints, and blocking.
+Three strategies cover different memory and speed tradeoffs:
 
-- 20 LAP algorithms (19 sum-cost solvers via `assignment()` plus `bottleneck_assignment()` for min-max problems),
-- automatic preprocessing with variable health checks,
-- balance diagnostics for assessing match quality,
-- analysis-ready joined output.
+```r
+match_couples(treated, control, vars = c("age", "income"), auto_scale = TRUE)   # optimal
 
-These features make the package useful in domains like:
+match_couples(treated, control, vars = c("age", "income"),
+              method = "greedy", strategy = "pq")                               # fast, large pools
+```
 
-- causal inference (matching treated/control units),
-- experimental design (pairing samples for within-pair comparisons),
-- resource allocation (assigning workers to tasks),
-- image processing (pixel-level morphing and alignment).
+## Scaling and constraints
 
-## Features
+Covariates on different scales are put on common footing before distances are computed,
+and pairs can be constrained or matched within strata:
 
-### High-Level Matching Functions
+```r
+match_couples(
+  treated, control,
+  vars         = c("age", "income", "bmi"),
+  scale        = "robust",             # or "standardize", "range"; auto_scale = TRUE picks one
+  max_distance = 2,                    # forbid pairs beyond this covariate distance
+  calipers     = list(age = 5),        # per-variable maximum absolute difference
+  block_id     = "site",               # match only within site
+  ratio        = 2                     # two controls per treated unit
+)
+```
 
-- **`match_couples()`**: Optimal one-to-one matching
-  - Automatic preprocessing with variable health checks
-  - Multiple scaling methods: robust (MAD), standardize (SD), range
-  - Distance constraints via `max_distance` and `calipers`
-  - Blocking support for stratified matching
+## A family of matching designs
 
-- **`greedy_couples()`**: Fast approximate matching
-  - Three strategies: `sorted`, `row_best`, `pq` (priority queue)
-  - 10-100x faster than optimal for large datasets
-  - Same preprocessing and constraint options
+The same two-group input drives several established designs, each returning a result the
+diagnostics and join helpers understand:
 
-### Matching Extensions
+```r
+# variable-ratio full matching
+full_match(treated, control, vars = c("age", "income"), min_controls = 1, max_controls = 3)
 
-- **`ps_match()`**: Propensity score matching
-  - Logistic regression or pre-fitted model
-  - Logit caliper (default: 0.2 SD per [Rosenbaum & Rubin, 1985](https://doi.org/10.1080/00031305.1985.10479383))
-  - Supports ratio and replacement matching
+# coarsened exact matching
+cem_match(treated, control, vars = c("age", "income"))
 
-- **`full_match()`**: Variable-ratio full matching
-  - Optimal (min-cost max-flow) or greedy group formation
-  - Constraints: `min_controls`, `max_controls`, `caliper`
+# balance-constrained cardinality matching
+cardinality_match(treated, control, vars = c("age", "income"), max_std_diff = 0.1)
 
-- **`cem_match()`**: Coarsened exact matching
-  - Automatic binning (Sturges, FD, Scott) or custom cutpoints
-  - Model-free: no distance function or propensity score needed
+# propensity subclassification and propensity matching, formula interface
+subclass_match(treated ~ age + income, data = df, n_subclasses = 5)
+ps_match(treated ~ age + income, data = df)
+```
 
-- **`subclass_match()`**: Propensity score subclassification
-  - Quantile-based stratification with ATT/ATE/ATC weighting
+## Balance and sensitivity
 
-- **`cardinality_match()`**: Balance-constrained matching
-  - Maximizes sample size subject to balance thresholds
-  - Iterative pruning of imbalanced pairs
+Check covariate balance before and after matching, and probe how sensitive a conclusion is
+to unmeasured confounding:
 
-- **Ratio matching**: k:1 matching via `ratio` parameter
-- **Replacement matching**: with-replacement via `replace` parameter
+```r
+bal <- balance_diagnostics(result)      # standardized differences, variance ratios, KS tests
+bal
+autoplot(bal)                           # love plot of standardized differences
 
-### Ecosystem Integration
+sensitivity_analysis(result, treated, control, outcome_var = "recovery_days")   # Rosenbaum bounds
+```
 
-- **`match_data()`**: Unified analysis-ready output with treatment, weights, subclass columns
-- **`as_matchit()`**: Convert any couplr result to `matchit`-class for cobalt and marginaleffects
-- **`bal.tab()` methods** for direct cobalt integration
+## Works with the matching ecosystem
 
-### Balance Diagnostics & Analysis
+A `couplr` result converts to `matchit`-class with `as_matchit()`, so `cobalt` balance
+tables and `marginaleffects` estimates run against it without rewiring the analysis.
+`match_data()` returns treatment, weights, and subclass columns in one analysis-ready
+frame, and `autoplot()` methods cover matching results, balance, and sensitivity.
 
-- **`balance_diagnostics()`**: Comprehensive balance assessment
-  - Standardized differences, variance ratios, KS tests
-  - Quality thresholds: <0.1 excellent, 0.1-0.25 good, 0.25-0.5 acceptable ([Austin, 2009](https://doi.org/10.1002/sim.3697))
-  - Per-block statistics when blocking is used
-  - Publication-ready tables via `balance_table()`
+```r
+m  <- as_matchit(result)
+md <- match_data(result)
+```
 
-- **`sensitivity_analysis()`**: [Rosenbaum bounds](https://doi.org/10.1007/978-1-4757-3692-2)
-  - Assesses sensitivity to hidden bias
-  - Reports critical gamma for inference robustness
+## The assignment backend
 
-- **`autoplot()` methods** for ggplot2 visualizations of matching results,
-  balance diagnostics, and sensitivity analysis
+`lap_solve()` exposes the solver layer directly. It takes a cost matrix, handles
+rectangular shapes and forbidden edges (`NA` / `Inf`), and picks from twenty solvers when
+`method = "auto"`:
 
-### Low-Level LAP Solving
+```r
+cost <- matrix(c(4, 2, 8, 4, 3, 7, 3, 1, 6), nrow = 3, byrow = TRUE)
 
-- **`lap_solve()`**: Tidy interface for LAP algorithms
-  - 20 solvers: Hungarian, Jonker-Volgenant, Auction, Network Simplex, etc.
-  - Automatic method selection via `method = "auto"`
-  - Supports rectangular matrices and forbidden assignments
+lap_solve(cost)                      # auto-selected solver
+lap_solve(cost, method = "hungarian")
+lap_solve_kbest(cost, k = 3)         # the three best assignments (Murty's algorithm)
+lap_solve_batch(problems)            # many independent problems in one call
+```
 
-- **`lap_solve_batch()`**: Batch solving for multiple matrices
-- **`lap_solve_kbest()`**: K-best solutions via Murty's algorithm
+The solvers span the classics and the scaling algorithms: Jonker-Volgenant, Hungarian,
+Kuhn-Munkres, Bertsekas auction (with epsilon-scaling variants), Goldberg-Kennedy
+cost-scaling, Gabow-Tarjan bit-scaling, push-relabel, network simplex, and Sinkhorn
+entropy-regularized transport. `bottleneck_assignment()` minimizes the largest edge
+instead of the total, and `sinkhorn()` returns a soft transport plan.
+
+## Watching a solve
+
+`pixel_morph()` treats two images as source and target pixel sets and morphs one into the
+other along the optimal assignment, so a matching problem becomes something you can look at:
+
+```r
+pixel_morph(imgA, imgB, n_frames = 16)
+```
 
 ## Installation
 
 ```r
-# Install from CRAN
-install.packages("couplr")
+install.packages("couplr")            # CRAN
 
-# Or install development version from GitHub
-# install.packages("pak")
+install.packages("pak")               # development version
 pak::pak("gcol33/couplr")
-```
-
-## Usage Examples
-
-### Optimal Matching (`match_couples`)
-
-```r
-library(couplr)
-
-# Basic matching with automatic scaling
-result <- match_couples(
-  treated, control,
-  vars = c("age", "income"),
-  auto_scale = TRUE
-)
-
-# With distance constraint
-result <- match_couples(
-  treated, control,
-  vars = c("age", "income"),
-  auto_scale = TRUE,
-  max_distance = 0.5
-)
-
-# With blocking (exact matching on site)
-result <- match_couples(
-  treated, control,
-  vars = c("age", "income"),
-  block_by = "site",
-  auto_scale = TRUE
-)
-
-# Check what was matched
-result$pairs
-```
-
-### Greedy Matching (`greedy_couples`)
-
-```r
-# Fast matching for large datasets
-result <- greedy_couples(
-  treated, control,
-  vars = c("age", "income"),
-  strategy = "row_best",
-  auto_scale = TRUE
-)
-
-# Priority queue strategy (often best quality)
-result <- greedy_couples(
-  treated, control,
-  vars = c("age", "income"),
-  strategy = "pq"
-)
-```
-
-### Low-Level LAP Solving
-
-```r
-# Solve a cost matrix
-cost <- matrix(c(4, 2, 8, 4, 3, 7, 3, 1, 6), nrow = 3, byrow = TRUE)
-result <- lap_solve(cost)
-result$assignment
-result$total_cost
-
-# Choose a specific algorithm
-result <- lap_solve(cost, method = "hungarian")
-
-# K-best solutions
-results <- lap_solve_kbest(cost, k = 3)
-```
-
-## Choosing Between `match_couples` and `greedy_couples`
-
-| Feature | `match_couples()` | `greedy_couples()` |
-|---------|-------------------|---------------------|
-| **Optimality** | Guaranteed optimal | Approximate |
-| **Speed** | O(n^3) | O(n^2) or better |
-| **Best for** | n < 5000 | n > 5000 |
-| **Supports constraints?** | Yes | Yes |
-| **Supports blocking?** | Yes | Yes |
-
-**Tip**: Start with `match_couples()`. Switch to `greedy_couples()` if runtime is too long.
-
-## Advanced Features
-
-### Distance Caching
-
-Precompute distances for rapid experimentation:
-
-```r
-# Compute once
-dist_obj <- compute_distances(treated, control, vars = c("age", "income"))
-
-# Reuse with different constraints
-result1 <- match_couples(dist_obj, max_distance = 0.3)
-result2 <- match_couples(dist_obj, max_distance = 0.5)
-```
-
-### Parallel Processing
-
-Speed up blocked matching with multi-core processing:
-
-```r
-result <- match_couples(
-  treated, control,
-  vars = c("age", "income"),
-  block_by = "site",
-  parallel = TRUE
-)
-```
-
-### Propensity Score Matching
-
-Match on estimated propensity scores with a logit caliper:
-
-```r
-result <- ps_match(
-  treatment ~ age + income + education,
-  data = combined_data,
-  treatment = "treated"
-)
-```
-
-### Sensitivity Analysis
-
-Assess robustness of matched comparisons to hidden bias:
-
-```r
-sa <- sensitivity_analysis(result, treated, control, outcome_var = "outcome")
-summary(sa)
-# Critical gamma: 1.75 — results robust to moderate hidden bias
-```
-
-### Pixel Morphing
-
-Align images pixel-by-pixel using optimal assignment:
-
-```r
-morph <- pixel_morph(image_a, image_b)
-pixel_morph_animate(morph, "output.gif")
 ```
 
 ## Documentation
 
 - [Getting Started](https://gillescolling.com/couplr/articles/getting-started.html)
-- [Algorithm Details](https://gillescolling.com/couplr/articles/algorithms.html)
 - [Matching Workflows](https://gillescolling.com/couplr/articles/matching-workflows.html)
+- [Algorithms](https://gillescolling.com/couplr/articles/algorithms.html)
+- [Comparison](https://gillescolling.com/couplr/articles/comparison.html)
 - [Pixel Morphing](https://gillescolling.com/couplr/articles/pixel-morphing.html)
-
-## Development
-
-The package was developed using a modern AI-assisted developer stack. The author designed the package architecture, made the algorithm-selection choices, and wrote the implementation in a TUI-first command-line workflow, using a self-hosted Qwen3-Coder-Next-REAP-48B-A3B model (mixture-of-experts coder, ~3B active per token, 4-bit MLX quantization, running on a single Apple M4 Pro) for code completion, refactoring, and boilerplate through Anthropic's Claude Code CLI, with requests routed to the local model and no cloud inference.
 
 ## Support
 
 > "Software is like sex: it's better when it's free." — Linus Torvalds
 
-I'm a PhD student who builds R packages in my free time because I believe good tools should be free and open. I started these projects for my own work and figured others might find them useful too.
+I'm a PhD student who builds R packages in my free time because I believe good tools
+should be free and open. I started these projects for my own work and figured others
+might find them useful too.
 
-If this package saved you some time, buying me a coffee is a nice way to say thanks. It helps with my coffee addiction.
+If this package saved you some time, buying me a coffee is a nice way to say thanks.
+It helps with my coffee addiction.
 
 [![Buy Me A Coffee](https://img.shields.io/badge/-Buy%20me%20a%20coffee-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/gcol33)
 
@@ -300,8 +175,8 @@ MIT (see the LICENSE file)
 ```bibtex
 @software{couplr,
   author = {Colling, Gilles},
-  title = {couplr: Optimal Matching via Linear Assignment},
-  year = {2026},
-  url = {https://github.com/gcol33/couplr}
+  title  = {couplr: Optimal Matching via Linear Assignment},
+  year   = {2026},
+  url    = {https://github.com/gcol33/couplr}
 }
 ```

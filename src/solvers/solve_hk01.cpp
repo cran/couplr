@@ -2,6 +2,7 @@
 // Pure C++ Hopcroft-Karp solver for 0/1 costs - NO Rcpp dependencies
 
 #include "solve_hk01.h"
+#include "solve_csflow.h"
 #include "../core/lap_error.h"
 #include "../core/lap_utils.h"
 #include <vector>
@@ -181,8 +182,26 @@ LapResult solve_hk01(const CostMatrix& cost, bool maximize) {
         LAP_THROW_DIMENSION("Infeasible: number of rows greater than number of columns");
     }
 
-    // Prepare working costs (negated if maximize, BIG for forbidden)
-    CostMatrix work = prepare_for_solve(cost, maximize);
+    // Prepare working costs. For maximize, flip finite allowed costs via
+    // c' = cmax - c rather than negating: this keeps a {0,1} palette as {0,1}
+    // (negation makes it {0,-1}, which the palette check below rejects), so the
+    // binary and uniform fast paths still engage. Forbidden edges are read
+    // through the mask and never scanned, so they need no transform; the total
+    // is recomputed from the original matrix below, so the shift never leaks in.
+    CostMatrix work = cost;
+    if (maximize) {
+        double cmax = -std::numeric_limits<double>::infinity();
+        for (int i = 0; i < n; ++i)
+            for (int j = 0; j < m; ++j)
+                if (work.allowed(i, j) && std::isfinite(work.at(i, j)))
+                    cmax = std::max(cmax, work.at(i, j));
+        if (std::isfinite(cmax)) {
+            for (int i = 0; i < n; ++i)
+                for (int j = 0; j < m; ++j)
+                    if (work.allowed(i, j) && std::isfinite(work.at(i, j)))
+                        work.at(i, j) = cmax - work.at(i, j);
+        }
+    }
 
     // Check feasibility
     ensure_each_row_has_option(work.mask, n, m);
@@ -244,9 +263,10 @@ LapResult solve_hk01(const CostMatrix& cost, bool maximize) {
                 assignment[i] = v1 - 1;
             }
         } else {
-            // Need to include some 1-cost edges -> fall back to weighted solver
-            // For now, throw error since we don't have solve_csflow yet
-            LAP_THROW("hk01: binary {0,1} costs require some 1-edges; fallback to weighted solver needed");
+            // Optimum needs some 1-cost edges: the 0-cost subgraph has no
+            // perfect matching. Fall back to the exact weighted solver on the
+            // original costs (the rcpp twin does the same via lap_solve_csflow).
+            return solve_csflow(cost, maximize);
         }
 
     } else {

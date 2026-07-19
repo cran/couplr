@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-05-20" />
+<meta name="date" content="2026-07-19" />
 
 <title>Troubleshooting Guide</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Troubleshooting Guide</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-05-20</h4>
+<h4 class="date">2026-07-19</h4>
 
 
 
@@ -403,7 +403,7 @@ and provides step-by-step solutions.</p>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>cost <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>, <span class="cn">Inf</span>, <span class="cn">Inf</span>, <span class="cn">Inf</span>, <span class="cn">Inf</span>, <span class="cn">Inf</span>, <span class="cn">Inf</span>, <span class="dv">2</span>, <span class="dv">3</span>), <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">byrow =</span> <span class="cn">TRUE</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">lap_solve</span>(cost)</span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">#&gt; ! Infeasible given forbidden edges</span></span></code></pre></div>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">#&gt; ! Infeasible: row 2 has no allowed edges</span></span></code></pre></div>
 <p>Error message: “No feasible assignment found” or total cost is
 Inf.</p>
 </div>
@@ -537,8 +537,8 @@ entries, no valid assignment exists.</p>
 <span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 7</span></span>
 <span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#&gt;   Variable `Mean Left` `Mean Right` `Mean Diff` `Std Diff` `Var Ratio` `KS Stat`</span></span>
 <span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a><span class="co">#&gt; 1 age             30.6         32.5       -1.89     -0.386        1.05      0.22</span></span>
-<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a><span class="co">#&gt; 2 income       77666.       41353.     36313.        2.40         2.15      0.81</span></span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a><span class="co">#&gt; 1 age             30.6         32.5       -1.89     -0.386        1.10      0.22</span></span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a><span class="co">#&gt; 2 income       77666.       41353.     36313.        2.40         4.63      0.81</span></span>
 <span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a><span class="co">#&gt; Overall Balance:</span></span>
 <span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co">#&gt;   Mean |Std Diff|: 1.391 (Poor)</span></span>
@@ -612,8 +612,8 @@ weighted</p></li>
 <span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 7</span></span>
 <span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a><span class="co">#&gt;   Variable `Mean Left` `Mean Right` `Mean Diff` `Std Diff` `Var Ratio` `KS Stat`</span></span>
 <span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a><span class="co">#&gt; 1 age             31.2         31.2        0.04      0.009       1.03        0.1</span></span>
-<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a><span class="co">#&gt; 2 income       53160.       51959.      1201.        0.16        0.998       0.2</span></span>
+<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a><span class="co">#&gt; 1 age             31.2         31.2        0.04      0.009       1.06        0.1</span></span>
+<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a><span class="co">#&gt; 2 income       53160.       51959.      1201.        0.16        0.996       0.2</span></span>
 <span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a><span class="co">#&gt; Overall Balance:</span></span>
 <span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a><span class="co">#&gt;   Mean |Std Diff|: 0.085 (Excellent)</span></span>
@@ -702,15 +702,15 @@ complexity. For n = 5,000, this means ~125 billion operations.</p>
 <span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a></span>
 <span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co"># Greedy is much faster</span></span>
 <span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>time_greedy <span class="ot">&lt;-</span> <span class="fu">system.time</span>({</span>
-<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>  result_greedy <span class="ot">&lt;-</span> <span class="fu">greedy_couples</span>(</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>  result_greedy <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
 <span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>    large_left, large_right,</span>
 <span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>    <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;x1&quot;</span>, <span class="st">&quot;x2&quot;</span>),</span>
 <span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>    <span class="at">strategy =</span> <span class="st">&quot;row_best&quot;</span></span>
-<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>  )</span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>  , <span class="at">method =</span> <span class="st">&quot;greedy&quot;</span>)</span>
 <span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a>})</span>
 <span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a></span>
 <span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy matching (n=500):&quot;</span>, <span class="fu">round</span>(time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">2</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="co">#&gt; Greedy matching (n=500): 0.23 seconds</span></span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="co">#&gt; Greedy matching (n=500): 0.49 seconds</span></span>
 <span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Quality (mean distance):&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_greedy<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a><span class="co">#&gt; Quality (mean distance): 0.2886</span></span></code></pre></div>
 <p><strong>2. Use blocking to divide the problem:</strong></p>
@@ -818,11 +818,11 @@ complexity. For n = 5,000, this means ~125 billion operations.</p>
 <h3>Solutions</h3>
 <p><strong>1. Use greedy matching (avoids full matrix):</strong></p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a><span class="co"># Greedy computes distances on-the-fly</span></span>
-<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">greedy_couples</span>(</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
 <span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>  left, right,</span>
 <span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>  <span class="at">vars =</span> covariates,</span>
 <span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;row_best&quot;</span>  <span class="co"># Most memory-efficient</span></span>
-<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>)</span></code></pre></div>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>, <span class="at">method =</span> <span class="st">&quot;greedy&quot;</span>)</span></code></pre></div>
 <p><strong>2. Use blocking to create smaller subproblems:</strong></p>
 <div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="co"># Each block is much smaller</span></span>
 <span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>blocks <span class="ot">&lt;-</span> <span class="fu">matchmaker</span>(left, right, <span class="at">block_type =</span> <span class="st">&quot;cluster&quot;</span>, <span class="at">n_blocks =</span> <span class="dv">20</span>)</span>

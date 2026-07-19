@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-05-20" />
+<meta name="date" content="2026-07-19" />
 
 <title>Matching Workflows</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Matching Workflows</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-05-20</h4>
+<h4 class="date">2026-07-19</h4>
 
 
 
@@ -857,34 +857,34 @@ matters</p></li>
 <span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a></span>
 <span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co"># Greedy matching (row_best strategy)</span></span>
 <span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a>time_greedy <span class="ot">&lt;-</span> <span class="fu">system.time</span>({</span>
-<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>  result_greedy <span class="ot">&lt;-</span> <span class="fu">greedy_couples</span>(</span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>  result_greedy <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
 <span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a>    large_left, large_right,</span>
 <span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a>    <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;x1&quot;</span>, <span class="st">&quot;x2&quot;</span>, <span class="st">&quot;x3&quot;</span>),</span>
 <span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a>    <span class="at">strategy =</span> <span class="st">&quot;row_best&quot;</span></span>
-<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a>  )</span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a>  , <span class="at">method =</span> <span class="st">&quot;greedy&quot;</span>)</span>
 <span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a>})</span>
 <span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a></span>
 <span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a><span class="co"># Compare</span></span>
 <span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Optimal matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co">#&gt; Optimal matching:</span></span>
 <span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 1.33 seconds</span></span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 2.74 seconds</span></span>
 <span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_optimal<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.3368</span></span>
 <span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a></span>
 <span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a><span class="co">#&gt; Greedy matching:</span></span>
 <span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 0.92 seconds</span></span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 1.8 seconds</span></span>
 <span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_greedy<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.4667</span></span>
 <span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Speedup:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>] <span class="sc">/</span> time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">1</span>), <span class="st">&quot;x</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 1.4 x</span></span></code></pre></div>
+<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 1.5 x</span></span></code></pre></div>
 </div>
 <div id="greedy-strategies" class="section level3">
 <h3>Greedy Strategies</h3>
 <p>Three greedy strategies available via
-<code>greedy_couples()</code>:</p>
+<code>match_couples(method = &quot;greedy&quot;)</code>:</p>
 <p><strong>1. Sorted</strong> (<code>strategy = &quot;sorted&quot;</code>):</p>
 <ul>
 <li><p>Sort all possible pairs by distance</p></li>
@@ -936,11 +936,11 @@ default):</p>
 <span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a></span>
 <span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="cf">for</span> (strat <span class="cf">in</span> strategies) {</span>
 <span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>  time <span class="ot">&lt;-</span> <span class="fu">system.time</span>({</span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>    result <span class="ot">&lt;-</span> <span class="fu">greedy_couples</span>(</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>    result <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
 <span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>      test_left, test_right,</span>
 <span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>      <span class="at">vars =</span> <span class="st">&quot;x&quot;</span>,</span>
 <span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>      <span class="at">strategy =</span> strat</span>
-<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>    )</span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>    , <span class="at">method =</span> <span class="st">&quot;greedy&quot;</span>)</span>
 <span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>  })</span>
 <span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a></span>
 <span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>  results[[strat]] <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
@@ -962,9 +962,9 @@ default):</p>
 <span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a></span>
 <span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a><span class="fu">print</span>(comparison)</span>
 <span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt;          strategy time_sec mean_distance total_distance</span></span>
-<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; elapsed    sorted     0.03        0.0912          18.24</span></span>
-<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; elapsed1 row_best     0.05        0.0968          19.36</span></span>
-<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.05        0.0912          18.24</span></span></code></pre></div>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; elapsed    sorted     0.06        0.0912          18.24</span></span>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; elapsed1 row_best     0.07        0.0968          19.36</span></span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.08        0.0912          18.24</span></span></code></pre></div>
 <p><strong>Recommendation:</strong></p>
 <ul>
 <li><p>Default to <code>strategy = &quot;row_best&quot;</code> for good
@@ -1314,8 +1314,8 @@ blocks:</p>
 <span id="cb15-38"><a href="#cb15-38" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 7</span></span>
 <span id="cb15-39"><a href="#cb15-39" tabindex="-1"></a><span class="co">#&gt;   Variable `Mean Left` `Mean Right` `Mean Diff` `Std Diff` `Var Ratio` `KS Stat`</span></span>
 <span id="cb15-40"><a href="#cb15-40" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span id="cb15-41"><a href="#cb15-41" tabindex="-1"></a><span class="co">#&gt; 1 age             45.9         47.3       -1.43     -0.148       0.891      0.18</span></span>
-<span id="cb15-42"><a href="#cb15-42" tabindex="-1"></a><span class="co">#&gt; 2 income       58387.       56118.      2269.        0.155       0.982      0.09</span></span>
+<span id="cb15-41"><a href="#cb15-41" tabindex="-1"></a><span class="co">#&gt; 1 age             45.9         47.3       -1.43     -0.148       0.794      0.18</span></span>
+<span id="cb15-42"><a href="#cb15-42" tabindex="-1"></a><span class="co">#&gt; 2 income       58387.       56118.      2269.        0.155       0.965      0.09</span></span>
 <span id="cb15-43"><a href="#cb15-43" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb15-44"><a href="#cb15-44" tabindex="-1"></a><span class="co">#&gt; Overall Balance:</span></span>
 <span id="cb15-45"><a href="#cb15-45" tabindex="-1"></a><span class="co">#&gt;   Mean |Std Diff|: 0.151 (Good)</span></span>
@@ -1333,8 +1333,8 @@ blocks:</p>
 <span id="cb15-57"><a href="#cb15-57" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2 × 7</span></span>
 <span id="cb15-58"><a href="#cb15-58" tabindex="-1"></a><span class="co">#&gt;   Variable `Mean Left` `Mean Right` `Mean Diff` `Std Diff` `Var Ratio` `KS Stat`</span></span>
 <span id="cb15-59"><a href="#cb15-59" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span id="cb15-60"><a href="#cb15-60" tabindex="-1"></a><span class="co">#&gt; 1 age             45.9         47.3       -1.43     -0.148       0.891      0.18</span></span>
-<span id="cb15-61"><a href="#cb15-61" tabindex="-1"></a><span class="co">#&gt; 2 income       58387.       56118.      2269.        0.155       0.982      0.09</span></span></code></pre></div>
+<span id="cb15-60"><a href="#cb15-60" tabindex="-1"></a><span class="co">#&gt; 1 age             45.9         47.3       -1.43     -0.148       0.794      0.18</span></span>
+<span id="cb15-61"><a href="#cb15-61" tabindex="-1"></a><span class="co">#&gt; 2 income       58387.       56118.      2269.        0.155       0.965      0.09</span></span></code></pre></div>
 </div>
 <div id="how-to-interpret-balance-results" class="section level3">
 <h3>How to Interpret Balance Results</h3>
@@ -1595,10 +1595,10 @@ status</p></li>
 <span id="cb20-30"><a href="#cb20-30" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 × 7</span></span>
 <span id="cb20-31"><a href="#cb20-31" tabindex="-1"></a><span class="co">#&gt;   Variable `Mean Left` `Mean Right` `Mean Diff` `Std Diff` `Var Ratio` `KS Stat`</span></span>
 <span id="cb20-32"><a href="#cb20-32" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;       &lt;dbl&gt;     &lt;dbl&gt;</span></span>
-<span id="cb20-33"><a href="#cb20-33" tabindex="-1"></a><span class="co">#&gt; 1 age             35.4       36.0        -0.656     -0.081       0.869     0.1  </span></span>
-<span id="cb20-34"><a href="#cb20-34" tabindex="-1"></a><span class="co">#&gt; 2 educati…        13.9       13.5         0.4        0.195       0.93      0.18 </span></span>
-<span id="cb20-35"><a href="#cb20-35" tabindex="-1"></a><span class="co">#&gt; 3 prior_e…     35015.     33795.       1219.         0.121       1.01      0.08 </span></span>
-<span id="cb20-36"><a href="#cb20-36" tabindex="-1"></a><span class="co">#&gt; 4 employed         0.7        0.635       0.065      0.138       0.952     0.065</span></span>
+<span id="cb20-33"><a href="#cb20-33" tabindex="-1"></a><span class="co">#&gt; 1 age             35.4       36.0        -0.656     -0.081       0.756     0.1  </span></span>
+<span id="cb20-34"><a href="#cb20-34" tabindex="-1"></a><span class="co">#&gt; 2 educati…        13.9       13.5         0.4        0.195       0.865     0.18 </span></span>
+<span id="cb20-35"><a href="#cb20-35" tabindex="-1"></a><span class="co">#&gt; 3 prior_e…     35015.     33795.       1219.         0.121       1.03      0.08 </span></span>
+<span id="cb20-36"><a href="#cb20-36" tabindex="-1"></a><span class="co">#&gt; 4 employed         0.7        0.635       0.065      0.138       0.906     0.065</span></span>
 <span id="cb20-37"><a href="#cb20-37" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb20-38"><a href="#cb20-38" tabindex="-1"></a><span class="co">#&gt; Overall Balance:</span></span>
 <span id="cb20-39"><a href="#cb20-39" tabindex="-1"></a><span class="co">#&gt;   Mean |Std Diff|: 0.134 (Good)</span></span>
@@ -1766,11 +1766,11 @@ status</p></li>
 <span id="cb23-15"><a href="#cb23-15" tabindex="-1"></a>)</span></code></pre></div>
 <p><strong>2. Start with greedy, refine if needed</strong></p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># Quick greedy match for exploration</span></span>
-<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>quick <span class="ot">&lt;-</span> <span class="fu">greedy_couples</span>(</span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a>quick <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
 <span id="cb24-3"><a href="#cb24-3" tabindex="-1"></a>  left_data, right_data,</span>
 <span id="cb24-4"><a href="#cb24-4" tabindex="-1"></a>  <span class="at">vars =</span> covariates,</span>
 <span id="cb24-5"><a href="#cb24-5" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;row_best&quot;</span></span>
-<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a>)</span>
+<span id="cb24-6"><a href="#cb24-6" tabindex="-1"></a>, <span class="at">method =</span> <span class="st">&quot;greedy&quot;</span>)</span>
 <span id="cb24-7"><a href="#cb24-7" tabindex="-1"></a></span>
 <span id="cb24-8"><a href="#cb24-8" tabindex="-1"></a><span class="co"># Assess balance</span></span>
 <span id="cb24-9"><a href="#cb24-9" tabindex="-1"></a>balance_quick <span class="ot">&lt;-</span> <span class="fu">balance_diagnostics</span>(quick, left_data, right_data, <span class="at">vars =</span> covariates)</span>
@@ -1850,7 +1850,7 @@ minutes or doesn’t complete. <strong>Cause</strong>: <span class="math inline"
 matching.</p>
 <p><strong>Solutions</strong>:</p>
 <div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" tabindex="-1"></a><span class="co"># For n &gt; 3000: use greedy</span></span>
-<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">greedy_couples</span>(left, right, <span class="at">vars =</span> vars, <span class="at">strategy =</span> <span class="st">&quot;sorted&quot;</span>)</span>
+<span id="cb28-2"><a href="#cb28-2" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(left, right, <span class="at">vars =</span> vars, <span class="at">strategy =</span> <span class="st">&quot;sorted&quot;</span>, <span class="at">method =</span> <span class="st">&quot;greedy&quot;</span>)</span>
 <span id="cb28-3"><a href="#cb28-3" tabindex="-1"></a></span>
 <span id="cb28-4"><a href="#cb28-4" tabindex="-1"></a><span class="co"># For n &gt; 5000: add blocking</span></span>
 <span id="cb28-5"><a href="#cb28-5" tabindex="-1"></a>blocks <span class="ot">&lt;-</span> <span class="fu">matchmaker</span>(left, right, <span class="at">block_type =</span> <span class="st">&quot;cluster&quot;</span>, <span class="at">n_blocks =</span> <span class="dv">20</span>)</span>
@@ -1863,8 +1863,9 @@ matching.</p>
 vector of size X”.</p>
 <p><strong>Cause</strong>: Full cost matrix doesn’t fit in RAM. A
 10,000×10,000 matrix needs ~800 MB.</p>
-<p><strong>Solutions</strong>: - Use <code>greedy_couples()</code> which
-doesn’t require full matrix</p>
+<p><strong>Solutions</strong>: - Use
+<code>match_couples(method = &quot;greedy&quot;)</code> which doesn’t require full
+matrix</p>
 <ul>
 <li><p>Use blocking to create smaller sub-problems</p></li>
 <li><p>Consider random sampling if sample size permits</p></li>
@@ -2363,20 +2364,20 @@ confounding.</p>
 <span id="cb41-35"><a href="#cb41-35" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb41-36"><a href="#cb41-36" tabindex="-1"></a><span class="co">#&gt; Matched pairs: 50 </span></span>
 <span id="cb41-37"><a href="#cb41-37" tabindex="-1"></a><span class="co">#&gt; Alternative: greater </span></span>
-<span id="cb41-38"><a href="#cb41-38" tabindex="-1"></a><span class="co">#&gt; Test statistic (T+): 850.0 </span></span>
+<span id="cb41-38"><a href="#cb41-38" tabindex="-1"></a><span class="co">#&gt; Test statistic (T+): 889.0 </span></span>
 <span id="cb41-39"><a href="#cb41-39" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb41-40"><a href="#cb41-40" tabindex="-1"></a><span class="co">#&gt; Gamma    p (upper bound)</span></span>
 <span id="cb41-41"><a href="#cb41-41" tabindex="-1"></a><span class="co">#&gt; -----    ---------------</span></span>
-<span id="cb41-42"><a href="#cb41-42" tabindex="-1"></a><span class="co">#&gt; 1.00     0.0204 *</span></span>
-<span id="cb41-43"><a href="#cb41-43" tabindex="-1"></a><span class="co">#&gt; 1.25     0.0852</span></span>
-<span id="cb41-44"><a href="#cb41-44" tabindex="-1"></a><span class="co">#&gt; 1.50     0.2026</span></span>
-<span id="cb41-45"><a href="#cb41-45" tabindex="-1"></a><span class="co">#&gt; 1.75     0.3510</span></span>
-<span id="cb41-46"><a href="#cb41-46" tabindex="-1"></a><span class="co">#&gt; 2.00     0.5020</span></span>
+<span id="cb41-42"><a href="#cb41-42" tabindex="-1"></a><span class="co">#&gt; 1.00     0.0077 *</span></span>
+<span id="cb41-43"><a href="#cb41-43" tabindex="-1"></a><span class="co">#&gt; 1.25     0.0401 *</span></span>
+<span id="cb41-44"><a href="#cb41-44" tabindex="-1"></a><span class="co">#&gt; 1.50     0.1118</span></span>
+<span id="cb41-45"><a href="#cb41-45" tabindex="-1"></a><span class="co">#&gt; 1.75     0.2195</span></span>
+<span id="cb41-46"><a href="#cb41-46" tabindex="-1"></a><span class="co">#&gt; 2.00     0.3467</span></span>
 <span id="cb41-47"><a href="#cb41-47" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb41-48"><a href="#cb41-48" tabindex="-1"></a><span class="co">#&gt; * significant at alpha = 0.05</span></span>
 <span id="cb41-49"><a href="#cb41-49" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb41-50"><a href="#cb41-50" tabindex="-1"></a><span class="co">#&gt; Insensitive to hidden bias up to Gamma = 1.00</span></span>
-<span id="cb41-51"><a href="#cb41-51" tabindex="-1"></a><span class="co">#&gt; To explain away the effect, hidden bias would need Gamma &gt;= 1.25</span></span></code></pre></div>
+<span id="cb41-50"><a href="#cb41-50" tabindex="-1"></a><span class="co">#&gt; Insensitive to hidden bias up to Gamma = 1.25</span></span>
+<span id="cb41-51"><a href="#cb41-51" tabindex="-1"></a><span class="co">#&gt; To explain away the effect, hidden bias would need Gamma &gt;= 1.50</span></span></code></pre></div>
 <p>The <strong>critical gamma</strong> (<span class="math inline">\(\Gamma\)</span>) is the smallest value at which
 the upper-bound p-value crosses 0.05. A larger critical gamma means the
 finding is more robust: a critical gamma of 1.75, for example, means an
@@ -2405,7 +2406,7 @@ produce publication-ready plots:</p>
 <span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a>  <span class="co"># Sensitivity analysis curve</span></span>
 <span id="cb44-3"><a href="#cb44-3" tabindex="-1"></a>  <span class="fu">autoplot</span>(sa)</span>
 <span id="cb44-4"><a href="#cb44-4" tabindex="-1"></a>}</span></code></pre></div>
-<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
 <p>All <code>autoplot()</code> methods return <code>ggplot</code>
 objects, so you can add layers, themes, and labels as needed.</p>
 <hr />
@@ -2423,9 +2424,8 @@ MatchIt, optmatch, designmatch</p></li>
 solutions</p></li>
 <li><p><code>vignette(&quot;pixel-morphing&quot;)</code> - Large-scale
 approximation strategies</p></li>
-<li><p><code>?match_couples</code>, <code>?greedy_couples</code>,
-<code>?full_match</code>, <code>?balance_diagnostics</code>,
-<code>?matchmaker</code></p></li>
+<li><p><code>?match_couples</code>, <code>?full_match</code>,
+<code>?balance_diagnostics</code>, <code>?matchmaker</code></p></li>
 <li><p><code>?ps_match</code>, <code>?cardinality_match</code>,
 <code>?sensitivity_analysis</code>, <code>?cem_match</code>,
 <code>?subclass_match</code></p></li>

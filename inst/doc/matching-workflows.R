@@ -186,11 +186,11 @@ time_optimal <- system.time({
 
 # Greedy matching (row_best strategy)
 time_greedy <- system.time({
-  result_greedy <- greedy_couples(
+  result_greedy <- match_couples(
     large_left, large_right,
     vars = c("x1", "x2", "x3"),
     strategy = "row_best"
-  )
+  , method = "greedy")
 })
 
 # Compare
@@ -214,11 +214,11 @@ results <- list()
 
 for (strat in strategies) {
   time <- system.time({
-    result <- greedy_couples(
+    result <- match_couples(
       test_left, test_right,
       vars = "x",
       strategy = strat
-    )
+    , method = "greedy")
   })
 
   results[[strat]] <- list(
@@ -681,11 +681,11 @@ cat("  (Closer to true effect of $5,000)\n")
 
 ## ----optimization-greedy, eval=FALSE------------------------------------------
 # # Quick greedy match for exploration
-# quick <- greedy_couples(
+# quick <- match_couples(
 #   left_data, right_data,
 #   vars = covariates,
 #   strategy = "row_best"
-# )
+# , method = "greedy")
 # 
 # # Assess balance
 # balance_quick <- balance_diagnostics(quick, left_data, right_data, vars = covariates)
@@ -731,7 +731,7 @@ cat("  (Closer to true effect of $5,000)\n")
 
 ## ----slow-matching-fix, eval=FALSE--------------------------------------------
 # # For n > 3000: use greedy
-# result <- greedy_couples(left, right, vars = vars, strategy = "sorted")
+# result <- match_couples(left, right, vars = vars, strategy = "sorted", method = "greedy")
 # 
 # # For n > 5000: add blocking
 # blocks <- matchmaker(left, right, block_type = "cluster", n_blocks = 20)

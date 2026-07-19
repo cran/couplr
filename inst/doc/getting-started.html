@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-05-20" />
+<meta name="date" content="2026-07-19" />
 
 <title>Quick Start</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Quick Start</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-05-20</h4>
+<h4 class="date">2026-07-19</h4>
 
 
 
@@ -568,8 +568,8 @@ concentrated near zero indicates good matches.</p>
 <div id="large-datasets-use-greedy-matching" class="section level2">
 <h2>Large Datasets: Use Greedy Matching</h2>
 <p>For datasets larger than a few thousand observations, optimal
-matching becomes slow. Use <code>greedy_couples()</code> instead; it’s
-10-100x faster with nearly identical results:</p>
+matching becomes slow. Use <code>match_couples(method = &quot;greedy&quot;)</code>
+instead; it’s 10-100x faster with nearly identical results:</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Create larger datasets</span></span>
 <span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">456</span>)</span>
 <span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>large_treatment <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
@@ -585,12 +585,12 @@ matching becomes slow. Use <code>greedy_couples()</code> instead; it’s
 <span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>)</span>
 <span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a></span>
 <span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co"># Fast greedy matching</span></span>
-<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>result_greedy <span class="ot">&lt;-</span> <span class="fu">greedy_couples</span>(</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>result_greedy <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
 <span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>  large_treatment, large_control,</span>
 <span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
 <span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>  <span class="at">auto_scale =</span> <span class="cn">TRUE</span>,</span>
 <span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>  <span class="at">strategy =</span> <span class="st">&quot;row_best&quot;</span>  <span class="co"># fastest strategy</span></span>
-<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>)</span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>, <span class="at">method =</span> <span class="st">&quot;greedy&quot;</span>)</span>
 <span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
 <span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a></span>
 <span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Matched&quot;</span>, result_greedy<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;pairs</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
@@ -616,7 +616,7 @@ matching becomes slow. Use <code>greedy_couples()</code> instead; it’s
 </tr>
 <tr class="odd">
 <td>&gt; 5,000</td>
-<td><code>greedy_couples()</code></td>
+<td><code>match_couples(method = &quot;greedy&quot;)</code></td>
 </tr>
 </tbody>
 </table>
@@ -1001,7 +1001,8 @@ all results in one tidy table.</p>
 matching</p></li>
 <li><p><code>?full_match</code> - Full matching (variable-ratio
 groups)</p></li>
-<li><p><code>?greedy_couples</code> - Fast approximate matching</p></li>
+<li><p><code>?match_couples</code> with <code>method = &quot;greedy&quot;</code> -
+Fast approximate matching</p></li>
 <li><p><code>?balance_diagnostics</code> - Formal balance
 assessment</p></li>
 <li><p><code>?lap_solve</code> - Direct assignment problem

@@ -176,11 +176,11 @@ large_right <- tibble(id = 1:n, x1 = rnorm(n), x2 = rnorm(n))
 
 # Greedy is much faster
 time_greedy <- system.time({
-  result_greedy <- greedy_couples(
+  result_greedy <- match_couples(
     large_left, large_right,
     vars = c("x1", "x2"),
     strategy = "row_best"
-  )
+  , method = "greedy")
 })
 
 cat("Greedy matching (n=500):", round(time_greedy["elapsed"], 2), "seconds\n")
@@ -251,11 +251,11 @@ for (n in c(1000, 5000, 10000, 20000, 50000)) {
 
 ## ----eval=FALSE---------------------------------------------------------------
 # # Greedy computes distances on-the-fly
-# result <- greedy_couples(
+# result <- match_couples(
 #   left, right,
 #   vars = covariates,
 #   strategy = "row_best"  # Most memory-efficient
-# )
+# , method = "greedy")
 
 ## ----eval=FALSE---------------------------------------------------------------
 # # Each block is much smaller

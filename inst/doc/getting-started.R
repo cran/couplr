@@ -96,12 +96,12 @@ large_control <- tibble(
 )
 
 # Fast greedy matching
-result_greedy <- greedy_couples(
+result_greedy <- match_couples(
   large_treatment, large_control,
   vars = c("age", "income"),
   auto_scale = TRUE,
   strategy = "row_best"  # fastest strategy
-)
+, method = "greedy")
 
 cat("Matched", result_greedy$info$n_matched, "pairs\n")
 cat("Mean distance:", round(mean(result_greedy$pairs$distance), 3), "\n")

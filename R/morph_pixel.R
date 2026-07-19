@@ -26,7 +26,9 @@
 #' @param format Output format: "gif", "webp", or "mp4"
 #' @param outfile Optional output file path
 #' @param show Logical, display animation in viewer (default: interactive())
-#' @param mode Assignment algorithm: "color_walk" (default), "exact", or "recursive"
+#' @param mode Assignment algorithm: "color_walk" (default), "exact",
+#'   "recursive", or "color_match" (spatially match pixels of identical
+#'   quantized colour, filling the remainder by identity)
 #' @param lap_method LAP solver method (default: "jv")
 #' @param maximize Logical, maximize instead of minimize cost (default: FALSE)
 #' @param quantize_bits Color quantization for "color_walk" mode (default: 5)
@@ -122,7 +124,7 @@ pixel_morph_animate <- function(imgA,
                                 format = c("gif", "webp", "mp4"),
                                 outfile = NULL,
                                 show = interactive(),
-                                mode = c("color_walk", "exact", "recursive"),
+                                mode = c("color_walk", "exact", "recursive", "color_match"),
                                 lap_method = "jv",
                                 maximize = FALSE,
                                 quantize_bits = 5L,
@@ -131,211 +133,19 @@ pixel_morph_animate <- function(imgA,
                                 beta  = 0,
                                 patch_size = 1L,
                                 upscale = 1) {
+  format <- match.arg(format)
 
-  format  <- match.arg(format)
-  mode    <- match.arg(mode)
-  
-  # Robust input validation
-  if (!is.numeric(upscale) || length(upscale) != 1 || is.na(upscale)) {
-    stop("upscale must be a single numeric value", call. = FALSE)
-  }
-  upscale <- as.numeric(upscale)
-  if (upscale <= 0) {
-    warning("upscale must be positive, setting to 1", call. = FALSE)
-    upscale <- 1
-  }
-  
-  if (!is.numeric(n_frames) || length(n_frames) != 1 || is.na(n_frames)) {
-    stop("n_frames must be a single numeric value", call. = FALSE)
-  }
-  n_frames <- as.integer(n_frames)
-  if (n_frames < 2L) {
-    warning("n_frames must be at least 2, setting to 2", call. = FALSE)
-    n_frames <- 2L
-  }
-  
-  if (!is.numeric(alpha) || length(alpha) != 1 || is.na(alpha) || alpha < 0) {
-    stop("alpha must be a single non-negative numeric value", call. = FALSE)
-  }
-  if (!is.numeric(beta) || length(beta) != 1 || is.na(beta) || beta < 0) {
-    stop("beta must be a single non-negative numeric value", call. = FALSE)
-  }
-  if (alpha == 0 && beta == 0) {
-    stop("alpha and beta cannot both be zero", call. = FALSE)
-  }
-  
-  if (!is.numeric(patch_size) || length(patch_size) != 1 || is.na(patch_size)) {
-    stop("patch_size must be a single numeric value", call. = FALSE)
-  }
-  patch_size <- as.integer(patch_size)
-  if (patch_size < 1L) {
-    stop("patch_size must be at least 1", call. = FALSE)
-  }
-  
-  if (!is.numeric(downscale_steps) || length(downscale_steps) != 1 || is.na(downscale_steps)) {
-    stop("downscale_steps must be a single numeric value", call. = FALSE)
-  }
-  downscale_steps <- as.integer(downscale_steps)
-  if (downscale_steps < 0L) {
-    stop("downscale_steps must be non-negative", call. = FALSE)
-  }
-
-  if (!.has_namespace("magick")) stop("Package 'magick' is required.")
-
-  # Read images and align sizes
-  A <- if (is.character(imgA)) magick::image_read(imgA) else imgA
-  B <- if (is.character(imgB)) magick::image_read(imgB) else imgB
-
-  infoA <- magick::image_info(A)
-  infoB <- magick::image_info(B)
-
-  if (infoA$width != infoB$width || infoA$height != infoB$height) {
-    B <- magick::image_resize(
-      B,
-      geometry = sprintf("%dx%d!", infoA$width, infoA$height)
-    )
-    infoB <- magick::image_info(B)
-  }
-
-  H <- as.integer(infoA$height)
-  W <- as.integer(infoA$width)
-  N <- H * W
-
-  # Planar RGB buffers (0-255, column-major)
-  arrA    <- .to_array_rgb(A)
-  arrB    <- .to_array_rgb(B)
-  planarA <- .to_planar_rgb(arrA)
-  planarB <- .to_planar_rgb(arrB)
-
-  # Optional downscaling for assignment computation
-  ds   <- .downscale_both(planarA, planarB, H, W, steps = downscale_steps)
-  Hs   <- ds$Hs
-  Ws   <- ds$Ws
-  A_s  <- ds$A_s
-  B_s  <- ds$B_s
-  Ns   <- Hs * Ws
-
-  # Size checks based on mode (after downscaling)
-  patch_size <- as.integer(patch_size)
-  if (patch_size < 1L) patch_size <- 1L
-
-  if (mode %in% c("exact", "recursive")) {
-
-    if (patch_size <= 1L && mode == "exact") {
-      MAX_EXACT <- 4096L
-      if (Ns > MAX_EXACT) {
-        warning(sprintf(
-          paste0(
-            "Image is large for 'exact' global LAP: %d x %d = %d pixels (recommended max %d).\n",
-            "Computation may be slow -- consider using patch_size > 1, mode='recursive',",
-            " or mode='color_walk'."
-          ),
-          Hs, Ws, Ns, MAX_EXACT
-        ), call. = FALSE)
-      }
-
-    } else {
-      tile_n <- patch_size * patch_size
-      MAX_TILE_EXACT <- 400L
-
-      if (tile_n > MAX_TILE_EXACT) {
-        warning(sprintf(
-          paste0(
-            "Tile is large for LAP: patch_size=%d -> %d pixels per tile (recommended max %d).\n",
-            "Computation may be slow -- reduce patch_size or use mode='color_walk'."
-          ),
-          patch_size, tile_n, MAX_TILE_EXACT
-        ), call. = FALSE)
-      }
-    }
-
-  } else if (mode == "color_walk") {
-
-    WARN_THRESHOLD <- 250000L
-    if (Ns > WARN_THRESHOLD) {
-      warning(sprintf(
-        paste0(
-          "Large image: %d x %d = %d pixels. This may take a while.\n",
-          "Consider increasing downscale_steps or reducing image size."
-        ),
-        Hs, Ws, Ns
-      ), call. = FALSE)
-    }
-  }
-
-  # Compute pixel assignment at (Hs, Ws)
-  if (mode == "exact") {
-
-    if (patch_size > 1L) {
-      assign_s <- .square_tiling_solver(
-        A_planar      = A_s,
-        B_planar      = B_s,
-        H             = Hs,
-        W             = Ws,
-        max_tile_size = patch_size,
-        alpha         = alpha,
-        beta          = beta,
-        method        = lap_method,
-        maximize      = maximize
-      )
-    } else {
-      assign_s <- .exact_cost_and_solve(
-        A_s, B_s, Hs, Ws, alpha, beta, lap_method, maximize
-      )
-    }
-
-  } else if (mode == "recursive") {
-
-    assign_s <- .recursive_tiling_solver(
-      A_planar   = A_s,
-      B_planar   = B_s,
-      H          = Hs,
-      W          = Ws,
-      patch_size = patch_size,
-      alpha      = alpha,
-      beta       = beta,
-      method     = lap_method,
-      maximize   = maximize
-    )
-
-  } else {
-    assign_s <- .solve_color_walk_pipeline(
-      A_s,
-      B_s,
-      Hs,
-      Ws,
-      quantize_bits,
-      lap_method,
-      maximize
-    )
-  }
-
-  # Upscale assignment back to original resolution and convert to 0-based
-  assign_in <- as.integer(assign_s) - 1L
-
-  if (downscale_steps > 0L && (Hs != H || Ws != W)) {
-    assign_0based <- .upscale_assignment(
-      assign_in,
-      H  = H,
-      W  = W,
-      Hs = Hs,
-      Ws = Ws
-    )
-  } else {
-    assign_0based <- assign_in
-  }
-
-  # Render morph frames via C++ (assignment is 0-based here)
-  # NOTE: morph_pixel_level_cpp() returns a sharp, transport-only final frame
-  #       (no motion blur), while intermediate frames use bilinear splatting.
-  frames <- morph_pixel_level_cpp(
-    planarA,
-    planarB,
-    assign_0based,
-    H,
-    W,
-    n_frames
-  )
+  eng <- .pixel_morph_engine(imgA, imgB, n_frames, mode, lap_method, maximize,
+                             quantize_bits, downscale_steps, alpha, beta,
+                             patch_size, upscale)
+  frames        <- eng$frames
+  H             <- eng$H
+  W             <- eng$W
+  n_frames      <- eng$n_frames
+  upscale       <- eng$upscale
+  assign_0based <- eng$assign_0based
+  mode          <- eng$mode
+  N             <- eng$N
 
   magick_list <- lapply(frames, function(fr) {
     Hf  <- fr$H
@@ -450,7 +260,9 @@ pixel_morph_animate <- function(imgA,
 #' @param imgA Source image (file path or magick image object)
 #' @param imgB Target image (file path or magick image object)
 #' @param n_frames Internal parameter for rendering (default: 16)
-#' @param mode Assignment algorithm: "color_walk" (default), "exact", or "recursive"
+#' @param mode Assignment algorithm: "color_walk" (default), "exact",
+#'   "recursive", or "color_match" (spatially match pixels of identical
+#'   quantized colour, filling the remainder by identity)
 #' @param lap_method LAP solver method (default: "jv")
 #' @param maximize Logical, maximize instead of minimize cost (default: FALSE)
 #' @param quantize_bits Color quantization for "color_walk" mode (default: 5)
@@ -513,7 +325,7 @@ pixel_morph_animate <- function(imgA,
 pixel_morph <- function(imgA,
                         imgB,
                         n_frames = 16L,
-                        mode = c("color_walk", "exact", "recursive"),
+                        mode = c("color_walk", "exact", "recursive", "color_match"),
                         lap_method = "jv",
                         maximize = FALSE,
                         quantize_bits = 5L,
@@ -523,9 +335,76 @@ pixel_morph <- function(imgA,
                         patch_size = 1L,
                         upscale = 1,
                         show = interactive()) {
+  eng <- .pixel_morph_engine(imgA, imgB, n_frames, mode, lap_method, maximize,
+                             quantize_bits, downscale_steps, alpha, beta,
+                             patch_size, upscale)
+  frames   <- eng$frames
+  H        <- eng$H
+  W        <- eng$W
+  n_frames <- eng$n_frames
+  upscale  <- eng$upscale
 
-  mode <- match.arg(mode)
-  
+  stopifnot(length(frames) == n_frames)
+
+  last_fr <- frames[[length(frames)]]
+  Hf      <- last_fr$H
+  Wf      <- last_fr$W
+  vec     <- last_fr$data
+  Cch     <- length(vec) / (Hf * Wf)
+
+  if (!Cch %in% c(3, 4)) {
+    stop("Unexpected channel count from morph_pixel_level_cpp: ", Cch)
+  }
+
+  arr <- array(vec / 255, dim = c(Hf, Wf, Cch))
+  final_img <- magick::image_read(arr)
+
+  # Optional upscaling of final frame
+  if (upscale != 1) {
+    if (abs(upscale - round(upscale)) < 1e-9) {
+      target_width  <- as.integer(round(W * upscale))
+      target_height <- as.integer(round(H * upscale))
+      final_img <- magick::image_scale(
+        final_img,
+        geometry = sprintf("%dx%d!", target_width, target_height)
+      )
+    } else {
+      pct <- upscale * 100
+      final_img <- magick::image_scale(
+        final_img,
+        geometry = sprintf("%.2f%%", pct)
+      )
+    }
+  }
+
+  if (show) {
+    print(final_img)
+  }
+
+  invisible(final_img)
+}
+
+
+# =============================================================================
+# Core solvers
+# =============================================================================
+
+#' Shared compute core for pixel_morph() and pixel_morph_animate()
+#'
+#' Validates arguments, reads and aligns the two images, computes the optimal
+#' pixel assignment (optionally at a downscaled resolution), and renders the
+#' transport frames via morph_pixel_level_cpp(). The two public front doors
+#' differ only in how they present these frames -- a single final image versus
+#' an animation -- so everything up to and including frame rendering lives here.
+#'
+#' Returns a list with: frames, H, W, n_frames (clamped), upscale (clamped),
+#' assign_0based, mode (matched), N.
+#' @noRd
+.pixel_morph_engine <- function(imgA, imgB, n_frames, mode, lap_method, maximize,
+                                quantize_bits, downscale_steps, alpha, beta,
+                                patch_size, upscale) {
+  mode <- match.arg(mode, c("color_walk", "exact", "recursive", "color_match"))
+
   # Robust input validation
   if (!is.numeric(upscale) || length(upscale) != 1 || is.na(upscale)) {
     stop("upscale must be a single numeric value", call. = FALSE)
@@ -535,7 +414,7 @@ pixel_morph <- function(imgA,
     warning("upscale must be positive, setting to 1", call. = FALSE)
     upscale <- 1
   }
-  
+
   if (!is.numeric(n_frames) || length(n_frames) != 1 || is.na(n_frames)) {
     stop("n_frames must be a single numeric value", call. = FALSE)
   }
@@ -544,7 +423,7 @@ pixel_morph <- function(imgA,
     warning("n_frames must be at least 2, setting to 2", call. = FALSE)
     n_frames <- 2L
   }
-  
+
   if (!is.numeric(alpha) || length(alpha) != 1 || is.na(alpha) || alpha < 0) {
     stop("alpha must be a single non-negative numeric value", call. = FALSE)
   }
@@ -554,7 +433,7 @@ pixel_morph <- function(imgA,
   if (alpha == 0 && beta == 0) {
     stop("alpha and beta cannot both be zero", call. = FALSE)
   }
-  
+
   if (!is.numeric(patch_size) || length(patch_size) != 1 || is.na(patch_size)) {
     stop("patch_size must be a single numeric value", call. = FALSE)
   }
@@ -562,7 +441,7 @@ pixel_morph <- function(imgA,
   if (patch_size < 1L) {
     stop("patch_size must be at least 1", call. = FALSE)
   }
-  
+
   if (!is.numeric(downscale_steps) || length(downscale_steps) != 1 || is.na(downscale_steps)) {
     stop("downscale_steps must be a single numeric value", call. = FALSE)
   }
@@ -590,8 +469,9 @@ pixel_morph <- function(imgA,
 
   H <- as.integer(infoA$height)
   W <- as.integer(infoA$width)
+  N <- H * W
 
-  # Planar RGB buffers
+  # Planar RGB buffers (0-255, column-major)
   arrA    <- .to_array_rgb(A)
   arrB    <- .to_array_rgb(B)
   planarA <- .to_planar_rgb(arrA)
@@ -639,7 +519,7 @@ pixel_morph <- function(imgA,
       }
     }
 
-  } else if (mode == "color_walk") {
+  } else if (mode %in% c("color_walk", "color_match")) {
 
     WARN_THRESHOLD <- 250000L
     if (Ns > WARN_THRESHOLD) {
@@ -654,272 +534,56 @@ pixel_morph <- function(imgA,
   }
 
   # Compute pixel assignment at (Hs, Ws)
-  if (mode == "exact") {
+  assign_s <- .solve_pixel_assignment(mode, A_s, B_s, Hs, Ws, patch_size,
+                                      alpha, beta, lap_method, maximize,
+                                      quantize_bits)
 
-    if (patch_size > 1L) {
-      assign_s <- .square_tiling_solver(
-        A_planar      = A_s,
-        B_planar      = B_s,
-        H             = Hs,
-        W             = Ws,
-        max_tile_size = patch_size,
-        alpha         = alpha,
-        beta          = beta,
-        method        = lap_method,
-        maximize      = maximize
-      )
-    } else {
-      assign_s <- .exact_cost_and_solve(
-        A_s, B_s, Hs, Ws, alpha, beta, lap_method, maximize
-      )
-    }
-
-  } else if (mode == "recursive") {
-
-    assign_s <- .recursive_tiling_solver(
-      A_planar   = A_s,
-      B_planar   = B_s,
-      H          = Hs,
-      W          = Ws,
-      patch_size = patch_size,
-      alpha      = alpha,
-      beta       = beta,
-      method     = lap_method,
-      maximize   = maximize
-    )
-
-  } else {
-    # color_walk mode - use positional arguments matching function signature
-    assign_s <- .solve_color_walk_pipeline(
-      A_s,             # Ap
-      B_s,             # Bp
-      Hs,              # H
-      Ws,              # W
-      quantize_bits,   # quantize_bits
-      lap_method,      # method
-      maximize         # maximize
-    )
-  }
-
-  # 1-based -> 0-based
+  # 1-based -> 0-based, then upscale back to full resolution if downscaled
   assign_in <- as.integer(assign_s) - 1L
-
-  # Upscale assignment if we computed it at a smaller resolution
   if (downscale_steps > 0L && (Hs != H || Ws != W)) {
-    assign_0based <- .upscale_assignment(
-      assign_in,
-      H  = H,
-      W  = W,
-      Hs = Hs,
-      Ws = Ws
-    )
+    assign_0based <- .upscale_assignment(assign_in, H = H, W = W, Hs = Hs, Ws = Ws)
   } else {
     assign_0based <- assign_in
   }
 
-  # Render morph frames and take final frame only
-  # NOTE: morph_pixel_level_cpp() returns a sharp, non-splatted final frame.
-  #       We take only that frame here (transport-only morph).
-  frames <- morph_pixel_level_cpp(
-    planarA,
-    planarB,
-    assign_0based,
-    H,
-    W,
-    n_frames
-  )
-  
-  # Safety check: ensure we got the expected number of frames
-  stopifnot(length(frames) == n_frames)
+  # Render morph frames via C++ (assignment is 0-based here). The final frame is
+  # a sharp, transport-only render; intermediate frames use bilinear splatting.
+  frames <- morph_pixel_level_cpp(planarA, planarB, assign_0based, H, W, n_frames)
 
-  last_fr <- frames[[length(frames)]]
-  Hf      <- last_fr$H
-  Wf      <- last_fr$W
-  vec     <- last_fr$data
-  Cch     <- length(vec) / (Hf * Wf)
+  list(frames = frames, H = H, W = W, n_frames = n_frames, upscale = upscale,
+       assign_0based = assign_0based, mode = mode, N = N)
+}
 
-  if (!Cch %in% c(3, 4)) {
-    stop("Unexpected channel count from morph_pixel_level_cpp: ", Cch)
-  }
-
-  arr <- array(vec / 255, dim = c(Hf, Wf, Cch))
-  final_img <- magick::image_read(arr)
-
-  # Optional upscaling of final frame
-  if (upscale != 1) {
-    if (abs(upscale - round(upscale)) < 1e-9) {
-      target_width  <- as.integer(round(W * upscale))
-      target_height <- as.integer(round(H * upscale))
-      final_img <- magick::image_scale(
-        final_img,
-        geometry = sprintf("%dx%d!", target_width, target_height)
+#' Dispatch a pixel-morph mode to its solver (shared by pixel_morph and
+#' pixel_morph_animate)
+#' @noRd
+.solve_pixel_assignment <- function(mode, A_s, B_s, Hs, Ws, patch_size,
+                                    alpha, beta, lap_method, maximize,
+                                    quantize_bits) {
+  if (mode == "exact") {
+    if (patch_size > 1L) {
+      .square_tiling_solver(
+        A_planar = A_s, B_planar = B_s, H = Hs, W = Ws,
+        max_tile_size = patch_size, alpha = alpha, beta = beta,
+        method = lap_method, maximize = maximize
       )
     } else {
-      pct <- upscale * 100
-      final_img <- magick::image_scale(
-        final_img,
-        geometry = sprintf("%.2f%%", pct)
-      )
+      .exact_cost_and_solve(A_s, B_s, Hs, Ws, alpha, beta, lap_method, maximize)
     }
-  }
-
-  if (show) {
-    print(final_img)
-  }
-
-  invisible(final_img)
-}
-
-
-# =============================================================================
-# Core solvers
-# =============================================================================
-
-#' Exact pixel-level LAP on full N x N cost (global)
-#' @noRd
-.exact_cost_and_solve <- function(Ap, Bp, H, W, alpha, beta, method, maximize) {
-  C   <- compute_pixel_cost_cpp(Ap, Bp, H, W, alpha, beta)
-  asg <- .lap_assign(C, method = method, maximize = maximize)
-  as.integer(asg) + 1L
-}
-
-#' Square tiling solver: move tiles as rigid blocks
-#' @noRd
-.square_tiling_solver <- function(A_planar, B_planar, H, W,
-                                  max_tile_size = 3L,
-                                  alpha = 1, beta = 0,
-                                  method = "jv", maximize = FALSE) {
-
-  N <- H * W
-  max_tile_size <- as.integer(max_tile_size)
-  if (max_tile_size < 1L) max_tile_size <- 1L
-
-  idx_cm <- function(x, y, H) x * H + y + 1L
-
-  # Build tiles
-  tiles   <- .generate_square_tiles(W, H, P = max_tile_size)
-  n_tiles <- length(tiles)
-
-  # Compute tile sizes, centers + mean colors
-  sizes    <- integer(n_tiles)
-  centers  <- matrix(0, n_tiles, 2)
-  colors_A <- matrix(0, n_tiles, 3)
-  colors_B <- matrix(0, n_tiles, 3)
-
-  for (k in seq_len(n_tiles)) {
-    tile <- tiles[[k]]
-    x0   <- tile$x0
-    y0   <- tile$y0
-    sz   <- tile$size
-    sizes[k] <- sz
-
-    centers[k, 1] <- x0 + (sz - 1) / 2
-    centers[k, 2] <- y0 + (sz - 1) / 2
-
-    idxs  <- integer(sz * sz)
-    c_idx <- 0L
-    for (dy in 0:(sz - 1L)) {
-      for (dx in 0:(sz - 1L)) {
-        x <- x0 + dx
-        y <- y0 + dy
-        c_idx <- c_idx + 1L
-        idxs[c_idx] <- idx_cm(x, y, H)
-      }
-    }
-
-    colors_A[k, ] <- c(
-      mean(A_planar[idxs])          / 255,
-      mean(A_planar[idxs + N])      / 255,
-      mean(A_planar[idxs + 2 * N])  / 255
+  } else if (mode == "recursive") {
+    .recursive_tiling_solver(
+      A_planar = A_s, B_planar = B_s, H = Hs, W = Ws,
+      patch_size = patch_size, alpha = alpha, beta = beta,
+      method = lap_method, maximize = maximize
     )
-
-    colors_B[k, ] <- c(
-      mean(B_planar[idxs])          / 255,
-      mean(B_planar[idxs + N])      / 255,
-      mean(B_planar[idxs + 2 * N])  / 255
-    )
+  } else if (mode == "color_match") {
+    # Identity-palette matching: pixels sharing a quantized colour are matched
+    # spatially, and any left over fall back to identity.
+    .solve_color_match_pipeline(A_s, B_s, Hs, Ws, quantize_bits, lap_method, maximize)
+  } else {
+    # color_walk mode - positional arguments matching the function signature
+    .solve_color_walk_pipeline(A_s, B_s, Hs, Ws, quantize_bits, lap_method, maximize)
   }
-
-  # Assignment vector (1-based)
-  assignment <- rep(NA_integer_, N)
-
-  # Spatial distances normalized by image diagonal
-  diag_norm <- sqrt(H^2 + W^2)
-
-  # Solve LAP inside each tile-size group
-  for (sz in sort(unique(sizes))) {
-
-    group <- which(sizes == sz)
-    ng    <- length(group)
-    if (ng == 0L) next
-
-    # Build separate color + spatial distance matrices
-    dc_mat <- matrix(0, ng, ng)
-    ds_mat <- matrix(0, ng, ng)
-
-    for (i in seq_len(ng)) {
-      ti <- group[i]
-      for (j in seq_len(ng)) {
-        tj <- group[j]
-
-        dc <- sqrt(sum((colors_A[ti, ] - colors_B[tj, ])^2))
-        ds <- sqrt(sum((centers[ti, ] - centers[tj, ])^2)) / diag_norm
-
-        dc_mat[i, j] <- dc
-        ds_mat[i, j] <- ds
-      }
-    }
-
-    # Normalize so alpha / beta are comparable
-    mean_dc <- mean(dc_mat)
-    mean_ds <- mean(ds_mat)
-
-    if (mean_dc <= 0) mean_dc <- 1
-    if (mean_ds <= 0) mean_ds <- 1
-
-    dc_norm <- dc_mat / mean_dc
-    ds_norm <- ds_mat / mean_ds
-
-    C <- alpha * dc_norm + beta * ds_norm
-
-    # LAP
-    perm0 <- .lap_assign(C, method = method, maximize = maximize)
-    perm  <- as.integer(perm0) + 1L
-
-    # Map tiles as rigid blocks
-    for (i in seq_len(ng)) {
-      src_id <- group[i]
-      dst_id <- group[perm[i]]
-      src    <- tiles[[src_id]]
-      dst    <- tiles[[dst_id]]
-
-      stopifnot(src$size == dst$size)
-      sz_tile <- src$size
-
-      for (dy in 0:(sz_tile - 1L)) {
-        for (dx in 0:(sz_tile - 1L)) {
-
-          xs <- src$x0 + dx
-          ys <- src$y0 + dy
-          xd <- dst$x0 + dx
-          yd <- dst$y0 + dy
-
-          ia <- idx_cm(xs, ys, H)
-          ib <- idx_cm(xd, yd, H)
-
-          assignment[ia] <- ib
-        }
-      }
-    }
-  }
-
-  # Unassigned pixels (should not happen, but keep safe)
-  unassigned <- which(is.na(assignment))
-  if (length(unassigned)) {
-    assignment[unassigned] <- unassigned
-  }
-
-  assignment
 }
 
 #' Recursive tiling solver: multi-scale 2x2 splitting + square tiling at leaves
@@ -1172,156 +836,4 @@ pixel_morph <- function(imgA,
   }
 
   assignment
-}
-
-#' Reduced-palette color-walk -> expand to per-pixel via spatial mini-LAP
-#' @noRd
-.solve_color_walk_pipeline <- function(Ap, Bp, H, W, quantize_bits, method, maximize) {
-  pal     <- color_palette_info_cpp(Ap, Bp, H, W, quantize_bits)
-  groupsA <- pal$groupsA
-  groupsB <- pal$groupsB
-  Dcol    <- pal$color_dist
-
-  pal_asg <- .lap_assign(Dcol, method = method, maximize = FALSE) + 1L
-
-  N     <- H * W
-  out0  <- rep.int(NA_integer_, N)
-  freeB <- rep(TRUE, N)
-
-  order_pairs <- order(Dcol[cbind(seq_along(pal_asg), pal_asg)], decreasing = FALSE)
-  for (ia in order_pairs) {
-    ib   <- pal_asg[ia]
-    idxA <- groupsA[[ia]]
-    idxB <- groupsB[[ib]]
-
-    if (length(idxA) == 0L || length(idxB) == 0L) next
-    idxB <- idxB[freeB[idxB]]
-    if (!length(idxB)) next
-
-    Csp   <- spatial_cost_matrix_cpp(idxA, idxB, H, W)
-    match <- .lap_assign(Csp, method = method, maximize = FALSE)
-
-    take  <- seq_len(min(length(idxA), length(idxB)))
-    a_sel <- idxA[take]
-    b_sel <- idxB[match[take] + 1L]
-    out0[a_sel] <- b_sel - 1L
-    freeB[b_sel] <- FALSE
-  }
-
-  remainA <- which(is.na(out0))
-  if (length(remainA)) {
-    idxB  <- which(freeB)
-    Csp   <- spatial_cost_matrix_cpp(remainA, idxB, H, W)
-    match <- .lap_assign(Csp, method = method, maximize = FALSE)
-    out0[remainA] <- idxB[match + 1L] - 1L
-    freeB[idxB[match + 1L]] <- FALSE
-  }
-
-  as.integer(out0 + 1L)
-}
-
-
-# =============================================================================
-# Tile generation utilities
-# =============================================================================
-
-#' Generate deterministic square tiles covering W x H
-#' @noRd
-.generate_square_tiles <- function(W, H, P = 3L) {
-  tiles   <- list()
-  covered <- matrix(FALSE, nrow = H, ncol = W)
-
-  core_w <- (W %/% P) * P
-  core_h <- (H %/% P) * P
-
-  for (x0 in seq(0, core_w - P, by = P)) {
-    for (y0 in seq(0, core_h - P, by = P)) {
-      tiles[[length(tiles) + 1L]] <- list(x0 = x0, y0 = y0, size = P)
-      for (dx in 0:(P - 1L)) {
-        for (dy in 0:(P - 1L)) {
-          covered[y0 + dy + 1L, x0 + dx + 1L] <- TRUE
-        }
-      }
-    }
-  }
-
-  if (core_w < W) {
-    remaining_width <- W - core_w
-    x0 <- core_w
-
-    for (y0 in seq(0, core_h - 1L, by = 1L)) {
-      if (covered[y0 + 1L, x0 + 1L]) next
-
-      max_size <- min(remaining_width, core_h - y0)
-      for (size in min(P, max_size):1L) {
-        if (y0 + size <= core_h && x0 + size <= W) {
-          all_free <- TRUE
-          for (dx in 0:(size - 1L)) {
-            for (dy in 0:(size - 1L)) {
-              if (covered[y0 + dy + 1L, x0 + dx + 1L]) {
-                all_free <- FALSE
-                break
-              }
-            }
-            if (!all_free) break
-          }
-
-          if (all_free) {
-            tiles[[length(tiles) + 1L]] <- list(x0 = x0, y0 = y0, size = size)
-            for (dx in 0:(size - 1L)) {
-              for (dy in 0:(size - 1L)) {
-                covered[y0 + dy + 1L, x0 + dx + 1L] <- TRUE
-              }
-            }
-            break
-          }
-        }
-      }
-    }
-  }
-
-  if (core_h < H) {
-    remaining_height <- H - core_h
-    y0 <- core_h
-
-    for (x0 in seq(0, W - 1L, by = 1L)) {
-      if (covered[y0 + 1L, x0 + 1L]) next
-
-      max_size <- min(remaining_height, W - x0)
-      for (size in min(P, max_size):1L) {
-        if (x0 + size <= W && y0 + size <= H) {
-          all_free <- TRUE
-          for (dx in 0:(size - 1L)) {
-            for (dy in 0:(size - 1L)) {
-              if (covered[y0 + dy + 1L, x0 + dx + 1L]) {
-                all_free <- FALSE
-                break
-              }
-            }
-            if (!all_free) break
-          }
-
-          if (all_free) {
-            tiles[[length(tiles) + 1L]] <- list(x0 = x0, y0 = y0, size = size)
-            for (dx in 0:(size - 1L)) {
-              for (dy in 0:(size - 1L)) {
-                covered[y0 + dy + 1L, x0 + dx + 1L] <- TRUE
-              }
-            }
-            break
-          }
-        }
-      }
-    }
-  }
-
-  for (y in 0:(H - 1L)) {
-    for (x in 0:(W - 1L)) {
-      if (!covered[y + 1L, x + 1L]) {
-        tiles[[length(tiles) + 1L]] <- list(x0 = x, y0 = y, size = 1L)
-      }
-    }
-  }
-
-  tiles
 }
