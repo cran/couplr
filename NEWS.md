@@ -1,3 +1,104 @@
+# couplr 1.5.3
+
+## Bug Fixes
+
+* **Fixed a silent integer overflow in the core cost-matrix type.**
+  `lap::CostMatrix` computed its flat row-major index as `i * ncol + j` using
+  plain 32-bit `int` arithmetic, which wraps (undefined behavior) once
+  `nrow * ncol` exceeds `INT_MAX` (~46,341 square) -- a scale the package's
+  own vignettes already walk through as a normal example. The same pattern
+  was duplicated, uncaught, in several solvers' own raw index arithmetic
+  (`auction`, `csa`, `cycle_cancel`, `munkres`, `ramshaw_tarjan`,
+  `ssap_bucket`, `sap`/`ssp`, `network_simplex`) and in the Rcpp boundary's
+  matrix conversion. All flat-index arithmetic is now computed in 64-bit,
+  with a new arithmetic-only regression test covering the exact overflow
+  point without allocating an overflow-sized matrix.
+
+## New Features
+
+* **`memory_mode = "lazy"`: compute costs on demand instead of materializing
+  the full matrix.** `match_couples()`, `compute_distances()`, and
+  `assignment()` now accept `memory_mode = c("auto", "dense", "lazy")`.
+  `"lazy"` (with `method = "jv"` or `"auction"`) computes each pairwise
+  distance from the underlying feature data as the solver needs it, rather
+  than allocating an n_left x n_right matrix up front -- a 100k x 100k
+  match needs ~80GB dense, but the underlying 100k x 100 feature data needs
+  ~80MB. `"auto"` (the default) estimates the dense matrix's memory
+  footprint against free system RAM and switches to lazy (with a warning
+  giving concrete GB numbers) before a huge allocation, rather than silently
+  crashing or thrashing; `"dense"` skips the check entirely. Supports all
+  built-in distance metrics, per-variable calipers, and `max_distance`;
+  `replace = TRUE`, `ratio > 1`, `method = "greedy"`, custom distance
+  functions, and `full_match()` are not lazy-capable yet and error clearly
+  rather than silently falling back to dense or producing a wrong answer.
+  Ordinary-sized problems never probe RAM at all (a cheap cell-count
+  short-circuit), so this adds no overhead for existing usage.
+
+## Documentation
+
+* **Corrected memory-usage claims for greedy matching.** The vignettes and
+  `compute_distances()` docs said greedy matching "computes distances
+  on-the-fly" and "avoids the full cost matrix", and that a caliper "creates
+  a sparse matrix". None of that is true: `build_cost_matrix()` allocates the
+  full n_left x n_right matrix for every `method`, including `"greedy"`, and
+  couplr has no sparse matrix representation anywhere. Greedy and calipers
+  change how that matrix is solved, not how much memory it takes; blocking is
+  the only documented option that actually shrinks the allocation. Also fixed
+  the `strategy = "pq"` docs, which called it "memory-efficient" when it
+  holds the same candidate pairs as `"sorted"` and only `"row_best"` avoids
+  that extra storage.
+
+# couplr 1.5.2
+
+## Performance
+
+* **`method = "ssap_bucket"` is much faster on fine-grained fractional costs.**
+  Dial's queue was built as a `std::vector<std::vector<int>>` grown to the
+  largest *distance* in the shortest-path tree, so costs needing six decimals
+  (scale `1e6`) allocated roughly 15 million bucket vectors per augmentation.
+  It is now the textbook circular ring, sized by the largest
+  *reduced edge cost* and holding intrusive lists over a pooled arena, which is
+  what bounds Dial's memory to `O(maxC)` instead of `O(N * maxC)`. Measured over
+  200 randomised solves: 36.0 s to 2.5 s at six decimals, 2.5 s to 0.23 s at
+  five. The accepted inputs and returned optima are unchanged.
+
+* **`lap_solve_batch()` honours the check-environment core limit.** With
+  `n_threads = NULL` it sized its cluster from `parallel::detectCores()`, which
+  reports the physical core count and ignores `_R_CHECK_LIMIT_CORES_`. It now
+  uses two workers when that variable is set, and every available core
+  otherwise. Both the matrix-list and grouped-data-frame paths read the same
+  helper.
+
+## Installation
+
+* **Four unused packages dropped from `Suggests`:** `OpenImageR`, `reticulate`,
+  `xml2`, and `farver` had no call site anywhere in the package, tests,
+  vignettes, or scripts. `av` is kept: `pixel_morph_animate()` uses it for mp4
+  output, guarded at call time.
+
+# couplr 1.5.1
+
+## Installation
+
+* **`RcppEigen` is no longer required to build the package.** It was declared in
+  `LinkingTo` but never used: the only Eigen reference in `src/` was the
+  `#include <RcppEigen.h>` that `Rcpp::compileAttributes()` emits for each
+  `LinkingTo` entry, and no solver instantiated an Eigen type. The declaration
+  forced every source install to build RcppEigen first, which was reported as an
+  install failure. `LinkingTo` is now `Rcpp` alone; the unused `testthat` entry
+  and the `-DEIGEN_NO_DEBUG -DEIGEN_DONT_PARALLELIZE` compile flags are removed
+  with it.
+
+* **`htmlwidgets` moved from `Imports` to `Suggests`.** It is used only by
+  `lap_animate()`, which now checks for it at call time and errors with an
+  install hint if it is missing. This drops about 24 packages from a default
+  install, including `knitr`, `rmarkdown`, `bslib`, `sass`, and `tinytex`.
+
+## Documentation
+
+* The README and `paper/paper.md` stated that the assignment is solved on
+  RcppEigen. The solvers are hand-written C++ via Rcpp; both now say so.
+
 # couplr 1.5.0
 
 ## Breaking changes
@@ -170,7 +271,8 @@ a wrong "optimal" or a crash (#13):
   integer ties, `NA`/`BIG`-forbidden edges, and rectangular shapes. The three
   per-strategy Rcpp exports (`greedy_matching_sorted` / `_row_best` / `_pq`) were
   folded into the single `greedy_matching(strategy = ...)` dispatcher they
-  duplicated; `greedy_couples(strategy = ...)` remains the user-facing verb.
+  duplicated; `match_couples(method = "greedy", strategy = ...)` is the
+  user-facing verb.
 
 ## Tests
 

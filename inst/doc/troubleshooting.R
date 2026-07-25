@@ -250,26 +250,13 @@ for (n in c(1000, 5000, 10000, 20000, 50000)) {
 }
 
 ## ----eval=FALSE---------------------------------------------------------------
-# # Greedy computes distances on-the-fly
-# result <- match_couples(
-#   left, right,
-#   vars = covariates,
-#   strategy = "row_best"  # Most memory-efficient
-# , method = "greedy")
+# result <- match_couples(left, right, vars = vars, method = "jv",
+#                         memory_mode = "lazy")
 
 ## ----eval=FALSE---------------------------------------------------------------
 # # Each block is much smaller
 # blocks <- matchmaker(left, right, block_type = "cluster", n_blocks = 20)
 # result <- match_couples(blocks$left, blocks$right, vars = vars, block_id = "block_id")
-
-## ----eval=FALSE---------------------------------------------------------------
-# # Caliper excludes distant pairs (sparse representation)
-# result <- match_couples(
-#   left, right,
-#   vars = covariates,
-#   max_distance = 0.5,
-#   method = "sap"  # Sparse-optimized algorithm
-# )
 
 ## ----eval=FALSE---------------------------------------------------------------
 # # Increase to 16 GB (if available)
