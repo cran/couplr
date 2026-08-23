@@ -6,11 +6,35 @@
 # Shared Internal Implementations
 # ==============================================================================
 
+# Replace forbidden entries of `sub` with a finite sentinel, so that a
+# minimum-cost solve maximises the number of admissible pairs before it
+# minimises cost. The sentinel magnitude comes from .cardinality_sentinel() in
+# R/lap_cardinality.R, which is the same quantity assignment(cardinality =) uses
+# to price its dummy columns. Returns NULL when that ordering can no longer be
+# represented exactly in a double.
+.pad_forbidden <- function(sub, admissible) {
+  real <- sub[admissible]
+  sentinel <- .cardinality_sentinel(real, min(dim(sub)))
+  if (is.null(sentinel)) {
+    return(NULL)
+  }
+  sub[!admissible] <- sentinel
+  sub
+}
+
 # Solve a LAP that may have rows or columns where every edge is forbidden
 # (Inf / NA / >= BIG_COST). Such rows/cols can't be matched, and most C++
 # solvers would raise "Infeasible: row N has no allowed edges". We drop them
 # before calling the solver and re-map the result back to original indices so
 # the caller can report them as unmatched.
+#
+# The pruned submatrix can still admit no perfect matching, because Hall's
+# condition fails: several rows compete for the same few admissible columns.
+# The objective there is lexicographic, the largest number of admissible pairs
+# first and the smallest total cost among matchings of that size second, and
+# it is reached by padding the forbidden entries with a sentinel and solving
+# the padded problem with the same optimal solver. Pairs that came back on a
+# sentinel edge are dropped before the result is returned.
 #
 # Returns a list with:
 #   result       — raw solver output for the submatrix (or NULL if degenerate)
@@ -22,7 +46,7 @@
     return(.solve_lazy_with_partial_feasibility(cost_matrix, solver_fn, solver_params))
   }
 
-  feasible <- is.finite(cost_matrix) & cost_matrix < BIG_COST
+  feasible <- .is_valid_cost(cost_matrix)
   row_ok <- rowSums(feasible) > 0L
   col_ok <- colSums(feasible) > 0L
 
@@ -34,23 +58,38 @@
 
   if (all(row_ok) && all(col_ok)) {
     sub <- cost_matrix
+    sub_feasible <- feasible
   } else {
     sub <- cost_matrix[row_ok, col_ok, drop = FALSE]
+    sub_feasible <- feasible[row_ok, col_ok, drop = FALSE]
   }
 
   orig_rows <- which(row_ok)
   orig_cols <- which(col_ok)
 
-  # Try the requested optimal solver. If even the feasibility-pruned submatrix
-  # has no perfect matching (Hall's-condition violation), every LAP method will
-  # raise. Fall back to greedy_matching so callers with strict constraints get
-  # the partial matching the C++ greedy can produce instead of a hard error.
   res <- tryCatch(
     do.call(solver_fn, c(list(sub, maximize = FALSE), solver_params)),
     error = function(e) NULL
   )
 
+  padded <- NULL
   if (is.null(res)) {
+    padded <- .pad_forbidden(sub, sub_feasible)
+    if (!is.null(padded)) {
+      res <- tryCatch(
+        do.call(solver_fn, c(list(padded, maximize = FALSE), solver_params)),
+        error = function(e) NULL
+      )
+      if (is.null(res)) {
+        padded <- NULL
+      }
+    }
+  }
+
+  if (is.null(res)) {
+    # Neither the direct nor the padded solve returned. Greedy still produces a
+    # partial matching, but it is not the optimal one, so say so rather than
+    # letting an optimal request come back quietly downgraded.
     res <- tryCatch(
       greedy_matching(sub, strategy = "sorted"),
       error = function(e) NULL
@@ -60,11 +99,24 @@
                   matched_rows = integer(0),
                   matched_cols = integer(0)))
     }
+    warning("constraints admit no complete matching and the cost range is too ",
+            "wide to solve the maximum-cardinality problem exactly; returning ",
+            "a greedy partial matching, which is not optimal. Relax ",
+            "max_distance/calipers or rescale the covariates to recover an ",
+            "optimal result.", call. = FALSE)
   }
 
   match_vec <- as.integer(res$match)
   matched_sub_rows <- which(match_vec > 0L)
   matched_sub_cols <- match_vec[matched_sub_rows]
+
+  if (!is.null(padded)) {
+    # Drop the pairs that were only matched through a sentinel edge.
+    keep <- sub_feasible[cbind(matched_sub_rows, matched_sub_cols)]
+    matched_sub_rows <- matched_sub_rows[keep]
+    matched_sub_cols <- matched_sub_cols[keep]
+  }
+
   matched_rows <- orig_rows[matched_sub_rows]
   matched_cols <- orig_cols[matched_sub_cols]
 
@@ -76,16 +128,18 @@
 # exactly what lazy mode exists to avoid); instead the FULL problem is
 # solved directly, and an InfeasibleException from the solver is treated the
 # same way a fully-infeasible dense submatrix is: everyone unmatched, no
-# hard error. This is a real, coarser fallback than the dense path (which
-# recovers a partial matching via greedy on Hall's-condition violations) --
-# greedy_matching has no lazy-cost-source support, so it isn't available as
-# a fallback here.
+# hard error. This is a real, coarser fallback than the dense path, which
+# prunes and then recovers the maximum-cardinality minimum-cost matching by
+# sentinel padding; both steps need the materialized matrix a lazy cost
+# source exists to avoid, so neither is available here.
 .solve_lazy_with_partial_feasibility <- function(cost_matrix, solver_fn,
                                                  solver_params = list()) {
+  mode <- lazy_cost_spec_mode(cost_matrix)
+
   if (identical(solver_fn, greedy_matching)) {
-    stop("method = \"greedy\" does not support memory_mode = \"lazy\" yet; ",
-         "use an optimal method (\"jv\"/\"auction\") or memory_mode = \"dense\".",
-         call. = FALSE)
+    stop("method = \"greedy\" does not support memory_mode = \"", mode,
+         "\" yet; use an optimal method (\"jv\"/\"auction\") or ",
+         "memory_mode = \"dense\".", call. = FALSE)
   }
 
   res <- tryCatch(
@@ -94,13 +148,27 @@
   )
 
   if (inherits(res, "error")) {
-    warning("memory_mode = \"lazy\" found no feasible full matching under the current ",
-            "constraints (", conditionMessage(res), "). Unlike memory_mode = \"dense\", ",
-            "there is no greedy fallback yet for a lazy cost source, so all units are ",
-            "reported unmatched rather than a partial matching. Use memory_mode = ",
-            "\"dense\" to recover a partial matching, or relax max_distance/calipers.",
-            call. = FALSE)
+    warning("memory_mode = \"", mode, "\" found no feasible full matching under ",
+            "the current constraints (", conditionMessage(res), "). Recovering ",
+            "the partial matching needs the materialized cost matrix that this ",
+            "mode exists to avoid, so all units are reported unmatched. Use ",
+            "memory_mode = \"dense\" for the maximum-cardinality minimum-cost ",
+            "partial matching, or relax max_distance/calipers.", call. = FALSE)
     return(list(result = NULL, matched_rows = integer(0), matched_cols = integer(0)))
+  }
+
+  # The implicit path answers infeasibility with Hall's witness instead of an
+  # exception: the rows that could not be matched, the columns they can reach,
+  # and the check that no arc set over this source does better. The outcome is
+  # the same one the error branch above reports, and the reason is the witness.
+  if (identical(res$status, "infeasible")) {
+    warning("memory_mode = \"", mode, "\" found no complete matching under the ",
+            "current constraints: ", .witness_reason(res$witness),
+            " Recovering the partial matching needs the materialized cost ",
+            "matrix this mode exists to avoid, so all units are reported ",
+            "unmatched. Use memory_mode = \"dense\" for the ",
+            "maximum-cardinality minimum-cost partial matching, or relax ",
+            "max_distance/calipers.", call. = FALSE)
   }
 
   match_vec <- as.integer(res$match)
@@ -108,6 +176,114 @@
   matched_cols <- match_vec[matched_rows]
 
   list(result = res, matched_rows = matched_rows, matched_cols = matched_cols)
+}
+
+# ==============================================================================
+# The compiled design
+# ==============================================================================
+# match_couples() offers three designs and none of them is written out as a
+# network here. The design is named to the compilers in src/flow/flow_compile.h,
+# which build it, check the structural property its solve relies on, and return
+# the maps saying which of the caller's units each node stands for:
+#
+#   design       network                            solved as
+#   --------------------------------------------------------------------------
+#   1:1          one unit per row, a column          the assignment problem
+#                admits one row                      R/lap_solve.R solves
+#   k:1          the same, rows replicated k times   the same, read back
+#                                                    through the replica map
+#   replacement  k units per row, a column admits    each row's own k cheapest
+#                every row                           columns
+#
+# Only the shape is compiled. Costs stay in the matrix this file built and the
+# lowered problem is that matrix read through the maps, which is what keeps a
+# lazy cost source reachable on the 1:1 path, where the maps are the identity
+# and the matrix is passed to the solver untouched.
+.couples_design <- function(n_rows, n_cols, replace = FALSE, ratio = 1L) {
+  design <- if (isTRUE(replace)) {
+    "with_replacement"
+  } else if (ratio > 1L) {
+    "fixed_ratio"
+  } else {
+    "one_to_one"
+  }
+
+  plan <- lap_flow_compile_couples(design, n_rows, n_cols, ratio)
+  plan$row_unit <- as.integer(plan$row_unit)
+  plan$col_unit <- as.integer(plan$col_unit)
+  plan
+}
+
+# The matrix the compiled design is solved from: the caller's costs read through
+# the design's maps. A design that did not reshape its input is solved from the
+# matrix itself, which for a lazy cost spec is the only form it has.
+.couples_costs <- function(cost_matrix, plan) {
+  if (!isTRUE(plan$reshaped)) {
+    return(cost_matrix)
+  }
+  cost_matrix[plan$row_unit, plan$col_unit, drop = FALSE]
+}
+
+# The pairs a solve produced, in the caller's ids, carrying the distance of each
+# pair and one .{var}_diff column per matching variable. `rows` and `cols` index
+# the two sides pair by pair, so every column here is read at the same position
+# and the pairing is positional throughout rather than joined back together.
+.pairs_tibble <- function(left, right, left_ids, right_ids,
+                          rows, cols, distances, vars) {
+  pairs <- tibble::tibble(
+    left_id = left_ids[rows],
+    right_id = right_ids[cols],
+    distance = distances
+  )
+
+  for (v in vars) {
+    pairs[[paste0(".", v, "_diff")]] <- left[[v]][rows] - right[[v]][cols]
+  }
+
+  pairs
+}
+
+# Read a solved assignment back as pairs in the caller's units. The solver
+# answered in node offsets of the compiled design, and the maps turn each one
+# into the left or right unit it stands for: the identity on the 1:1 design,
+# replica e back to row e / k on the k:1 one.
+#
+# A pair the solver returned on a forbidden edge is dropped here, and its two
+# units come back unmatched. The solver returns one when a complete matching
+# demands it and pruning has left the forbidden entry in the matrix; reporting it
+# would put a pair in the result at a price the same cost says is no pair at all.
+.couples_pairs <- function(solved, plan, cost_matrix, left, right,
+                           left_ids, right_ids, vars) {
+  matched_rows <- plan$row_unit[solved$matched_rows]
+  matched_cols <- plan$col_unit[solved$matched_cols]
+
+  if (length(matched_rows) == 0L) {
+    return(list(
+      pairs = tibble::tibble(
+        left_id = character(0),
+        right_id = character(0),
+        distance = numeric(0)
+      ),
+      matched_rows = integer(0),
+      matched_cols = integer(0)
+    ))
+  }
+
+  distances <- if (is_lazy_cost_spec(cost_matrix)) {
+    lazy_pair_distances(cost_matrix, matched_rows, matched_cols)
+  } else {
+    cost_matrix[cbind(matched_rows, matched_cols)]
+  }
+
+  valid <- .is_valid_cost(distances)
+  matched_rows <- matched_rows[valid]
+  matched_cols <- matched_cols[valid]
+  distances <- distances[valid]
+
+  pairs <- .pairs_tibble(left, right, left_ids, right_ids,
+                         matched_rows, matched_cols, distances, vars)
+
+  list(pairs = pairs, matched_rows = matched_rows, matched_cols = matched_cols)
 }
 
 #' Shared single matching implementation
@@ -170,103 +346,109 @@
     ))
   }
 
-  # --- Replacement matching ---
-  if (replace) {
+  # --- The design, compiled ---
+  plan <- .couples_design(nrow(cost_matrix), ncol(cost_matrix),
+                          replace = replace, ratio = ratio)
+
+  # --- Replacement matching, one row at a time ---
+  if (identical(plan$route, "separable")) {
     if (is_lazy_cost_spec(cost_matrix)) {
-      stop("replace = TRUE does not support memory_mode = \"lazy\" yet; ",
-           "use memory_mode = \"dense\".", call. = FALSE)
+      stop("replace = TRUE does not support memory_mode = \"",
+           lazy_cost_spec_mode(cost_matrix), "\" yet; use ",
+           "memory_mode = \"dense\".", call. = FALSE)
     }
     return(.couples_replace(
-      cost_matrix, left, right, left_ids, right_ids, vars, ratio
+      cost_matrix, left, right, left_ids, right_ids, vars, ratio, plan
     ))
   }
 
-  # --- k:1 matching (ratio > 1, without replacement) ---
-  if (ratio > 1L) {
-    if (is_lazy_cost_spec(cost_matrix)) {
-      stop("ratio > 1 does not support memory_mode = \"lazy\" yet; ",
-           "use memory_mode = \"dense\".", call. = FALSE)
-    }
-    return(.couples_ratio(
-      cost_matrix, left, right, left_ids, right_ids, vars, ratio,
-      solver_fn, solver_params
-    ))
+  # --- 1:1 and k:1 matching, as the assignment the design lowers to ---
+  if (isTRUE(plan$reshaped) && is_lazy_cost_spec(cost_matrix)) {
+    stop("ratio > 1 does not support memory_mode = \"",
+         lazy_cost_spec_mode(cost_matrix), "\" yet; use ",
+         "memory_mode = \"dense\".", call. = FALSE)
   }
 
-  # --- Standard 1:1 matching ---
   # Drop rows/cols with no allowed edges so the LAP solver sees a feasible
   # submatrix; the dropped indices return as unmatched. Without this filter
   # the C++ solvers raise "Infeasible: row N has no allowed edges" instead
   # of producing the partial matching the caller expects with max_distance
   # / calipers constraints.
-  solved <- .solve_with_partial_feasibility(cost_matrix, solver_fn, solver_params)
+  solved <- .solve_with_partial_feasibility(.couples_costs(cost_matrix, plan),
+                                            solver_fn, solver_params)
   solver_result <- solved$result
-  matched_rows <- solved$matched_rows  # 1-based indices into original cost_matrix rows
-  matched_cols <- solved$matched_cols  # 1-based indices into original cost_matrix cols
 
-  if (length(matched_rows) == 0L) {
-    pairs <- tibble::tibble(
-      left_id = character(0),
-      right_id = character(0),
-      distance = numeric(0)
-    )
-  } else {
-    distances <- if (is_lazy_cost_spec(cost_matrix)) {
-      lazy_pair_distances(cost_matrix, matched_rows, matched_cols)
-    } else {
-      cost_matrix[cbind(matched_rows, matched_cols)]
-    }
+  read <- .couples_pairs(
+    solved, plan, cost_matrix, left, right, left_ids, right_ids, vars
+  )
+  pairs <- read$pairs
 
-    pairs <- tibble::tibble(
-      left_id = left_ids[matched_rows],
-      right_id = right_ids[matched_cols],
-      distance = distances
-    )
+  unmatched_left <- setdiff(seq_len(nrow(left)), read$matched_rows)
+  unmatched_right <- setdiff(seq_len(nrow(right)), read$matched_cols)
 
-    # Add variable differences
-    for (v in vars) {
-      left_vals <- left[[v]][matched_rows]
-      right_vals <- right[[v]][matched_cols]
-      pairs[[paste0(".", v, "_diff")]] <- left_vals - right_vals
-    }
+  info <- list(
+    solver = if (is.null(solver_result)) NA_character_ else solver_result$method_used,
+    n_matched = nrow(pairs),
+    total_distance = sum(pairs$distance, na.rm = TRUE)
+  )
+  if (identical(plan$design, "fixed_ratio")) {
+    info$ratio <- ratio
   }
 
-  unmatched_left <- setdiff(seq_len(nrow(left)), matched_rows)
-  unmatched_right <- setdiff(seq_len(nrow(right)), matched_cols)
-
-  list(
+  out <- list(
     pairs = pairs,
     unmatched = list(
       left = left_ids[unmatched_left],
       right = right_ids[unmatched_right]
     ),
-    info = list(
-      solver = if (is.null(solver_result)) NA_character_ else solver_result$method_used,
-      n_matched = nrow(pairs),
-      total_distance = sum(pairs$distance, na.rm = TRUE)
-    )
+    info = info
   )
+
+  # The proof and the search record sit at the top level, beside `status`, for
+  # the reason `status` does: return_diagnostics = FALSE truncates `info` to
+  # three fields, and a certificate that survives only a diagnostic call is not
+  # one a caller can rely on.
+  .carry_solve_evidence(out, solver_result)
+}
+
+# Move what a solve proved about itself onto the matching it produced.
+.carry_solve_evidence <- function(out, solver_result) {
+  if (is.null(solver_result)) {
+    return(out)
+  }
+  if (!is.null(solver_result$certificate)) {
+    out$certificate <- solver_result$certificate
+  }
+  if (!is.null(solver_result$search)) {
+    out$search <- solver_result$search
+  }
+  if (!is.null(solver_result$witness)) {
+    out$witness <- solver_result$witness
+  }
+  out
 }
 
 #' Replacement matching: each left picks its best right independently
 #'
+#' The compiled design gives every column capacity for every row, so the rows
+#' never compete and the optimum of the whole network is each row's own cheapest
+#' columns. `plan$per_row` is how many of them a row takes: the requested ratio,
+#' or the column count when there are fewer columns than that.
+#'
 #' @return List with pairs tibble, unmatched list, and info list.
 #' @keywords internal
 .couples_replace <- function(cost_matrix, left, right,
-                             left_ids, right_ids, vars, ratio = 1L) {
+                             left_ids, right_ids, vars, ratio = 1L, plan) {
   n_left <- nrow(cost_matrix)
-  n_right <- ncol(cost_matrix)
+  k <- plan$per_row
   all_pairs <- list()
 
   for (i in seq_len(n_left)) {
     row_costs <- cost_matrix[i, ]
-    # Find the k best right units
-    k <- min(ratio, n_right)
     ordered_cols <- order(row_costs)[seq_len(k)]
     ordered_dists <- row_costs[ordered_cols]
 
-    # Keep only valid (< BIG_COST)
-    valid <- ordered_dists < BIG_COST
+    valid <- .is_valid_cost(ordered_dists)
     if (any(valid)) {
       cols <- ordered_cols[valid]
       dists <- ordered_dists[valid]
@@ -308,84 +490,6 @@
       n_matched = nrow(pairs),
       total_distance = sum(pairs$distance, na.rm = TRUE),
       replace = TRUE,
-      ratio = ratio
-    )
-  )
-}
-
-#' k:1 matching via cost matrix expansion
-#'
-#' Replicates left-side rows k times so each left unit can match up to k
-#' different right units. Solves as standard LAP, then maps expanded rows
-#' back to original left indices.
-#'
-#' @return List with pairs tibble, unmatched list, and info list.
-#' @keywords internal
-.couples_ratio <- function(cost_matrix, left, right,
-                           left_ids, right_ids, vars, ratio,
-                           solver_fn, solver_params) {
-  n_left <- nrow(cost_matrix)
-  n_right <- ncol(cost_matrix)
-
-  # Expand: replicate each left row `ratio` times
-  row_map <- rep(seq_len(n_left), each = ratio)
-  expanded_cost <- cost_matrix[row_map, , drop = FALSE]
-
-  # Solve the expanded problem, pruning all-forbidden rows/cols and falling back
-  # to greedy on infeasibility, exactly as the 1:1 path does. Solving directly
-  # would hard-error when constraints forbid every edge of some left unit.
-  solved <- .solve_with_partial_feasibility(expanded_cost, solver_fn,
-                                            solver_params)
-  solver_result <- solved$result
-  matched_exp_rows <- solved$matched_rows
-
-  if (length(matched_exp_rows) == 0) {
-    pairs <- tibble::tibble(
-      left_id = character(0), right_id = character(0), distance = numeric(0)
-    )
-    original_rows <- integer(0)
-    matched_cols <- integer(0)
-  } else {
-    original_rows <- row_map[matched_exp_rows]
-    matched_cols <- solved$matched_cols
-
-    # Get distances from original cost matrix
-    distances <- vapply(seq_along(matched_exp_rows), function(i) {
-      cost_matrix[original_rows[i], matched_cols[i]]
-    }, numeric(1))
-
-    # Filter out BIG_COST
-    valid <- distances < BIG_COST
-    original_rows <- original_rows[valid]
-    matched_cols <- matched_cols[valid]
-    distances <- distances[valid]
-
-    pairs <- tibble::tibble(
-      left_id = left_ids[original_rows],
-      right_id = right_ids[matched_cols],
-      distance = distances
-    )
-
-    for (v in vars) {
-      pairs[[paste0(".", v, "_diff")]] <- left[[v]][original_rows] -
-        right[[v]][matched_cols]
-    }
-  }
-
-  # Unmatched
-  unmatched_left <- setdiff(seq_len(n_left), unique(original_rows))
-  unmatched_right <- setdiff(seq_len(n_right), unique(matched_cols))
-
-  list(
-    pairs = pairs,
-    unmatched = list(
-      left = left_ids[unmatched_left],
-      right = right_ids[unmatched_right]
-    ),
-    info = list(
-      solver = if (!is.null(solver_result)) solver_result$method_used else NA_character_,
-      n_matched = nrow(pairs),
-      total_distance = sum(pairs$distance, na.rm = TRUE),
       ratio = ratio
     )
   )
@@ -458,7 +562,8 @@
         n_left = length(left_ids),
         n_right = length(right_ids)
       ),
-      extra_info
+      extra_info,
+      design_estimand(length(left_ids), 0L)
     )
 
     return(structure(
@@ -478,34 +583,25 @@
     ))
   }
 
+  # A precomputed distance object is the 1:1 design reached through another
+  # door, so it compiles to the same network and is solved through the same
+  # maps. Distances are reported alone here: no variable goes to .couples_pairs
+  # and no difference column is written.
+  plan <- .couples_design(nrow(cost_matrix), ncol(cost_matrix))
+
   # Solve with row/col filtering (see .solve_with_partial_feasibility)
-  solved <- .solve_with_partial_feasibility(cost_matrix, solver_fn, solver_params)
+  solved <- .solve_with_partial_feasibility(.couples_costs(cost_matrix, plan),
+                                            solver_fn, solver_params)
   solver_result <- solved$result
-  matched_rows <- solved$matched_rows
-  matched_cols <- solved$matched_cols
 
-  if (length(matched_rows) == 0L) {
-    pairs <- tibble::tibble(
-      left_id = character(0),
-      right_id = character(0),
-      distance = numeric(0)
-    )
-  } else {
-    distances <- if (is_lazy_cost_spec(cost_matrix)) {
-      lazy_pair_distances(cost_matrix, matched_rows, matched_cols)
-    } else {
-      cost_matrix[cbind(matched_rows, matched_cols)]
-    }
+  read <- .couples_pairs(
+    solved, plan, cost_matrix, left, right, left_ids, right_ids,
+    vars = character(0)
+  )
+  pairs <- read$pairs
 
-    pairs <- tibble::tibble(
-      left_id = left_ids[matched_rows],
-      right_id = right_ids[matched_cols],
-      distance = distances
-    )
-  }
-
-  unmatched_left <- setdiff(seq_along(left_ids), matched_rows)
-  unmatched_right <- setdiff(seq_along(right_ids), matched_cols)
+  unmatched_left <- setdiff(seq_along(left_ids), read$matched_rows)
+  unmatched_right <- setdiff(seq_along(right_ids), read$matched_cols)
 
   info <- c(
     list(
@@ -535,15 +631,84 @@
     check_full_matching(result)
   }
 
+  # Before the truncation below removes info$solver and return_unmatched removes
+  # the unmatched ids, both of which the status is read from.
+  result$status <- .matching_status(
+    solver      = result$info$solver,
+    greedy      = identical(method_label, "greedy"),
+    n_pairs     = nrow(result$pairs),
+    n_requested = length(left_ids)
+  )
+
+  result$info <- c(
+    result$info,
+    design_estimand(length(left_ids), dplyr::n_distinct(result$pairs$left_id))
+  )
+
   if (!return_unmatched) {
     result$unmatched <- NULL
   }
 
   if (!return_diagnostics) {
-    result$info <- result$info[diagnostics_fields]
+    result$info <- result$info[
+      c(diagnostics_fields, "estimand", "focal", "focal_discarded")
+    ]
   }
 
   structure(result, class = c("matching_result", "couplr_result"))
+}
+
+# One block's row of the summary, and the whole blocked matching's info. Both
+# branches of .couples_blocked() build theirs here, because they used to build
+# their own: the two disagreed on which fields were present, on their order, and
+# on whether a block with nothing to match got a row at all.
+#
+# Every block gets a row, matched or not, so nrow(block_summary) is the block
+# count on both branches.
+.block_summary_row <- function(block_id, n_left, n_right, pairs,
+                               n_unmatched_left, n_unmatched_right) {
+  tibble::tibble(
+    block_id = as.character(block_id),
+    n_left = as.integer(n_left),
+    n_right = as.integer(n_right),
+    n_matched = nrow(pairs),
+    total_distance = sum(pairs$distance, na.rm = TRUE),
+    mean_distance = if (nrow(pairs) > 0L) {
+      mean(pairs$distance, na.rm = TRUE)
+    } else {
+      NA_real_
+    },
+    n_unmatched_left = as.integer(n_unmatched_left),
+    n_unmatched_right = as.integer(n_unmatched_right)
+  )
+}
+
+.empty_block_summary <- function() {
+  tibble::tibble(
+    block_id = character(0),
+    n_left = integer(0),
+    n_right = integer(0),
+    n_matched = integer(0),
+    total_distance = numeric(0),
+    mean_distance = numeric(0),
+    n_unmatched_left = integer(0),
+    n_unmatched_right = integer(0)
+  )
+}
+
+# `solvers` is one method per block that ran a solve, which is what carries a
+# block's greedy fallback out to the status. Reporting the requested method
+# here instead reports every block as having run it, including the one that
+# did not.
+.blocked_info <- function(pairs, n_blocks, block_summary, solvers) {
+  list(
+    solver = if (length(solvers) > 0L) unique(solvers) else NA_character_,
+    blocked = TRUE,
+    n_blocks = n_blocks,
+    n_matched = nrow(pairs),
+    total_distance = sum(pairs$distance, na.rm = TRUE),
+    block_summary = block_summary
+  )
 }
 
 #' Shared blocked matching implementation
@@ -589,27 +754,11 @@
       result$pairs <- dplyr::select(result$pairs, "block_id", dplyr::everything())
     }
 
-    # Add additional summary statistics
-    if (nrow(result$block_summary) > 0) {
-      result$block_summary <- dplyr::mutate(
-        result$block_summary,
-        n_pairs = .data$n_matched,
-        total_distance = .data$n_matched * .data$mean_distance,
-        n_unmatched_left = .data$n_left - .data$n_matched,
-        n_unmatched_right = .data$n_right - .data$n_matched
-      )
-    }
-
     return(list(
       pairs = result$pairs,
       unmatched = result$unmatched,
-      info = list(
-        n_matched = nrow(result$pairs),
-        total_distance = sum(result$pairs$distance, na.rm = TRUE),
-        blocked = TRUE,
-        n_blocks = length(blocks),
-        block_summary = result$block_summary
-      )
+      info = .blocked_info(result$pairs, length(blocks),
+                           result$block_summary, result$solvers)
     ))
   }
 
@@ -618,13 +767,17 @@
   all_unmatched_left <- character(0)
   all_unmatched_right <- character(0)
   block_summaries <- list()
+  solvers <- character(0)
 
   for (block in blocks) {
     left_block <- left[left[[block_col]] == block, ]
     right_block <- right[right[[block_col]] == block, ]
 
     if (nrow(left_block) == 0 || nrow(right_block) == 0) {
-      # Skip blocks with no units on one side
+      # A block with nothing on one side runs no solve, so it contributes no
+      # solver; its units are unmatched and it still gets a summary row.
+      block_left_ids <- character(0)
+      block_right_ids <- character(0)
       if (nrow(left_block) > 0) {
         block_left_ids <- left_ids[left[[block_col]] == block]
         all_unmatched_left <- c(all_unmatched_left, block_left_ids)
@@ -633,6 +786,14 @@
         block_right_ids <- right_ids[right[[block_col]] == block]
         all_unmatched_right <- c(all_unmatched_right, block_right_ids)
       }
+      block_summaries[[length(block_summaries) + 1]] <- .block_summary_row(
+        block_id = block,
+        n_left = nrow(left_block),
+        n_right = nrow(right_block),
+        pairs = tibble::tibble(distance = numeric(0)),
+        n_unmatched_left = length(block_left_ids),
+        n_unmatched_right = length(block_right_ids)
+      )
       next
     }
 
@@ -661,12 +822,14 @@
     all_unmatched_left <- c(all_unmatched_left, block_result$unmatched$left)
     all_unmatched_right <- c(all_unmatched_right, block_result$unmatched$right)
 
+    solvers <- c(solvers, block_result$info$solver)
+
     # Block summary
-    block_summaries[[length(block_summaries) + 1]] <- tibble::tibble(
+    block_summaries[[length(block_summaries) + 1]] <- .block_summary_row(
       block_id = block,
-      n_pairs = nrow(block_result$pairs),
-      total_distance = sum(block_result$pairs$distance, na.rm = TRUE),
-      mean_distance = mean(block_result$pairs$distance, na.rm = TRUE),
+      n_left = nrow(left_block),
+      n_right = nrow(right_block),
+      pairs = block_result$pairs,
       n_unmatched_left = length(block_result$unmatched$left),
       n_unmatched_right = length(block_result$unmatched$right)
     )
@@ -689,14 +852,7 @@
   block_summary_df <- if (length(block_summaries) > 0) {
     dplyr::bind_rows(block_summaries)
   } else {
-    tibble::tibble(
-      block_id = character(0),
-      n_pairs = integer(0),
-      total_distance = numeric(0),
-      mean_distance = numeric(0),
-      n_unmatched_left = integer(0),
-      n_unmatched_right = integer(0)
-    )
+    .empty_block_summary()
   }
 
   list(
@@ -705,13 +861,7 @@
       left = all_unmatched_left,
       right = all_unmatched_right
     ),
-    info = list(
-      solver = solver_params$method,
-      n_blocks = length(blocks),
-      n_matched = nrow(pairs),
-      total_distance = sum(pairs$distance, na.rm = TRUE),
-      block_summary = block_summary_df
-    )
+    info = .blocked_info(pairs, length(blocks), block_summary_df, solvers)
   )
 }
 
@@ -732,6 +882,14 @@
 #'
 #' @param left Data frame of "left" units (e.g., treated, cases)
 #' @param right Data frame of "right" units (e.g., control, controls)
+#' @param left_id,right_id Name of the column holding the unit identifier, or
+#'   NULL (default) to use a column called `id`, then meaningful row names,
+#'   then synthesized ids `left_1 ... left_n` / `right_1 ... right_m` with a
+#'   warning. The values of this column are what `pairs$left_id` and
+#'   `pairs$right_id` carry, and what [join_matched()], [match_data()],
+#'   [balance_diagnostics()], [sensitivity_analysis()] and [as_matchit()] join
+#'   on, so the same column name is passed to those verbs. Ids read from the
+#'   data must be unique.
 #' @param vars Variable names to use for distance computation
 #' @param distance Distance metric: "euclidean", "manhattan", "mahalanobis",
 #'   or a custom function
@@ -773,22 +931,47 @@
 #' @param sigma Optional covariance matrix for Mahalanobis distance. If NULL
 #'   (default), the pooled sample covariance is used. Only relevant when
 #'   \code{distance = "mahalanobis"}.
-#' @param memory_mode One of "auto" (default), "dense", or "lazy". "auto"
-#'   warns (or, when `method` is `"jv"`/`"auction"` with a built-in distance
-#'   metric, switches) when the dense cost matrix would consume a large
+#' @param memory_mode One of "auto" (default), "dense", "lazy" or "implicit".
+#'   "auto" warns (or, when `method` is `"jv"`/`"auction"` with a built-in
+#'   distance metric, switches) when the dense cost matrix would consume a large
 #'   fraction of free system RAM. "lazy" computes each pairwise distance from
 #'   the underlying feature data as the solver needs it, instead of
 #'   allocating the full n_left x n_right matrix; supported for `method =
 #'   "jv"`/`"auction"` with a built-in distance metric, and not yet for
 #'   `replace = TRUE`, `ratio > 1`, `method = "greedy"`, or custom distance
 #'   functions (blocking via `block_id` is the other option that reduces
-#'   memory, by solving smaller sub-problems). "dense" skips the RAM check
-#'   entirely.
+#'   memory, by solving smaller sub-problems). "implicit" states the problem
+#'   over every pair and solves it over a fraction of them, generating the pairs
+#'   the answer turns out to need and proving that the ones it never generated
+#'   could not have improved it; same requirements as "lazy", and 1:1 only. It
+#'   is slower than "lazy" on every shape measured so far, and the time goes to
+#'   the restricted solve rather than to the pair scan, so what it buys today is
+#'   the certificate over the complete problem rather than speed. "auto" never
+#'   selects it. "dense" skips the RAM check entirely.
+#' @param certify Logical; whether the result carries a checked
+#'   `assignment_certificate` as `certificate`. Applies to
+#'   `memory_mode = "implicit"`, where it defaults to `TRUE`: the certificate is
+#'   what separates the answer from an approximate one. On the other paths the
+#'   matching is certified after the fact with [verify_assignment()], against
+#'   the cost matrix it was solved from.
 #'
 #' @return A list with class "matching_result" containing:
 #'   - `pairs`: Tibble of matched pairs with distances
 #'   - `unmatched`: List of unmatched left and right IDs
 #'   - `info`: Matching diagnostics and metadata
+#'   - `status`: One of [solver_status_values()], computed from what the solve
+#'     achieved. `"optimal"` when every left unit found a partner under an
+#'     optimal method, `"partial"` when constraints left some unmatched,
+#'     `"heuristic"` when a greedy method ran, either because it was asked for
+#'     or because the constrained path fell back to it, and `"infeasible"` when
+#'     nothing could be matched.
+#'
+#'   Under `memory_mode = "implicit"` it also carries `certificate`, the checked
+#'   proof of optimality (see [verify_assignment()]), and `search`: the pairs
+#'   the loop generated out of the pairs the problem states, the pairs a cost
+#'   was computed for, and one row per round of what each round did. An
+#'   infeasible answer carries `witness` instead, naming the units that could
+#'   not be matched and the partners they have between them.
 #'
 #' @examples
 #' # Basic matching
@@ -815,6 +998,8 @@
 #' @export
 match_couples <- function(left, right = NULL,
                           vars = NULL,
+                          left_id = NULL,
+                          right_id = NULL,
                           distance = "euclidean",
                           weights = NULL,
                           scale = FALSE,
@@ -833,10 +1018,19 @@ match_couples <- function(left, right = NULL,
                           ratio = 1L,
                           check_costs = TRUE,
                           sigma = NULL,
-                          memory_mode = "auto") {
+                          memory_mode = "auto",
+                          certify = NULL) {
 
   strategy <- match.arg(strategy)
   greedy <- identical(method, "greedy")
+  implicit <- identical(memory_mode, "implicit")
+
+  if (!is.null(certify) && !implicit) {
+    stop("`certify` applies to memory_mode = \"implicit\", where the ",
+         "certificate comes out of the solve. Elsewhere, certify a matching ",
+         "with verify_assignment() against the cost matrix it was solved ",
+         "from.", call. = FALSE)
+  }
 
   # Validate replace and ratio
   if (!is.logical(replace) || length(replace) != 1) {
@@ -901,8 +1095,8 @@ match_couples <- function(left, right = NULL,
   calipers <- validate_calipers(calipers, vars)
 
   # Extract IDs
-  left_ids <- extract_ids(left, "left")
-  right_ids <- extract_ids(right, "right")
+  left_ids <- extract_ids(left, "left", left_id, warn_synthetic = TRUE)
+  right_ids <- extract_ids(right, "right", right_id, warn_synthetic = TRUE)
 
   # Store original row indices
   left$..row_idx <- seq_len(nrow(left))
@@ -910,6 +1104,17 @@ match_couples <- function(left, right = NULL,
 
   # Detect blocking
   block_info <- detect_blocking(left, right, block_id, ignore_blocks)
+
+  if (block_info$use_blocking && implicit) {
+    # Each block is its own solve and would carry its own certificate, and a
+    # certificate per block is not a certificate for the matching. Blocking is
+    # also the other answer to the memory the loop addresses, so the two are
+    # alternatives rather than a combination.
+    stop("memory_mode = \"implicit\" is not supported with blocking: each ",
+         "block is a separate solve, and one certificate per block is not a ",
+         "proof about the matching. Drop block_id, or use ",
+         "ignore_blocks = TRUE.", call. = FALSE)
+  }
 
   if (block_info$use_blocking) {
     # Setup parallel processing if requested
@@ -936,7 +1141,7 @@ match_couples <- function(left, right = NULL,
       method = method, strategy = strategy,
       check_costs = check_costs,
       replace = replace, ratio = ratio,
-      sigma = sigma, memory_mode = memory_mode
+      sigma = sigma, memory_mode = memory_mode, certify = certify
     )
   }
 
@@ -958,6 +1163,24 @@ match_couples <- function(left, right = NULL,
   result$info$n_right <- nrow(right)
   if (replace) result$info$replace <- TRUE
   if (ratio > 1L) result$info$ratio <- ratio
+  result$info <- c(
+    result$info,
+    design_estimand(nrow(left),
+                    dplyr::n_distinct(result$pairs$left_id))
+  )
+
+  # Computed here because info$solver is about to go: the truncation below drops
+  # it. Status sits at the top level for the same reason -- inside info it would
+  # not survive a default call.
+  #
+  # A design asks for `ratio` partners per left unit, so that product is what a
+  # complete matching places, on the k:1 and with-replacement designs alike.
+  result$status <- .matching_status(
+    solver      = result$info$solver,
+    greedy      = greedy,
+    n_pairs     = nrow(result$pairs),
+    n_requested = nrow(left) * ratio
+  )
 
   if (!return_unmatched) {
     result$unmatched <- NULL
@@ -970,6 +1193,10 @@ match_couples <- function(left, right = NULL,
     } else {
       keep <- c("method", "n_matched", "total_distance")
     }
+    # The estimand survives the truncation for the reason `status` sits at the
+    # top level: it is what as_matchit() labels the target population with,
+    # and a field only a diagnostic call carries is one that door cannot read.
+    keep <- c(keep, "estimand", "focal", "focal_discarded")
     result$info <- result$info[keep]
   }
 
@@ -1026,14 +1253,21 @@ match_couples_single <- function(left, right, left_ids, right_ids,
                                  check_costs = TRUE,
                                  replace = FALSE, ratio = 1L,
                                  sigma = NULL,
-                                 memory_mode = "auto") {
+                                 memory_mode = "auto",
+                                 certify = NULL) {
   greedy <- identical(method, "greedy")
   .couples_single(
     left, right, left_ids, right_ids,
     vars, distance, weights, scale,
     max_distance, calipers,
     solver_fn = if (greedy) greedy_matching else assignment,
-    solver_params = if (greedy) list(strategy = strategy) else list(method = method),
+    solver_params = if (greedy) {
+      list(strategy = strategy)
+    } else if (is.null(certify)) {
+      list(method = method)
+    } else {
+      list(method = method, certify = certify)
+    },
     check_costs = if (greedy) FALSE else check_costs,
     strict_no_pairs = !greedy,
     replace = replace, ratio = ratio,
@@ -1119,207 +1353,4 @@ check_full_matching <- function(result) {
   }
 
   invisible(TRUE)
-}
-
-# ==============================================================================
-# Print Methods
-# ==============================================================================
-
-#' Print method for matching results
-#'
-#' @param x A matching_result object
-#' @param ... Additional arguments (ignored)
-#'
-#' @return Invisibly returns the input object `x`.
-#' @export
-#' @method print matching_result
-print.matching_result <- function(x, ...) {
-  cat("Matching Result\n")
-  cat("===============\n\n")
-
-  cat("Method:", x$info$method, "\n")
-  if (!is.null(x$info$strategy)) {
-    cat("Strategy:", x$info$strategy, "\n")
-  }
-  cat("Pairs matched:", x$info$n_matched, "\n")
-
-  if (!is.null(x$info$n_blocks) && x$info$n_blocks > 1) {
-    cat("Blocks:", x$info$n_blocks, "\n")
-  }
-
-  if (!is.null(x$unmatched)) {
-    cat("Unmatched (left):", length(x$unmatched$left), "\n")
-    cat("Unmatched (right):", length(x$unmatched$right), "\n")
-  }
-
-  cat("Total distance:", sprintf("%.4f", x$info$total_distance), "\n")
-
-  if (nrow(x$pairs) > 0) {
-    cat("\nMatched pairs:\n")
-    print(x$pairs, n = 10)
-  }
-
-  invisible(x)
-}
-
-#' Summary method for matching results
-#'
-#' @param object A matching_result object
-#' @param ... Additional arguments (ignored)
-#'
-#' @return A list containing summary statistics (invisibly)
-#' @export
-#' @method summary matching_result
-summary.matching_result <- function(object, ...) {
-  n_matched <- object$info$n_matched
-  total_dist <- object$info$total_distance
-  mean_dist <- if (n_matched > 0) total_dist / n_matched else NA_real_
-  distances <- object$pairs$distance
-
-  # Match rate: proportion of the smaller side that was matched
-  n_left <- object$info$n_left %||% NA_integer_
-  n_right <- object$info$n_right %||% NA_integer_
-  match_rate <- if (!is.na(n_left) && !is.na(n_right) && min(n_left, n_right) > 0) {
-    n_matched / min(n_left, n_right)
-  } else {
-    NA_real_
-  }
-
-  # Distance percentiles
-  distance_percentiles <- if (length(distances) > 0) {
-    stats::quantile(distances, c(0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95),
-                    na.rm = TRUE)
-  } else {
-    NULL
-  }
-
-  # Build summary list
-  out <- list(
-    method = object$info$method,
-    strategy = object$info$strategy,
-    n_matched = n_matched,
-    n_blocks = object$info$n_blocks %||% 1L,
-    total_distance = total_dist,
-    mean_distance = mean_dist,
-    match_rate = match_rate,
-    distance_stats = if (length(distances) > 0) {
-      list(
-        min = min(distances, na.rm = TRUE),
-        q1 = stats::quantile(distances, 0.25, na.rm = TRUE),
-        median = stats::median(distances, na.rm = TRUE),
-        q3 = stats::quantile(distances, 0.75, na.rm = TRUE),
-        max = max(distances, na.rm = TRUE),
-        sd = stats::sd(distances, na.rm = TRUE)
-      )
-    } else NULL,
-    distance_percentiles = distance_percentiles,
-    n_unmatched_left = if (!is.null(object$unmatched)) length(object$unmatched$left) else NA_integer_,
-    n_unmatched_right = if (!is.null(object$unmatched)) length(object$unmatched$right) else NA_integer_,
-    replace = object$info$replace %||% FALSE,
-    ratio = object$info$ratio %||% 1L
-  )
-
-  class(out) <- "summary.matching_result"
-  out
-}
-
-#' @export
-print.summary.matching_result <- function(x, ...) {
-  cat("Matching Result Summary\n")
-  cat("=======================\n\n")
-
-  cat("Method:", x$method)
-  if (!is.null(x$strategy)) cat(" (", x$strategy, ")", sep = "")
-  cat("\n")
-
-  cat("Pairs matched:", x$n_matched, "\n")
-  if (x$n_blocks > 1) cat("Blocks:", x$n_blocks, "\n")
-
-  if (!is.na(x$match_rate)) {
-    cat("Match rate:", sprintf("%.1f%%", x$match_rate * 100), "\n")
-  }
-
-  if (isTRUE(x$replace)) cat("Replacement: yes\n")
-  if (!is.null(x$ratio) && x$ratio > 1) cat("Ratio:", x$ratio, ":1\n")
-
-  if (!is.na(x$n_unmatched_left)) {
-    cat("Unmatched: ", x$n_unmatched_left, " left, ",
-        x$n_unmatched_right, " right\n", sep = "")
-  }
-
-  cat("\nDistance Statistics:\n")
-  cat("  Total:", sprintf("%.4f", x$total_distance), "\n")
-  cat("  Mean:", sprintf("%.4f", x$mean_distance), "\n")
-
-  if (!is.null(x$distance_stats)) {
-    ds <- x$distance_stats
-    cat("  Min:", sprintf("%.4f", ds$min), "\n")
-    cat("  Q1:", sprintf("%.4f", ds$q1), "\n")
-    cat("  Median:", sprintf("%.4f", ds$median), "\n")
-    cat("  Q3:", sprintf("%.4f", ds$q3), "\n")
-    cat("  Max:", sprintf("%.4f", ds$max), "\n")
-    cat("  SD:", sprintf("%.4f", ds$sd), "\n")
-  }
-
-  if (!is.null(x$distance_percentiles)) {
-    cat("\nDistance Percentiles:\n")
-    pct_names <- names(x$distance_percentiles)
-    for (i in seq_along(x$distance_percentiles)) {
-      cat(sprintf("  %s: %.4f\n", pct_names[i], x$distance_percentiles[i]))
-    }
-  }
-
-  invisible(x)
-}
-
-#' Plot method for matching results
-#'
-#' Produces a histogram of pairwise distances from a matching result.
-#'
-#' @param x A matching_result object
-#' @param type Type of plot: "histogram" (default), "density", or "ecdf"
-#' @param ... Additional arguments passed to plotting functions
-#'
-#' @return The matching_result object (invisibly)
-#' @export
-#' @method plot matching_result
-plot.matching_result <- function(x, type = c("histogram", "density", "ecdf"), ...) {
-  type <- match.arg(type)
-  distances <- x$pairs$distance
-
-  if (length(distances) == 0) {
-    message("No matched pairs to plot")
-    return(invisible(x))
-  }
-
-  main_title <- paste0("Matching Distances (n=", length(distances), ")")
-
-
-  switch(type,
-    histogram = {
-      graphics::hist(distances,
-                     main = main_title,
-                     xlab = "Distance",
-                     col = "steelblue",
-                     border = "white",
-                     ...)
-    },
-    density = {
-      d <- stats::density(distances)
-      graphics::plot(d,
-                     main = main_title,
-                     xlab = "Distance",
-                     ...)
-      graphics::polygon(d, col = "steelblue", border = "steelblue")
-    },
-    ecdf = {
-      graphics::plot(stats::ecdf(distances),
-                     main = main_title,
-                     xlab = "Distance",
-                     ylab = "Cumulative Proportion",
-                     ...)
-    }
-  )
-
-  invisible(x)
 }

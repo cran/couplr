@@ -74,7 +74,7 @@ full_match(treated, control, vars = c("age", "income"), min_controls = 1, max_co
 cem_match(treated, control, vars = c("age", "income"))
 
 # balance-constrained cardinality matching
-cardinality_match(treated, control, vars = c("age", "income"), max_std_diff = 0.1)
+cardinality_match(treated, control, vars = c("age", "income"), fine = "site")
 
 # propensity subclassification and propensity matching, formula interface
 subclass_match(treated ~ age + income, data = df, n_subclasses = 5)
@@ -87,7 +87,7 @@ Check covariate balance before and after matching, and probe how sensitive a con
 to unmeasured confounding:
 
 ```r
-bal <- balance_diagnostics(result)      # standardized differences, variance ratios, KS tests
+bal <- balance_diagnostics(result, treated, control)   # standardized differences, variance ratios, KS tests
 bal
 autoplot(bal)                           # love plot of standardized differences
 
@@ -102,14 +102,14 @@ tables and `marginaleffects` estimates run against it without rewiring the analy
 frame, and `autoplot()` methods cover matching results, balance, and sensitivity.
 
 ```r
-m  <- as_matchit(result)
-md <- match_data(result)
+m  <- as_matchit(result, treated, control)
+md <- match_data(result, treated, control)
 ```
 
 ## The assignment backend
 
 `lap_solve()` exposes the solver layer directly. It takes a cost matrix, handles
-rectangular shapes and forbidden edges (`NA` / `Inf`), and picks from twenty solvers when
+rectangular shapes and forbidden edges (`NA` / `Inf`), and picks from nineteen solvers when
 `method = "auto"`:
 
 ```r

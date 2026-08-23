@@ -5,6 +5,10 @@ lap_prepare_cost_matrix <- function(cost, maximize) {
     .Call(`_couplr_lap_prepare_cost_matrix`, cost, maximize)
 }
 
+lap_probe_cost_matrix <- function(cost) {
+    .Call(`_couplr_lap_probe_cost_matrix`, cost)
+}
+
 lap_solve_bruteforce <- function(cost, maximize) {
     .Call(`_couplr_lap_solve_bruteforce`, cost, maximize)
 }
@@ -19,6 +23,26 @@ cpp_lap_solve_jv_lazy <- function(left_mat, right_mat, metric, inv_cov, max_dist
 
 cpp_lap_solve_auction_lazy <- function(left_mat, right_mat, metric, inv_cov, max_distance, calipers, var_names, maximize, eps = NULL) {
     .Call(`_couplr_cpp_lap_solve_auction_lazy`, left_mat, right_mat, metric, inv_cov, max_distance, calipers, var_names, maximize, eps)
+}
+
+lap_certify_dense <- function(cost, match, u, v, maximize, tol) {
+    .Call(`_couplr_lap_certify_dense`, cost, match, u, v, maximize, tol)
+}
+
+lap_certify_lazy <- function(left_mat, right_mat, distance, inv_cov, max_distance, calipers, vars, match, u, v, maximize, tol) {
+    .Call(`_couplr_lap_certify_lazy`, left_mat, right_mat, distance, inv_cov, max_distance, calipers, vars, match, u, v, maximize, tol)
+}
+
+lap_scan_reduced_costs <- function(cost, u, v, tol) {
+    .Call(`_couplr_lap_scan_reduced_costs`, cost, u, v, tol)
+}
+
+lap_hall_witness_dense <- function(cost) {
+    .Call(`_couplr_lap_hall_witness_dense`, cost)
+}
+
+lap_hall_witness_lazy <- function(left_mat, right_mat, distance, inv_cov, max_distance, calipers, vars) {
+    .Call(`_couplr_lap_hall_witness_lazy`, left_mat, right_mat, distance, inv_cov, max_distance, calipers, vars)
 }
 
 lap_kbest_murty <- function(cost, k, maximize, single_method = "jv") {
@@ -109,12 +133,48 @@ lap_solve_jv_duals <- function(cost, maximize) {
     .Call(`_couplr_lap_solve_jv_duals`, cost, maximize)
 }
 
+cpp_lap_solve_jv_duals_lazy <- function(left_mat, right_mat, metric, inv_cov, max_distance, calipers, var_names, maximize) {
+    .Call(`_couplr_cpp_lap_solve_jv_duals_lazy`, left_mat, right_mat, metric, inv_cov, max_distance, calipers, var_names, maximize)
+}
+
 lap_solve_network_simplex <- function(cost) {
     .Call(`_couplr_lap_solve_network_simplex`, cost)
 }
 
-lap_solve_full_matching <- function(cost, min_controls, max_controls_val) {
-    .Call(`_couplr_lap_solve_full_matching`, cost, min_controls, max_controls_val)
+lap_flow_solve <- function(n_nodes, supply, tail, head, lower, upper, cost, warm_flow, warm_potential, time_limit, tol = 1e-12, relax_eps = 1e-18, max_augmentations = 0.0, return_potentials = TRUE) {
+    .Call(`_couplr_lap_flow_solve`, n_nodes, supply, tail, head, lower, upper, cost, warm_flow, warm_potential, time_limit, tol, relax_eps, max_augmentations, return_potentials)
+}
+
+lap_flow_certify <- function(n_nodes, supply, tail, head, lower, upper, cost, flow, potential, tol) {
+    .Call(`_couplr_lap_flow_certify`, n_nodes, supply, tail, head, lower, upper, cost, flow, potential, tol)
+}
+
+lap_flow_compile_full_match <- function(cost, min_controls, max_controls) {
+    .Call(`_couplr_lap_flow_compile_full_match`, cost, min_controls, max_controls)
+}
+
+lap_flow_compile_couples <- function(design, n_rows, n_cols, ratio = 1.0) {
+    .Call(`_couplr_lap_flow_compile_couples`, design, n_rows, n_cols, ratio)
+}
+
+lap_flow_trace_assignment <- function(cost, maximize = FALSE) {
+    .Call(`_couplr_lap_flow_trace_assignment`, cost, maximize)
+}
+
+lap_flow_trace_push_relabel <- function(cost, maximize = FALSE) {
+    .Call(`_couplr_lap_flow_trace_push_relabel`, cost, maximize)
+}
+
+lap_implicit_dense <- function(cost, maximize = FALSE, keep_per_row = 5.0, width = 5.0, tol = 1e-9, max_rounds = 60.0, certify = TRUE) {
+    .Call(`_couplr_lap_implicit_dense`, cost, maximize, keep_per_row, width, tol, max_rounds, certify)
+}
+
+lap_implicit_lazy <- function(left_mat, right_mat, distance, inv_cov, max_distance, calipers, vars, maximize = FALSE, keep_per_row = 5.0, width = 5.0, tol = 1e-9, max_rounds = 60.0, certify = TRUE) {
+    .Call(`_couplr_lap_implicit_lazy`, left_mat, right_mat, distance, inv_cov, max_distance, calipers, vars, maximize, keep_per_row, width, tol, max_rounds, certify)
+}
+
+lap_match_path_lazy <- function(left_mat, right_mat, distance, inv_cov, values, calipers, vars, maximize = FALSE, keep_per_row = 5.0, width = 5.0, tol = 1e-9, max_rounds = 60.0, certify = TRUE) {
+    .Call(`_couplr_lap_match_path_lazy`, left_mat, right_mat, distance, inv_cov, values, calipers, vars, maximize, keep_per_row, width, tol, max_rounds, certify)
 }
 
 greedy_matching <- function(cost_matrix, maximize = FALSE, strategy = "row_best") {

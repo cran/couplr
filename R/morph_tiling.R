@@ -12,8 +12,8 @@
 #' 
 #' Creates a tiling structure with:
 #' - Bulk region filled with P×P tiles (top-left anchored)
-#' - Right strip with largest squares ≤ remaining width
-#' - Bottom strip with largest squares ≤ remaining height
+#' - Right strip with largest squares <= remaining width
+#' - Bottom strip with largest squares <= remaining height
 #' 
 #' @param W Image width
 #' @param H Image height
@@ -329,17 +329,3 @@
 # -------------------------------------------------------------------
 # Integration Functions
 # -------------------------------------------------------------------
-
-#' Replace hierarchical patch pipeline with square tiling
-#'
-#' Drop-in replacement for .solve_hierarchical_patch_pipeline
-#' @noRd
-.solve_hierarchical_patch_pipeline_v2 <- function(A_planar, B_planar, H, W,
-                                                  max_patch_size = 3L,
-                                                  alpha = 1, beta = 0,
-                                                  method = "jv", maximize = FALSE) {
-  .square_tiling_solver(A_planar, B_planar, H, W,
-                       max_tile_size = max_patch_size,
-                       alpha = alpha, beta = beta,
-                       method = method, maximize = maximize)
-}

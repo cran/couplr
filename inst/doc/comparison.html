@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-07-25" />
+<meta name="date" content="2026-08-23" />
 
 <title>Comparison with Alternatives</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Comparison with Alternatives</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-07-25</h4>
+<h4 class="date">2026-08-23</h4>
 
 
 
@@ -864,17 +864,20 @@ through distance minimization:</p>
 <tr class="odd">
 <td><strong>Objective</strong></td>
 <td>Satisfy balance constraints</td>
-<td>Minimize total distance</td>
+<td>Minimize total distance (<code>match_couples()</code>), or maximize
+matched cardinality under balance constraints
+(<code>cardinality_match()</code>)</td>
 </tr>
 <tr class="even">
 <td><strong>Balance</strong></td>
 <td>Hard constraint</td>
-<td>Achieved via optimization</td>
+<td>Achieved via optimization, or stated as a hard constraint</td>
 </tr>
 <tr class="odd">
 <td><strong>Solver</strong></td>
 <td>Mixed-integer programming (GLPK, Gurobi)</td>
-<td>Linear assignment (JV, Hungarian, etc.)</td>
+<td>Linear assignment (JV, Hungarian, etc.), min-cost flow, Lagrangian
+branch and bound</td>
 </tr>
 <tr class="even">
 <td><strong>Feasibility</strong></td>
@@ -884,7 +887,7 @@ through distance minimization:</p>
 <tr class="odd">
 <td><strong>Fine-grain control</strong></td>
 <td>Moment constraints, cardinality</td>
-<td>Caliper, blocking</td>
+<td>Caliper, blocking, fine and refined balance, moment constraints</td>
 </tr>
 <tr class="even">
 <td><strong>Speed</strong></td>
@@ -909,6 +912,9 @@ quantiles)</p></li>
 <li><p>Balance is assessed post-hoc (typical workflow)</p></li>
 <li><p>Need guaranteed solutions</p></li>
 <li><p>Iterative refinement (match, assess, refine)</p></li>
+<li><p>Fine or refined balance is the requirement, and a certificate of
+the largest balanced sample is wanted
+(<code>cardinality_match()</code>)</p></li>
 </ul>
 <hr />
 </div>

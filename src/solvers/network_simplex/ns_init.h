@@ -92,7 +92,11 @@ inline bool augment_match(NSState& state,
     return true;
 }
 
-inline void initialize_spanning_tree_greedy(NSState& state) {
+// Returns the number of rows the matching covers. A value below n_rows is a
+// maximum-cardinality result, so it certifies that no assignment covers every
+// row; the caller decides what to do with that, and the spanning tree is not
+// built, because its flow assumes one unit leaving every row node.
+inline int initialize_spanning_tree_greedy(NSState& state) {
     int n = state.n_rows;
     int m = state.n_cols;
     int source = state.source_node();
@@ -122,22 +126,27 @@ inline void initialize_spanning_tree_greedy(NSState& state) {
         }
     }
 
-    // Phase 2 — Augmenting paths: extend the partial matching to a perfect
-    // matching whenever one exists. Without this, unmatched rows leave the
-    // initial tree in an infeasible flow state (source supplies 1 unit to the
-    // row with no outgoing tree arc), which the pivot loop cannot reliably
-    // repair on adversarial instances. Pivots then terminate at a sub-optimal
-    // basis that still has an unmatched row.
+    // Phase 2 - Augmenting paths: extend the partial matching to a maximum
+    // matching. One attempt per unmatched row suffices: by Berge's augmenting
+    // path theorem a row with no augmenting path against the current matching
+    // has none against any matching a later augmentation can produce, so the
+    // matching left here is of maximum cardinality.
     for (int i = 0; i < n; ++i) {
         if (row_match[i] < 0) {
-            // Failure here means no perfect matching exists in the allowed
-            // subgraph. The C++ entry points already preflight feasibility for
-            // each row, but not Hall's condition globally; if we still fail
-            // here, leave the row unmatched and let downstream extraction
-            // surface the infeasibility with the existing error path.
             (void)augment_match(state, i, row_match, col_match);
         }
     }
+
+    int matched_rows = 0;
+    for (int i = 0; i < n; ++i) {
+        if (row_match[i] >= 0) ++matched_rows;
+    }
+
+    // Uncovered rows in a maximum matching mean the allowed subgraph violates
+    // Hall's condition, so no basis of this network carries a unit out of every
+    // row node. Report the cardinality instead of building a tree whose flow
+    // would not conserve.
+    if (matched_rows < n) return matched_rows;
 
     // Reset all arcs to lower bound (flow = 0)
     for (int a = 0; a < state.num_arcs; ++a) {
@@ -250,52 +259,7 @@ inline void initialize_spanning_tree_greedy(NSState& state) {
         // Unmatched cols stay at STATE_LOWER with flow = 0
     }
 
-    // Build thread order (DFS preorder from source)
-    std::vector<int> thread_order;
-    std::vector<bool> visited(state.num_nodes, false);
-    std::vector<int> stack;
-    stack.push_back(source);
-
-    while (!stack.empty()) {
-        int curr = stack.back();
-        stack.pop_back();
-        if (visited[curr]) continue;
-        visited[curr] = true;
-        thread_order.push_back(curr);
-
-        // Find children (nodes whose parent is curr)
-        std::vector<int> children;
-        for (int node = 0; node < state.num_nodes; ++node) {
-            if (state.parent[node] == curr) {
-                children.push_back(node);
-            }
-        }
-        // Push in reverse order for correct DFS order
-        for (int i = static_cast<int>(children.size()) - 1; i >= 0; --i) {
-            stack.push_back(children[i]);
-        }
-    }
-
-    // Build thread and rev_thread arrays (circular)
-    for (size_t i = 0; i < thread_order.size(); ++i) {
-        int curr = thread_order[i];
-        int next = thread_order[(i + 1) % thread_order.size()];
-        state.thread[curr] = next;
-        state.rev_thread[next] = curr;
-    }
-
-    // Compute subtree sizes (bottom-up)
-    for (int i = 0; i < state.num_nodes; ++i) {
-        state.subtree_size[i] = 1;
-    }
-
-    for (int i = static_cast<int>(thread_order.size()) - 1; i >= 0; --i) {
-        int node = thread_order[i];
-        int par = state.parent[node];
-        if (par != NO_NODE) {
-            state.subtree_size[par] += state.subtree_size[node];
-        }
-    }
+    return n;
 }
 
 // Compute potentials from the spanning tree

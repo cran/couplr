@@ -1,3 +1,522 @@
+# couplr 1.6.1
+
+## New features
+
+* **`memory_mode = "implicit"` solves an assignment by generating the pairs it
+  needs.** Available on `assignment()` and `match_couples()`, with `certify`
+  beside it. Every row starts with its nearest admissible partners, that sparse
+  problem is solved by the flow model, and the pairs left out are priced against
+  the duals it returns: a pair enters on a negative reduced cost, and the loop
+  repeats until none prices in. The duals then certify the sparse solution
+  optimal for the complete problem, so the answer is the one a dense solve
+  returns on every problem small enough to run both, reached without holding the
+  complete problem. The result carries `u` and `v`, the certificate, and
+  `search`: `candidate_edges`, `possible_edges`, `edges_evaluated`, `n_rounds`
+  and a per-round record. An arc set admitting no complete matching comes back
+  with Hall's witness, which says which units are short of partners.
+  `memory_mode = "auto"` does not select it.
+
+* **`match_path()` solves a matching per value of one argument as one sequence.**
+  `vary = "max_distance"` sweeps the distance cut over `values`, which must
+  ascend: each point resumes from the matching the point before it found, and
+  raising the cut admits pairs while leaving that matching feasible, so a point
+  costs a round of the edge-generation loop where an independent call costs a
+  solve from cold. Over 20 values this is 2.83x, 2.61x, 3.71x and 4.54x against
+  20 independent solves at 167 x 333, 667 x 1,333, 1,667 x 3,333 and
+  6,667 x 13,333, with all 80 points optimal and every status and matched count
+  equal to the independent solve's. A descending sweep withdraws pairs the
+  matching may be standing on, so it is refused and told why.
+
+  Returns a `couplr_path`: `$path`, a row per point carrying the matched count,
+  the total distance and the matched sample's balance, and `$balance`, a row per
+  point per variable, with the match vector, certificate, round record and Hall
+  witness for each point beside them. `certify = TRUE` by default, and a point's
+  certificate is what says its matching is the optimal one at that value.
+
+* **`method = "push_relabel"` runs cost-scaling push-relabel.** The method value
+  named an algorithm the solver did not run: what was dispatched was successive
+  shortest paths with Johnson potentials, the same search as `method = "csflow"`,
+  and three places in the repo said so (#32). It is now Goldberg-Tarjan's
+  successive approximation (1990): a sequence of eps-optimal flows, each phase
+  dividing eps, saturating the arcs the smaller eps no longer admits, and
+  clearing the resulting excess with two local operations. A push moves excess
+  along an arc of negative reduced cost; a relabel lowers the price of a node
+  that holds excess and has no such arc, by exactly the amount that gives it one.
+  Below `eps = 1/(n + 1)` an eps-optimal flow on integer costs is optimal, which
+  is what ends the scaling; real costs are scaled to integers first, because
+  without that the bound says nothing.
+
+  The solver lands on the compiled `FlowProblem`, beside the existing
+  shortest-path one, so every design the flow model compiles can reach it and
+  the two solvers read the same network.
+
+* **The min-cost flow solver can emit its per-step state, and the animation
+  reads it** (#34). `solve_min_cost_flow()` takes an optional step sink and
+  records, per augmentation, the distance labels, the shortest-path tree, the
+  potentials after the shift, the path and the units moved. `trace_csflow()` is
+  now a renderer over that record rather than a second implementation of the
+  search in R, and the R residual-graph Dijkstra, Bellman-Ford and
+  potential-update it used are gone. `solve_min_cost_flow_push_relabel()` has
+  the same arrangement, per scaling phase.
+
+  Two divergences between the two implementations had been found on 2026-08-15,
+  both in the potential update, both masked by a defensive clamp. Reading the
+  solver's own state is what removes the class.
+
+* **`cardinality_match()` maximizes matched cardinality subject to balance
+  constraints and reports an optimality gap** (#30). The matched sample now
+  comes back beside the largest sample the stated constraints admit, in
+  `result$cardinality`: `n_matched`, `best_possible`, `gap`, `gap_fraction`,
+  `certified`, `stopped_on`, and the state of every constraint the match was
+  asked to meet. Total distance remains the objective, ordered after
+  cardinality.
+
+  Fine and refined covariate balance are stated with the new `fine` and
+  `refined` arguments and are represented in the matching network, so
+  `max_std_diff = Inf` reaches a single min-cost flow solve that returns the
+  largest balanced sample with a dual certificate at polynomial cost. Linear
+  moment constraints -- a finite `max_std_diff`, or an explicit `moments` --
+  are dualized and searched by branch and bound under `node_limit` and
+  `time_limit`. `engine` names the solver directly, and refuses an argument the
+  named engine would not read.
+
+  `max_std_diff` now defaults to `Inf` rather than `0.1`, so a call states a
+  moment constraint only when it asks for one, and a call that states balance
+  through `fine` or `refined` alone is answered certified. A caller relying on
+  the previous default reaches it with `max_std_diff = 0.1`. `time_limit`
+  defaults to 30 seconds.
+
+  `engine = "heuristic"` runs the pruning loop: a full match, then repeated
+  deletion of the pairs carrying the worst variable's imbalance. It carries
+  `info$pruning_iterations` and `info$pairs_removed`, which are now heuristic
+  only, and reports `best_possible` and `gap` as `NA` with
+  `certified = FALSE`, since the loop derives no bound.
+
+  `left_id` and `right_id` are read through the same path as every other entry
+  point, so the pairs a match with no `id` column produces are keyed on the
+  values the rest of the package joins them by.
+
+* **`assignment_duals()` gained `certify`, and reads a lazy cost
+  specification.** It was computing a certificate's inputs without running the
+  check. Under `certify = TRUE` it runs it and attaches the certificate, and
+  `verify_assignment()` reads the duals off the result rather than solving
+  again, so the option costs one pass over the admissible pairs. The default is
+  `FALSE`, and the returned fields are unchanged without it.
+
+  The lazy path could produce no duals at all, so certifying a lazy solve meant
+  materializing the matrix that path exists to avoid. It takes a
+  `lazy_cost_spec` now and returns the duals the dense path returns, a
+  specification with more rows than columns is transposed rather than refused,
+  and `verify_assignment()` no longer requires `duals` for one.
+
+## Improvements
+
+* The flow solver searches from one node holding an excess rather than from a
+  super-source over all of them. Every design the flow model compiles gets it:
+  dense `sap`, `csflow`, `push_relabel` and `cycle_cancel`, `full_match()`, the
+  blocked and k:1 designs, and the implicit loop. Two orders of magnitude on the
+  shapes measured. On a cost matrix with ties this can return a different
+  matching among the equally optimal ones.
+
+* A lazy solve under `max_distance` evaluates each distance once where it
+  evaluated it three times. Reading a pair is halved, and a whole pricing pass
+  is 1.38x on the shapes measured. Affects every `memory_mode = "lazy"` path and
+  every certification over a lazy source.
+
+* `method = "gabow_tarjan"` returns the optimum on rectangular problems, which
+  1.6.0 carried as a known issue (#31, #33). The 1-optimality bound cancels its
+  column terms only when both matchings cover every column, so a rectangular
+  instance has to be completed, and it was completed by padding to
+  `max(n, m)` square. The padding rows are copies of one node, so they are
+  carried as a single row holding as many partners as there are dummies, which
+  covers every column the same way and solves the instance at its own n by m
+  shape: at n = 100, m = 100,000 the padded instance needed 80 GB for the cost
+  matrix alone, and the collapsed one runs in 31 s at 221 MB and agrees with
+  `jv` exactly. An unmatched row is reported as unmatched rather than as a
+  padding column, and the multiplier separating the optimum from a 1-optimal
+  matching falls from `max(n, m) + 1` to `2 * min(n, m) + 1`.
+
+* `method = "gabow_tarjan"` takes its integer scale from the range the sentinel
+  leaves. The conversion from doubles placed the largest magnitude at 1e6, so
+  the quantum was the matrix maximum over 1e6, and it swamped the edges an
+  optimum uses whenever those were far smaller than that maximum: a square 100
+  by 100 instance of costs in [0, 1] carrying one entry at 1e5 came back 54
+  percent above the optimum while reporting that it was optimal. Above a maximum
+  of 1e6 no scaling was applied at all, so costs in [2e6, 2e6 + 1] lost every
+  fractional part, and the shift counted a positive offset against the sentinel:
+  at 1e14 + [0, 100] every finite cost read as forbidden, and a 10 by 10
+  instance came back 442 high. The scale now satisfies
+  `K * (hi - lo) <= BIG_INT / 8`, the shift is the low end of the range, and
+  representability is checked in doubles before `llround()`, which had been
+  running on the raw value and was undefined past `LLONG_MAX`.
+
+* Every reader drops a pair the optimum was forced onto a forbidden edge. A cost
+  at or above `BIG_COST` is what the rest of the package reads as no edge, and
+  the 1:1 and precomputed-distance readers reported such a pair anyway, priced
+  at 1e+308, with `status` then reading "optimal" off a matching that placed it.
+  All four readers drop it now, and the two units come back unmatched. The
+  predicate was open-coded in five places in two spellings, two of them missing
+  the `is.finite()` half, which an NA distance could reach; the five call sites
+  share one function.
+
+* A matching's status is derived from what the design asked for. It came from
+  unmatched left units, and a k:1 design places pairs while unmatched counts
+  units, so a unit holding one of its two requested partners made the match
+  report "optimal". Placed pairs are compared against requested pairs, the left
+  unit count times the ratio, which reduces to the old rule at ratio 1 and
+  covers the with-replacement design.
+
+  The blocked path built its `info` twice, once per branch, and the copies
+  disagreed on the requested-versus-actual method, on which fields exist, and on
+  their order. Both branches build through one path now. `info$solver` is one
+  entry per block that ran a solve, so a block's greedy fallback reaches the
+  status and a blocked Hall-deficient match reports heuristic/greedy_sorted,
+  which is what the same data reports unblocked. `block_summary` gains `n_left`,
+  `n_right` and `n_matched` on the sequential branch, and loses `n_pairs`, that
+  branch's own name for `n_matched`.
+
+* Every reader in the matching layer joins on the id column. Columns were
+  attached by row order in five places, and two of them scrambled what they
+  attached: `match_data()` built weights and subclasses from a merge whose row
+  order it then assumed, and the per-pair variable differences behind the
+  cardinality prune did the same (#17, #24).
+
+  That made the id contract worth stating. A duplicated id is rejected at
+  extraction rather than left to pair the wrong units downstream (#35),
+  `match_couples()` takes `left_id` and `right_id` where it had hardcoded the
+  column name (#38), and a synthesised id warns and names the argument that
+  sets one. `join_matched()` no longer re-parses the join key with
+  `type.convert()`, so numeric-looking character ids join (#36).
+  `match_data.matching_result()` emits one row per pair with the weight that
+  pair carries, so `ratio > 1` and replacement come out with the shape MatchIt
+  expects.
+
+* The design's estimand is recorded, and `as_matchit()` reads it instead of
+  labelling every non-subclass design `"ATT"` (#29). `augment()` is the
+  `generics::augment()` generic rather than a second one beside it, and the
+  `bal.tab` methods are registered on `cobalt::bal.tab()`, so they dispatch
+  (#39). `forbidden` reaches the greedy single path, which had been ignoring it
+  (#21).
+
+* `verify_flow()`'s per-arc tolerance scales with the numbers behind the reduced
+  cost. `cbar(a)` is computed as `cost(a) + pi(tail(a)) - pi(head(a))`, so its
+  last bits are worth the largest of those three times the machine epsilon, and
+  the comparison was made against an absolute `tol` of 1e-9. The lexicographic
+  tier weights a balance design compiles to put the potentials in the millions,
+  where one unit in the last place is around 1e-9, so an exactly optimal flow
+  failed its own certificate on rounding: at n = m = 500 the search settled with
+  a zero gap and still reported `certified = FALSE` (#43). Each arc is now
+  compared against `tol * max(1, |cost(a)|, |pi(tail(a))|, |pi(head(a))|)`, the
+  same reasoning the duality-gap check already applied to the objective, and the
+  widest tolerance any comparison used is reported as `dual_tolerance`. The
+  scale never falls below 1, so a problem of order 1 is checked against `tol`
+  itself.
+
+* `time_limit` reaches the flow solver. The cardinality search checked its
+  budget between nodes, so a limit overshot by however long the solve in flight
+  took, and nothing in the flow engine noticed a user interrupt either. The
+  solver now asks between augmentations, at a cadence that cost nothing
+  measurable on a 251,012-arc solve (median 1.080 s either way, over seven
+  runs). A solve that runs out comes back with the new status `"interrupted"`,
+  which `solver_status_values()` lists: its flow respects every arc bound and
+  falls short of what the balances asked for, so it is neither an answer nor
+  evidence that no answer exists. The node it belonged to goes back on the
+  frontier unopened, which is what keeps the reported bound valid for the whole
+  tree, and Ctrl+C raises an R interrupt condition from inside the solve rather
+  than at the end of it.
+
+* The flow solver takes a warm start from R. `FlowProblem` carried `warm_flow`
+  and `warm_potential` and nothing on the R side reached them, so every solve
+  the cardinality search made was cold, including the twenty per node that
+  differ only in one multiplier step. The search now carries a solve's flow and
+  potentials into the next one, and a node's into its children. On a
+  branch-and-bound child, which differs from its parent by one arc bound, this
+  is 6.9x at 5% density: 252 augmentations instead of 504.
+
+  Which of the two starting points a solve uses is decided rather than assumed.
+  Successive shortest paths pays for the b-flow its starting point leaves, so
+  both are costed and the cheaper is taken. The check earns its pass on the
+  designs that tie many pairs at one reduced cost: 71,156 of 251,012 arcs on a
+  dense 500-by-500 with distances rounded to three decimals, where a repricing
+  decides every tied arc at once and the previous flow stops being worth
+  keeping.
+
+* Euclidean and squared-Euclidean distances are summed one dimension at a time
+  rather than through the Gram-matrix identity. The identity folds the same sum
+  into one BLAS call, but subtracting two large nearly equal terms costs most of
+  the mantissa whenever the coordinates are large next to the distance between
+  them, and a blocked match on coordinates of order 1e15 returned different
+  totals from its own parallel branch.
+
+* `summary()` reports the share of focal units that kept a partner. It divided
+  the pair count by the smaller side, which exceeds 1 under `ratio > 1` or
+  `replace = TRUE`, where a unit holds several pairs.
+
+* `print()` on a sensitivity result reports the largest Gamma actually tested
+  below the critical one, instead of assuming the Gamma grid steps by 0.25.
+
+* The many-forbidden-pairs warning counts the finite pairs instead of
+  extrapolating the first row's count across every row.
+
+## Internals
+
+* One k-best partitioning engine serves both the Murty and the Lawler backend.
+  Both had their own, and both dropped solutions: a child's subspace forces the
+  prefix and forbids one column at the branch row, so the child's own children
+  have to re-enter at that row carrying the forbidden set rather than start past
+  it. An exhaustive differential test against brute force covers both backends,
+  minimizing and maximizing, ties and forbidden edges.
+
+* The auction reports an infeasible instance as one, instead of as a
+  convergence failure (#18).
+
+* The three shortest-augmenting-path traces share the tree construction and the
+  dual lift; the two min-cost-flow traces share the edge lookup, which is now an
+  index rather than a scan; and the two auto-transposing traces share the
+  orientation helpers.
+
+* Removed: eight morph helpers reachable only from their own tests, the stub
+  trace registry (every name it covered has a real trace), a declared-never-
+  defined C++ solver entry point, an exported-never-called Gabow-Tarjan path
+  search, and the network-simplex thread arrays, which were maintained and never
+  read.
+
+* `CHANGELOG.md` is gone; `NEWS.md` is the changelog. The `matching_result` S3
+  methods moved to `R/matching_methods.R`. `.onUnload()` unloads the DLL.
+
+* `methods` is dropped from Imports. Nothing in the package imports from it.
+
+# couplr 1.6.0
+
+## New features
+
+* **`verify_assignment()` checks an assignment against the optimality
+  conditions and reports which of them hold.** Until now a result's
+  `status` was the solver's word for it. `verify_assignment()` returns a
+  checkable certificate instead: primal feasibility, dual feasibility, and
+  complementary slackness on both matched arcs and unmatched columns.
+  `certified_optimal` is `TRUE` only when every one of them holds.
+
+  The check needs dual variables and does not trust them. Dual feasibility is
+  tested over every admissible pair, so duals that certify nothing fail the
+  check rather than pass it. Optimal duals are shared by all optimal solutions
+  of a linear program, which is what makes it possible to certify a matching
+  from one solver against duals from another, including the solvers that return
+  no duals of their own.
+
+  Both halves of complementary slackness are checked, and the second half is not
+  optional. A verifier testing only tightness on matched arcs accepts a solution
+  whose dual bound equals the true optimum while its primal cost sits above it,
+  because a freed column carries `v_j < 0` (#28).
+
+* **`assignment()` gained a `cardinality` argument**, with `"maximum"` and
+  `"fixed"` alongside the previous behaviour, now named `"complete"`.
+  `"maximum"` returns as many pairs as the admissible edges allow and the
+  cheapest total among matchings of that size; `"fixed"` returns exactly
+  `n_matches` pairs at minimum total cost. Both are solved exactly by the same
+  solver as `"complete"`: dummy columns are appended, priced so that the
+  solver's own optimum is the requested objective, and a row that took a dummy
+  column comes back unmatched. `unmatched_penalty` replaces the lexicographic
+  objective under `"maximum"` with a single one, where a pair costing more than
+  the penalty is worth dropping.
+
+* **`explain_dispatch()` reports which solver `method = "auto"` selects, and
+  why**, without solving: the rule that fired, the property that triggered it,
+  the rules tested first that did not fire, and the shape the solver will
+  receive. The dispatch rules moved out of the branch chain in `assignment()`
+  into one ordered table that both the dispatch and the report read, so the
+  reported reason is the one that was acted on. Dispatch decisions themselves
+  are unchanged.
+
+* **`solver_status_values()` gives the closed set of values `status` can
+  take**: `"optimal"`, `"partial"`, `"infeasible"`, `"eps_optimal"`,
+  `"iteration_limit"`, `"heuristic"`. Each is documented in terms of what the
+  solver terminated on. A status outside the set is now an error at the point a
+  result is constructed rather than a string that reaches the caller.
+
+* `match_couples()` and `full_match()` results carry a `status` element from the
+  same vocabulary, so the matching layer reports what it achieved rather than
+  leaving the caller to infer it from the number of unmatched units. It is
+  computed before `return_unmatched = FALSE` and the `info` truncation remove
+  the fields it is derived from, and it sits at the top level for that reason.
+
+* Solve results carry a `dispatch` element recording how `method` was chosen,
+  and `assignment()` results additionally carry `cardinality`, `n_matched` and
+  `unmatched`.
+
+## Bug fixes
+
+* **The min-cost flow search no longer runs forever on a cost matrix with many
+  tied entries.** Successive shortest paths terminates because it keeps the
+  reduced cost of every residual arc at or above zero. The two directions of one
+  arc are priced by expressions that are negatives of each other in exact
+  arithmetic and not in floating point, so both can round a few ulps below zero
+  at once, and that pair is a cycle of negative reduced cost for the search to
+  circle. Ties make it reachable: a large block of equal costs prices a large
+  part of the residual graph at zero, where a rounding error in either direction
+  decides a comparison.
+
+  It was reached from `match_couples()` with default arguments. A caliper
+  problem with no complete matching is re-solved with forbidden entries at a
+  finite sentinel, and a matrix that is mostly one sentinel value is exactly the
+  tied input; `method = "auto"` sends a wide one to `"sap"`, which is the flow
+  solver in assignment orientation. A 4 x 7 instance is enough to reproduce it.
+
+  Where the invariant says a reduced cost cannot be negative, the search now
+  reads a negative one as the rounding it is, which leaves the cold first search
+  (whose costs may genuinely straddle zero) untouched. A search that outlives
+  the bound on how often labels can improve now reports the negative-cost cycle
+  it is circling instead of growing its queue until memory runs out.
+
+* **`status` is computed from what the solver terminated on, instead of being
+  a literal.** The generic solve paths assigned `status = "optimal"`
+  unconditionally, so the field asserted optimality no matter how the solver
+  stopped (#28). Three consequences of that are fixed:
+
+  * `network_simplex` reported `"optimal"` when the pivot cap ended the loop
+    with an improving arc still available. It now reports `"iteration_limit"`,
+    which says the result is feasible and its optimality unproven (#16).
+
+  * `network_simplex` decided infeasibility by looking for unmatched rows after
+    the pivot loop, which conflated an input admitting no complete assignment
+    with a basis that stopped carrying the flow. Hall's condition is now decided
+    before the loop, from a maximum-cardinality matching on the allowed edges,
+    and the two cases raise different errors (#16).
+
+  * `full_match()` reported `"optimal"` for results that were not, and units in
+    a group that lost its counterpart appeared in neither `groups` nor
+    `unmatched` (#20). The status now comes from actual flow against required
+    flow and distinguishes `"optimal"`, `"partial"` and `"infeasible"`;
+    `unmatched` is the complement of the groups actually emitted, so every unit
+    is in exactly one of the two; and `info$n_groups` counts the groups that
+    were written rather than the ones the flow solver opened.
+
+* **Constrained matching is now optimal instead of greedy.** When calipers,
+  `max_distance` or explicit forbidden pairs left the admissible bipartite
+  graph without a complete matching, `match_couples()` caught the solver's
+  infeasibility error and returned `greedy_matching(strategy = "sorted")`
+  instead. The result was a valid partial matching, so nothing failed and
+  nothing warned, but it was not the optimal one and the reported `method`
+  still named the optimal solver that had been asked for.
+
+  Such a problem has a lexicographic optimum: the largest number of admissible
+  pairs first, then the smallest total distance among matchings of that size.
+  couplr now reaches it by replacing forbidden entries with a finite sentinel,
+  chosen above `(k + 1)` times the spread of the admissible costs so that one
+  sentinel edge outweighs any saving on the real edges, re-solving with the
+  requested optimal solver, and dropping the pairs that came back on a
+  sentinel edge.
+
+  The difference is not cosmetic. On the `hospital_staff` example with
+  `calipers = list(age = 3, experience_years = 2)` and `max_distance = 1.5`,
+  which leaves 2,173 admissible pairs out of 60,000, the greedy fallback
+  matched 180 of 200 treated units and the optimal solve matches 197.
+
+  Greedy is still used as a last resort when the cost range is too wide for the
+  sentinel arithmetic to stay exact in a double, and that case now warns
+  explicitly that the result is not optimal. `method = "greedy"` is unaffected.
+
+* `memory_mode = "lazy"` reports the same situation more accurately: recovering
+  the partial matching needs the materialized cost matrix that lazy mode exists
+  to avoid, so the warning now points at `memory_mode = "dense"` for the
+  maximum-cardinality minimum-cost result rather than describing a greedy
+  fallback that no longer exists.
+
+## Testing
+
+* New `test-constrained-optimality.R` checks the lexicographic contract against
+  exhaustive enumeration over randomised instances with forbidden edges, rather
+  than checking only that a matching of the right shape comes back.
+
+* New `test-certificate.R` checks the certificate in both directions. It sweeps
+  every solver in the registry over three shapes and three cost kinds, plus
+  maximization, negative costs, forbidden edges and both rectangular
+  orientations, and requires each answer to certify. It then requires the
+  certificate to reject a permuted matching, a matching claiming a column twice,
+  a matching using a forbidden pair, an inflated row potential, and a lowered
+  potential on an unmatched column. A verifier that only ever returns `TRUE`
+  proves nothing, so the rejection cases are what give the accepting cases their
+  meaning.
+
+  The sweep matters because `jv` had become the de facto oracle for roughly
+  seventeen per-solver test files while being ground-truthed against brute force
+  only at `n <= 6`. A certificate is checked against the cost matrix itself and
+  does not rely on any solver being right.
+
+* Solver and shape combinations known to return a suboptimal answer are held in
+  one registry, `cert_known_suboptimal()`, and are both excluded from the sweep
+  and separately asserted to still fail. Fixing one breaks that test, so the
+  entry has to be removed rather than quietly masking a bug that came back.
+
+## Known issues
+
+* **`method = "gabow_tarjan"` returns suboptimal assignments on wide (`n < m`)
+  problems**; square problems are unaffected (#31). The certification sweep
+  found this on its first randomised run: 179 of 200 random wide problems came
+  back above the optimum, and a 3 by 6 counterexample returns 20 against a
+  brute-forced optimum of 8. The existing rectangular test asserted the number
+  of matched rows and nothing about cost, which is why the suite had not caught
+  it. `method = "auto"` never dispatches to this solver, so only an explicit
+  request is affected.
+
+# couplr 1.5.5
+
+## Performance
+
+* **`method = "auto"` no longer allocates the cost matrix several times over to
+  pick a solver.** Selecting a solver needs three data-dependent facts: whether
+  any entry is `NaN`, whether the finite entries are constant or binary, and
+  what fraction of entries are non-finite. These were read with
+  `any(is.nan())`, `range(finite = TRUE)` and
+  `mean(is.na() | is.infinite())`, each of which allocates a temporary the size
+  of the cost matrix, so choosing a solver cost several full-size allocations
+  and several passes before any solving started. A single C++ pass
+  (`lap_probe_cost_matrix()`) now returns all of them without allocating. The
+  probe itself is 7 to 18 times faster than the code it replaces, measured from
+  `n = 10` to `n = 5000`, and the gap between `method = "auto"` and naming the
+  solver it selects falls from as much as 2x to a few percent. Dispatch
+  decisions are unchanged: the new probe reproduces the previous solver choice
+  on every case tested, including all-`Inf`, exactly-half-sparse, constant,
+  binary-with-`NA` and integer inputs.
+
+* **Integer cost matrices are no longer coerced during selection.** The probe
+  reads `INTSXP` in place, so an integer matrix no longer pays for a full
+  double copy on the way to the dispatcher.
+
+## Documentation
+
+* **`?assignment` no longer lists `"line_metric"` as a `method`.** It was never
+  one of the accepted values, so `method = "line_metric"` failed `match.arg()`.
+  One-dimensional problems are solved by `lap_solve_line_metric()`, which takes
+  two point vectors rather than a cost matrix; the documentation now points
+  there.
+
+* **The `"auto"` selection rules are documented.** `?assignment` previously
+  described `"auto"` only as "automatic selection based on problem
+  characteristics". It now states the five rules and the order they are applied
+  in, matching the dispatcher.
+
+# couplr 1.5.4
+
+## Bug Fixes
+
+* **`memory_mode = "auto"` no longer under-reads available memory on Apple
+  Silicon.** `get_free_ram_mb()` converted `vm_stat`'s page counts with a
+  hardcoded 4096-byte page, but Apple Silicon pages are 16384 bytes, so every
+  M-series Mac saw a quarter of the memory it actually had -- measured on a
+  64 GB M4 Pro, 7.7 GB reported against 41.7 GB available. `"auto"` therefore
+  switched to the lazy path, or warned about a dense allocation, at a quarter
+  of the intended threshold. The page size is now read from `vm_stat`'s own
+  header line, with `sysctl hw.pagesize` as a fallback, and the parsing is
+  split into `vm_stat_page_size()` and `vm_stat_available_mb()` so it is
+  testable without a macOS host.
+
+* **The macOS memory figure now counts reclaimable pages.** Only the free list
+  was counted, which macOS keeps nearly empty by design. Inactive and
+  speculative pages are reclaimed on demand, so they are included, matching the
+  `MemAvailable` semantics the Linux branch already used. The reported quantity
+  is available rather than free memory, and the `memory_mode` warnings say so.
+
 # couplr 1.5.3
 
 ## Bug Fixes

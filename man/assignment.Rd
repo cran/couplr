@@ -13,7 +13,11 @@ assignment(
     "orlin", "network_simplex"),
   auction_eps = NULL,
   eps = NULL,
-  memory_mode = "auto"
+  memory_mode = "auto",
+  certify = NULL,
+  cardinality = c("complete", "maximum", "fixed"),
+  n_matches = NULL,
+  unmatched_penalty = NULL
 )
 }
 \arguments{
@@ -45,21 +49,46 @@ entries are treated as forbidden assignments.}
 \item \code{"lapmod"} — Sparse JV variant, faster when >50\\% entries are NA/Inf
 \item \code{"hk01"} — 'Hopcroft-Karp' for binary (0/1) costs only
 \item \code{"ssap_bucket"} — 'Dial' algorithm for integer costs
-\item \code{"line_metric"} — O(n log n) for 1D assignment problems
 \item \code{"bruteforce"} — Exact enumeration for tiny problems (n <= 8)
 }
 
 \strong{Advanced solvers:}
 \itemize{
 \item \code{"csa"} — 'Goldberg-Kennedy' cost-scaling, often fastest for medium-large
-\item \code{"gabow_tarjan"} — 'Gabow-Tarjan' bit-scaling with complementary slackness O(n^3 log C)
+\item \code{"gabow_tarjan"} — 'Gabow-Tarjan' bit-scaling with complementary
+slackness O(n^3 log C). Its optimality bound holds for a matching that
+saturates both sides, so a rectangular problem gains a dummy side of
+zero cost. The dummies are copies of one node and are carried as a
+single unit holding as many partners as there are dummies, so the
+problem is solved at its own \code{n} by \code{m} shape.
 \item \code{"cycle_cancel"} — Cycle-canceling with 'Karp' algorithm
-\item \code{"csflow"} — Cost-scaling network flow
+\item \code{"csflow"} — Successive shortest paths with 'Johnson' potentials
 \item \code{"network_simplex"} — 'Network simplex' with spanning tree representation
 \item \code{"orlin"} — 'Orlin-Ahuja' scaling O(sqrt(n) * m * log(nC))
-\item \code{"push_relabel"} — 'Push-relabel' max-flow based solver
+\item \code{"push_relabel"} — 'Goldberg-Tarjan' cost-scaling push-relabel
 \item \code{"ramshaw_tarjan"} — 'Ramshaw-Tarjan', optimized for rectangular matrices (n != m)
-}}
+}
+
+One-dimensional problems have their own entry point,
+\code{\link[=lap_solve_line_metric]{lap_solve_line_metric()}}, which takes two point vectors rather than a
+cost matrix and runs in O(n log n).
+
+Under \code{"auto"}, a single pass over \code{cost} supplies the facts the following
+rules need, and the first matching rule wins:
+\enumerate{
+\item at most 8 rows and 8 columns: \code{"bruteforce"}, exact and faster
+than setting up a general solver;
+\item finite entries all equal, or all either 0 or 1: \code{"hk01"}, which
+exploits the absence of a real cost scale;
+\item more than half the entries non-finite: \code{"lapmod"}, which carries
+forbidden edges in its adjacency structure;
+\item at least 3 times as many columns as rows: \code{"sap"}, avoiding the
+padding a square-oriented solver would need;
+\item everything else: \code{"jv"}.
+}
+Naming a method skips the pass. Rectangular problems are transposed
+internally so the solver always sees at least as many columns as rows, and
+the assignment is mapped back afterwards.}
 
 \item{auction_eps}{Optional numeric epsilon for the 'Auction'/'Auction-GS' methods.
 If \code{NULL}, an internal default (e.g., \code{1e-9}) is used.}
@@ -67,13 +96,51 @@ If \code{NULL}, an internal default (e.g., \code{1e-9}) is used.}
 \item{eps}{Deprecated. Use \code{auction_eps}. If provided and \code{auction_eps} is \code{NULL},
 its value is used for \code{auction_eps}.}
 
-\item{memory_mode}{One of "auto" (default), "dense", or "lazy". \code{cost} is
-already a materialized matrix by the time it reaches \code{assignment()}, so
-"auto" here is diagnostic only: it warns if the matrix is large relative
-to free system RAM (nothing else can be done post-hoc once the matrix
-already exists -- build it via \code{compute_distances(memory_mode = ...)}
-instead to avoid materializing it in the first place). No lazy solver
-exists yet, so \code{memory_mode = "lazy"} currently always errors.}
+\item{memory_mode}{One of "auto" (default), "dense", "lazy" or "implicit".
+\code{cost} is already a materialized matrix by the time it reaches
+\code{assignment()}, so "auto" here is diagnostic only: it warns if the matrix
+is large relative to free system RAM (nothing else can be done post-hoc
+once the matrix already exists -- build it via
+\code{compute_distances(memory_mode = ...)} instead to avoid materializing it in
+the first place). \code{"lazy"} and \code{"implicit"} describe how a cost source is
+read rather than how a matrix is stored, so they apply to a lazy cost
+specification; \code{"implicit"} also accepts a matrix, where it solves the same
+problem by generating the pairs it needs and saves nothing, which is what
+makes it a check on the complete solve rather than a faster one.
+\code{"implicit"} is slower than \code{"lazy"} on every shape measured so far, and
+the time goes to the restricted solve rather than to the pair scan, so what
+it buys today is the certificate over the complete problem.}
+
+\item{certify}{Logical; whether to attach a checked \code{assignment_certificate}
+as \code{certificate}. \code{NULL}, the default, takes the path's own answer: \code{TRUE}
+under \code{memory_mode = "implicit"}, where the certificate is what
+distinguishes the answer from an approximate one and the loop has already
+done most of the scan, and \code{FALSE} elsewhere, where the duals are not among
+the things the solve returns and the check costs the solve
+\code{\link[=verify_assignment]{verify_assignment()}} runs to get them. A solve that did not reach a
+complete optimal matching has nothing to certify and gets no certificate.}
+
+\item{cardinality}{How many pairs to produce.
+\itemize{
+\item \code{"complete"} (default) — every row is matched; an input admitting
+no complete matching is an error.
+\item \code{"maximum"} — as many pairs as the admissible edges allow, and the
+cheapest total among matchings of that size.
+\item \code{"fixed"} — exactly \code{n_matches} pairs, chosen to minimize total
+cost.
+}
+All three are solved exactly by the same solver: the two non-complete modes
+append dummy columns priced so that the solver's own optimum is the
+requested objective.}
+
+\item{n_matches}{Integer; the number of pairs to produce. Required when
+\code{cardinality = "fixed"}, and not accepted otherwise.}
+
+\item{unmatched_penalty}{Numeric; the cost charged for leaving one row
+unmatched, under \code{cardinality = "maximum"}. Supplying it replaces the
+lexicographic objective with a single one: a pair costing more than the
+penalty is worth dropping. Left \code{NULL}, no pair is ever traded away for a
+cost saving.}
 }
 \value{
 An object of class \code{lap_solve_result}, a list with elements:
@@ -81,9 +148,23 @@ An object of class \code{lap_solve_result}, a list with elements:
 \item \code{match} — integer vector of length \code{min(nrow(cost), ncol(cost))}
 giving the assigned column for each row (0 if unassigned).
 \item \code{total_cost} — numeric scalar, the objective value.
-\item \code{status} — character scalar, e.g. \code{"optimal"}.
+\item \code{status} — character scalar drawn from \code{\link[=solver_status_values]{solver_status_values()}},
+computed from what the solver terminated on. \code{"optimal"} means the
+solver reached its own optimality condition with every row matched;
+it is not a checked proof. Use \code{\link[=verify_assignment]{verify_assignment()}} for that.
 \item \code{method_used} — character scalar, the algorithm actually used.
+\item \code{dispatch} — list recording how \code{method} was chosen: the rule that
+fired under \code{"auto"}, the condition that triggered it, and whether
+the method was named explicitly. See \code{\link[=explain_dispatch]{explain_dispatch()}}.
+\item \code{certificate} — an \code{assignment_certificate}, present when one was
+checked. See \code{certify}.
 }
+Under \code{memory_mode = "implicit"} the result also carries \code{u} and \code{v}, the
+duals the last restricted master produced, and \code{search}: the pairs the
+candidate set ended up holding (\code{candidate_edges}) out of \code{possible_edges},
+the pairs a cost was computed for (\code{edges_evaluated}), the round count, and
+\code{rounds}, one row per round of what the master held, what priced out and what
+each step cost.
 }
 \description{
 Solve the linear assignment problem (minimum- or maximum-cost matching)

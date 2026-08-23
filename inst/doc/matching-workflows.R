@@ -214,7 +214,7 @@ results <- list()
 
 for (strat in strategies) {
   time <- system.time({
-    result <- match_couples(
+    greedy_result <- match_couples(
       test_left, test_right,
       vars = "x",
       strategy = strat
@@ -223,8 +223,8 @@ for (strat in strategies) {
 
   results[[strat]] <- list(
     time = time["elapsed"],
-    mean_dist = mean(result$pairs$distance),
-    total_dist = result$info$total_distance
+    mean_dist = mean(greedy_result$pairs$distance),
+    total_dist = greedy_result$info$total_distance
   )
 }
 
@@ -902,19 +902,43 @@ ps_result <- ps_match(
 ps_result
 
 ## ----cardinality-matching-----------------------------------------------------
-# Maximize pairs subject to balance threshold
+# Maximize pairs subject to exact balance on the education distribution
 card_result <- cardinality_match(
   left = left_data,
   right = right_data,
   vars = c("age", "income"),
-  max_std_diff = 0.1,  # Excellent balance threshold
-  auto_scale = TRUE,
-  method = "hungarian"
+  fine = "education",
+  auto_scale = TRUE
 )
 
-cat("Pairs matched:", card_result$info$n_matched, "\n")
-cat("Pruning iterations:", card_result$info$pruning_iterations, "\n")
-cat("Pairs removed:", card_result$info$pairs_removed, "\n")
+card_result$cardinality
+
+## ----cardinality-moments------------------------------------------------------
+card_bb <- cardinality_match(
+  left = left_data[1:20, ],
+  right = right_data[1:80, ],
+  vars = c("age", "income"),
+  max_std_diff = 0.1,
+  node_limit = 10L,
+  scale = "standardize"
+)
+
+card_bb$cardinality
+card_bb$cardinality$constraints
+
+## ----cardinality-heuristic----------------------------------------------------
+card_heur <- cardinality_match(
+  left = left_data,
+  right = right_data,
+  vars = c("age", "income"),
+  max_std_diff = 0.1,
+  engine = "heuristic",
+  scale = "standardize"
+)
+
+cat("Pairs matched:", card_heur$info$n_matched, "\n")
+cat("Pruning iterations:", card_heur$info$pruning_iterations, "\n")
+cat("Pairs removed:", card_heur$info$pairs_removed, "\n")
 
 ## ----cem-matching-------------------------------------------------------------
 cem_result <- cem_match(

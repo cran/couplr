@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-07-25" />
+<meta name="date" content="2026-08-23" />
 
 <title>Matching Workflows</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Matching Workflows</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-07-25</h4>
+<h4 class="date">2026-08-23</h4>
 
 
 
@@ -585,7 +585,16 @@ automatic preprocessing:</p>
 <span id="cb1-67"><a href="#cb1-67" tabindex="-1"></a><span class="co">#&gt; [1] 100</span></span>
 <span id="cb1-68"><a href="#cb1-68" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb1-69"><a href="#cb1-69" tabindex="-1"></a><span class="co">#&gt; $n_right</span></span>
-<span id="cb1-70"><a href="#cb1-70" tabindex="-1"></a><span class="co">#&gt; [1] 150</span></span></code></pre></div>
+<span id="cb1-70"><a href="#cb1-70" tabindex="-1"></a><span class="co">#&gt; [1] 150</span></span>
+<span id="cb1-71"><a href="#cb1-71" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-72"><a href="#cb1-72" tabindex="-1"></a><span class="co">#&gt; $estimand</span></span>
+<span id="cb1-73"><a href="#cb1-73" tabindex="-1"></a><span class="co">#&gt; [1] &quot;ATT&quot;</span></span>
+<span id="cb1-74"><a href="#cb1-74" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-75"><a href="#cb1-75" tabindex="-1"></a><span class="co">#&gt; $focal</span></span>
+<span id="cb1-76"><a href="#cb1-76" tabindex="-1"></a><span class="co">#&gt; [1] &quot;left&quot;</span></span>
+<span id="cb1-77"><a href="#cb1-77" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb1-78"><a href="#cb1-78" tabindex="-1"></a><span class="co">#&gt; $focal_discarded</span></span>
+<span id="cb1-79"><a href="#cb1-79" tabindex="-1"></a><span class="co">#&gt; [1] 0</span></span></code></pre></div>
 <p>The result contains:</p>
 <ul>
 <li><p><code>pairs</code>: Matched pairs with IDs and distances</p></li>
@@ -868,18 +877,18 @@ matters</p></li>
 <span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Optimal matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co">#&gt; Optimal matching:</span></span>
 <span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 2.25 seconds</span></span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 0.84 seconds</span></span>
 <span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_optimal<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.3368</span></span>
 <span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a></span>
 <span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a><span class="co">#&gt; Greedy matching:</span></span>
 <span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 1.5 seconds</span></span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 0.1 seconds</span></span>
 <span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_greedy<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.4667</span></span>
 <span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Speedup:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>] <span class="sc">/</span> time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">1</span>), <span class="st">&quot;x</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 1.5 x</span></span></code></pre></div>
+<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 8.4 x</span></span></code></pre></div>
 </div>
 <div id="greedy-strategies" class="section level3">
 <h3>Greedy Strategies</h3>
@@ -936,7 +945,7 @@ default):</p>
 <span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a></span>
 <span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="cf">for</span> (strat <span class="cf">in</span> strategies) {</span>
 <span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>  time <span class="ot">&lt;-</span> <span class="fu">system.time</span>({</span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>    result <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>    greedy_result <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
 <span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>      test_left, test_right,</span>
 <span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>      <span class="at">vars =</span> <span class="st">&quot;x&quot;</span>,</span>
 <span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>      <span class="at">strategy =</span> strat</span>
@@ -945,8 +954,8 @@ default):</p>
 <span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a></span>
 <span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>  results[[strat]] <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
 <span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>    <span class="at">time =</span> time[<span class="st">&quot;elapsed&quot;</span>],</span>
-<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>    <span class="at">mean_dist =</span> <span class="fu">mean</span>(result<span class="sc">$</span>pairs<span class="sc">$</span>distance),</span>
-<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>    <span class="at">total_dist =</span> result<span class="sc">$</span>info<span class="sc">$</span>total_distance</span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>    <span class="at">mean_dist =</span> <span class="fu">mean</span>(greedy_result<span class="sc">$</span>pairs<span class="sc">$</span>distance),</span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>    <span class="at">total_dist =</span> greedy_result<span class="sc">$</span>info<span class="sc">$</span>total_distance</span>
 <span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>  )</span>
 <span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>}</span>
 <span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a></span>
@@ -962,9 +971,9 @@ default):</p>
 <span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a></span>
 <span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a><span class="fu">print</span>(comparison)</span>
 <span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt;          strategy time_sec mean_distance total_distance</span></span>
-<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; elapsed    sorted     0.07        0.0912          18.24</span></span>
-<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; elapsed1 row_best     0.05        0.0968          19.36</span></span>
-<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.08        0.0912          18.24</span></span></code></pre></div>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; elapsed    sorted     0.02        0.0912          18.24</span></span>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; elapsed1 row_best     0.00        0.0968          19.36</span></span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.02        0.0912          18.24</span></span></code></pre></div>
 <p><strong>Recommendation:</strong></p>
 <ul>
 <li><p>Default to <code>strategy = &quot;row_best&quot;</code> for good
@@ -1961,11 +1970,12 @@ sample size while preserving balance.</p>
 <span id="cb29-11"><a href="#cb29-11" tabindex="-1"></a><span class="co">#&gt; Full Matching Result</span></span>
 <span id="cb29-12"><a href="#cb29-12" tabindex="-1"></a><span class="co">#&gt; ====================</span></span>
 <span id="cb29-13"><a href="#cb29-13" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb29-14"><a href="#cb29-14" tabindex="-1"></a><span class="co">#&gt;   Groups formed: 100</span></span>
-<span id="cb29-15"><a href="#cb29-15" tabindex="-1"></a><span class="co">#&gt;   Left units:  100 matched, 0 unmatched (of 100)</span></span>
-<span id="cb29-16"><a href="#cb29-16" tabindex="-1"></a><span class="co">#&gt;   Right units: 150 matched, 0 unmatched (of 150)</span></span>
-<span id="cb29-17"><a href="#cb29-17" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb29-18"><a href="#cb29-18" tabindex="-1"></a><span class="co">#&gt;   Right units per group: min=1, median=1, max=21</span></span></code></pre></div>
+<span id="cb29-14"><a href="#cb29-14" tabindex="-1"></a><span class="co">#&gt;   Status: optimal</span></span>
+<span id="cb29-15"><a href="#cb29-15" tabindex="-1"></a><span class="co">#&gt;   Groups formed: 100</span></span>
+<span id="cb29-16"><a href="#cb29-16" tabindex="-1"></a><span class="co">#&gt;   Left units:  100 matched, 0 unmatched (of 100)</span></span>
+<span id="cb29-17"><a href="#cb29-17" tabindex="-1"></a><span class="co">#&gt;   Right units: 150 matched, 0 unmatched (of 150)</span></span>
+<span id="cb29-18"><a href="#cb29-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb29-19"><a href="#cb29-19" tabindex="-1"></a><span class="co">#&gt;   Right units per group: min=1, median=1, max=21</span></span></code></pre></div>
 <p>The <code>method</code> argument controls the algorithm:</p>
 <ul>
 <li><p><code>&quot;optimal&quot;</code> (default) — Solves a min-cost max-flow
@@ -2145,7 +2155,7 @@ estimated probability of treatment — the propensity score.
 <span id="cb35-13"><a href="#cb35-13" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span></span>
 <span id="cb35-14"><a href="#cb35-14" tabindex="-1"></a>)</span>
 <span id="cb35-15"><a href="#cb35-15" tabindex="-1"></a><span class="co">#&gt; Warning: 74.8% of pairs are forbidden!</span></span>
-<span id="cb35-16"><a href="#cb35-16" tabindex="-1"></a><span class="co">#&gt;   Only 3600 valid pairs for 100 left units - the matching pool is shallow!</span></span>
+<span id="cb35-16"><a href="#cb35-16" tabindex="-1"></a><span class="co">#&gt;   Only 3776 valid pairs for 100 left units - the matching pool is shallow!</span></span>
 <span id="cb35-17"><a href="#cb35-17" tabindex="-1"></a><span class="co">#&gt;   Your constraints might be moderately strict.</span></span>
 <span id="cb35-18"><a href="#cb35-18" tabindex="-1"></a><span class="co">#&gt;   Consider:</span></span>
 <span id="cb35-19"><a href="#cb35-19" tabindex="-1"></a><span class="co">#&gt;     - Relaxing max_distance threshold</span></span>
@@ -2162,22 +2172,23 @@ estimated probability of treatment — the propensity score.
 <span id="cb35-30"><a href="#cb35-30" tabindex="-1"></a><span class="co">#&gt; Unmatched (left): 1 </span></span>
 <span id="cb35-31"><a href="#cb35-31" tabindex="-1"></a><span class="co">#&gt; Unmatched (right): 51 </span></span>
 <span id="cb35-32"><a href="#cb35-32" tabindex="-1"></a><span class="co">#&gt; Total distance: 9.8133 </span></span>
-<span id="cb35-33"><a href="#cb35-33" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb35-34"><a href="#cb35-34" tabindex="-1"></a><span class="co">#&gt; Matched pairs:</span></span>
-<span id="cb35-35"><a href="#cb35-35" tabindex="-1"></a><span class="co">#&gt; # A tibble: 99 × 4</span></span>
-<span id="cb35-36"><a href="#cb35-36" tabindex="-1"></a><span class="co">#&gt;    left_id right_id distance .logit_ps_diff</span></span>
-<span id="cb35-37"><a href="#cb35-37" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;   &lt;chr&gt;       &lt;dbl&gt;          &lt;dbl&gt;</span></span>
-<span id="cb35-38"><a href="#cb35-38" tabindex="-1"></a><span class="co">#&gt;  1 1       23        0.164          0.164  </span></span>
-<span id="cb35-39"><a href="#cb35-39" tabindex="-1"></a><span class="co">#&gt;  2 2       36        0.0533         0.0533 </span></span>
-<span id="cb35-40"><a href="#cb35-40" tabindex="-1"></a><span class="co">#&gt;  3 3       148       0.0121         0.0121 </span></span>
-<span id="cb35-41"><a href="#cb35-41" tabindex="-1"></a><span class="co">#&gt;  4 4       49        0.321          0.321  </span></span>
-<span id="cb35-42"><a href="#cb35-42" tabindex="-1"></a><span class="co">#&gt;  5 5       68        0.0874         0.0874 </span></span>
-<span id="cb35-43"><a href="#cb35-43" tabindex="-1"></a><span class="co">#&gt;  6 6       48        0.00425        0.00425</span></span>
-<span id="cb35-44"><a href="#cb35-44" tabindex="-1"></a><span class="co">#&gt;  7 7       111       0.102          0.102  </span></span>
-<span id="cb35-45"><a href="#cb35-45" tabindex="-1"></a><span class="co">#&gt;  8 8       81        0.196          0.196  </span></span>
-<span id="cb35-46"><a href="#cb35-46" tabindex="-1"></a><span class="co">#&gt;  9 9       128       0.0692         0.0692 </span></span>
-<span id="cb35-47"><a href="#cb35-47" tabindex="-1"></a><span class="co">#&gt; 10 10      110       0.0131         0.0131 </span></span>
-<span id="cb35-48"><a href="#cb35-48" tabindex="-1"></a><span class="co">#&gt; # ℹ 89 more rows</span></span></code></pre></div>
+<span id="cb35-33"><a href="#cb35-33" tabindex="-1"></a><span class="co">#&gt; Status: partial </span></span>
+<span id="cb35-34"><a href="#cb35-34" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb35-35"><a href="#cb35-35" tabindex="-1"></a><span class="co">#&gt; Matched pairs:</span></span>
+<span id="cb35-36"><a href="#cb35-36" tabindex="-1"></a><span class="co">#&gt; # A tibble: 99 × 4</span></span>
+<span id="cb35-37"><a href="#cb35-37" tabindex="-1"></a><span class="co">#&gt;    left_id right_id distance .logit_ps_diff</span></span>
+<span id="cb35-38"><a href="#cb35-38" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;   &lt;chr&gt;       &lt;dbl&gt;          &lt;dbl&gt;</span></span>
+<span id="cb35-39"><a href="#cb35-39" tabindex="-1"></a><span class="co">#&gt;  1 1       23        0.164          0.164  </span></span>
+<span id="cb35-40"><a href="#cb35-40" tabindex="-1"></a><span class="co">#&gt;  2 2       36        0.0533         0.0533 </span></span>
+<span id="cb35-41"><a href="#cb35-41" tabindex="-1"></a><span class="co">#&gt;  3 3       148       0.0121         0.0121 </span></span>
+<span id="cb35-42"><a href="#cb35-42" tabindex="-1"></a><span class="co">#&gt;  4 4       49        0.321          0.321  </span></span>
+<span id="cb35-43"><a href="#cb35-43" tabindex="-1"></a><span class="co">#&gt;  5 5       68        0.0874         0.0874 </span></span>
+<span id="cb35-44"><a href="#cb35-44" tabindex="-1"></a><span class="co">#&gt;  6 6       48        0.00425        0.00425</span></span>
+<span id="cb35-45"><a href="#cb35-45" tabindex="-1"></a><span class="co">#&gt;  7 7       111       0.102          0.102  </span></span>
+<span id="cb35-46"><a href="#cb35-46" tabindex="-1"></a><span class="co">#&gt;  8 8       81        0.196          0.196  </span></span>
+<span id="cb35-47"><a href="#cb35-47" tabindex="-1"></a><span class="co">#&gt;  9 9       128       0.0692         0.0692 </span></span>
+<span id="cb35-48"><a href="#cb35-48" tabindex="-1"></a><span class="co">#&gt; 10 10      110       0.0131         0.0131 </span></span>
+<span id="cb35-49"><a href="#cb35-49" tabindex="-1"></a><span class="co">#&gt; # ℹ 89 more rows</span></span></code></pre></div>
 <p>The function fits a logistic regression, transforms scores to the
 logit scale, and calls <code>match_couples()</code> with a caliper
 constraint. The default caliper is 0.2 SD of logit(PS) (Rosenbaum and
@@ -2188,61 +2199,137 @@ argument.</p>
 <div id="cardinality-matching" class="section level3">
 <h3>Cardinality Matching</h3>
 <p>Standard matching minimizes total distance. Cardinality matching
-instead maximizes the number of matched pairs while enforcing strict
-balance constraints:</p>
-<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="co"># Maximize pairs subject to balance threshold</span></span>
+instead maximizes the number of matched pairs subject to balance
+constraints, and reports how far the matched sample sits from the
+largest one those constraints admit.</p>
+<p>Fine balance on a categorical partition is representable in the
+matching network itself, so a call that states balance only that way is
+answered by a single min-cost flow solve, with a dual certificate, at
+polynomial cost. <code>max_std_diff</code> defaults to <code>Inf</code>,
+stating no moment constraint, so this is the route a call takes until a
+finite bound is asked for:</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" tabindex="-1"></a><span class="co"># Maximize pairs subject to exact balance on the education distribution</span></span>
 <span id="cb36-2"><a href="#cb36-2" tabindex="-1"></a>card_result <span class="ot">&lt;-</span> <span class="fu">cardinality_match</span>(</span>
 <span id="cb36-3"><a href="#cb36-3" tabindex="-1"></a>  <span class="at">left =</span> left_data,</span>
 <span id="cb36-4"><a href="#cb36-4" tabindex="-1"></a>  <span class="at">right =</span> right_data,</span>
 <span id="cb36-5"><a href="#cb36-5" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
-<span id="cb36-6"><a href="#cb36-6" tabindex="-1"></a>  <span class="at">max_std_diff =</span> <span class="fl">0.1</span>,  <span class="co"># Excellent balance threshold</span></span>
-<span id="cb36-7"><a href="#cb36-7" tabindex="-1"></a>  <span class="at">auto_scale =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb36-8"><a href="#cb36-8" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span></span>
-<span id="cb36-9"><a href="#cb36-9" tabindex="-1"></a>)</span>
-<span id="cb36-10"><a href="#cb36-10" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
-<span id="cb36-11"><a href="#cb36-11" tabindex="-1"></a></span>
-<span id="cb36-12"><a href="#cb36-12" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Pairs matched:&quot;</span>, card_result<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb36-13"><a href="#cb36-13" tabindex="-1"></a><span class="co">#&gt; Pairs matched: 81</span></span>
-<span id="cb36-14"><a href="#cb36-14" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Pruning iterations:&quot;</span>, card_result<span class="sc">$</span>info<span class="sc">$</span>pruning_iterations, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb36-15"><a href="#cb36-15" tabindex="-1"></a><span class="co">#&gt; Pruning iterations: 2</span></span>
-<span id="cb36-16"><a href="#cb36-16" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Pairs removed:&quot;</span>, card_result<span class="sc">$</span>info<span class="sc">$</span>pairs_removed, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb36-17"><a href="#cb36-17" tabindex="-1"></a><span class="co">#&gt; Pairs removed: 19</span></span></code></pre></div>
-<p>This is useful when you need strict balance guarantees and are
-willing to sacrifice some sample size.</p>
+<span id="cb36-6"><a href="#cb36-6" tabindex="-1"></a>  <span class="at">fine =</span> <span class="st">&quot;education&quot;</span>,</span>
+<span id="cb36-7"><a href="#cb36-7" tabindex="-1"></a>  <span class="at">auto_scale =</span> <span class="cn">TRUE</span></span>
+<span id="cb36-8"><a href="#cb36-8" tabindex="-1"></a>)</span>
+<span id="cb36-9"><a href="#cb36-9" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
+<span id="cb36-10"><a href="#cb36-10" tabindex="-1"></a></span>
+<span id="cb36-11"><a href="#cb36-11" tabindex="-1"></a>card_result<span class="sc">$</span>cardinality</span>
+<span id="cb36-12"><a href="#cb36-12" tabindex="-1"></a><span class="co">#&gt; Matched units:       100</span></span>
+<span id="cb36-13"><a href="#cb36-13" tabindex="-1"></a><span class="co">#&gt; Best possible:       100</span></span>
+<span id="cb36-14"><a href="#cb36-14" tabindex="-1"></a><span class="co">#&gt; Optimality gap:      0</span></span>
+<span id="cb36-15"><a href="#cb36-15" tabindex="-1"></a><span class="co">#&gt; Certified optimal</span></span></code></pre></div>
+<p>Bounding the standardized difference of each matching variable adds
+constraints that cut across the network. Those are dualized and searched
+by branch and bound, which runs until the bound meets the incumbent or
+<code>node_limit</code> or <code>time_limit</code> runs out:</p>
+<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a>card_bb <span class="ot">&lt;-</span> <span class="fu">cardinality_match</span>(</span>
+<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a>  <span class="at">left =</span> left_data[<span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>, ],</span>
+<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a>  <span class="at">right =</span> right_data[<span class="dv">1</span><span class="sc">:</span><span class="dv">80</span>, ],</span>
+<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
+<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a>  <span class="at">max_std_diff =</span> <span class="fl">0.1</span>,</span>
+<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a>  <span class="at">node_limit =</span> <span class="dv">10</span><span class="dt">L</span>,</span>
+<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a>  <span class="at">scale =</span> <span class="st">&quot;standardize&quot;</span></span>
+<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a>)</span>
+<span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a></span>
+<span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a>card_bb<span class="sc">$</span>cardinality</span>
+<span id="cb37-11"><a href="#cb37-11" tabindex="-1"></a><span class="co">#&gt; Matched units:       19</span></span>
+<span id="cb37-12"><a href="#cb37-12" tabindex="-1"></a><span class="co">#&gt; Global upper bound:  20</span></span>
+<span id="cb37-13"><a href="#cb37-13" tabindex="-1"></a><span class="co">#&gt; Cardinality gap:     1 unit (5.000%)</span></span>
+<span id="cb37-14"><a href="#cb37-14" tabindex="-1"></a>card_bb<span class="sc">$</span>cardinality<span class="sc">$</span>constraints</span>
+<span id="cb37-15"><a href="#cb37-15" tabindex="-1"></a><span class="co">#&gt; # A tibble: 5 × 6</span></span>
+<span id="cb37-16"><a href="#cb37-16" tabindex="-1"></a><span class="co">#&gt;   kind          target      bound achieved  slack satisfied</span></span>
+<span id="cb37-17"><a href="#cb37-17" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;         &lt;chr&gt;       &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt; &lt;lgl&gt;    </span></span>
+<span id="cb37-18"><a href="#cb37-18" tabindex="-1"></a><span class="co">#&gt; 1 std_diff      age           0.1  -0.0805 0.181  TRUE     </span></span>
+<span id="cb37-19"><a href="#cb37-19" tabindex="-1"></a><span class="co">#&gt; 2 std_diff      age          -0.1  -0.0805 0.0195 TRUE     </span></span>
+<span id="cb37-20"><a href="#cb37-20" tabindex="-1"></a><span class="co">#&gt; 3 std_diff      income        0.1   0.0335 0.0665 TRUE     </span></span>
+<span id="cb37-21"><a href="#cb37-21" tabindex="-1"></a><span class="co">#&gt; 4 std_diff      income       -0.1   0.0335 0.133  TRUE     </span></span>
+<span id="cb37-22"><a href="#cb37-22" tabindex="-1"></a><span class="co">#&gt; 5 exact_balance (all units)   0     0      0      TRUE</span></span></code></pre></div>
+<p><code>certified</code> is <code>TRUE</code> only when the search
+settled and the gap is zero. When it is not, <code>gap</code> and
+<code>gap_fraction</code> say how many matched units separate the answer
+from the bound, and <code>stopped_on</code> says what ended the
+search.</p>
+<p>How long the search runs depends on whether the moment bounds bind.
+When the distance-minimizing match already satisfies them, which happens
+with a loose bound or a control reservoir large enough that the closest
+partners are already balanced, the root node certifies and the call
+returns in milliseconds. When they bind, every node costs a flow solve,
+and although the root enters a feasible incumbent before the first node
+is opened, the bound above it closes slowly, so a call can spend its
+whole budget and still report a gap. Set <code>node_limit</code> and
+<code>time_limit</code> to a budget you are willing to spend, and read
+<code>stopped_on</code> and <code>gap</code> to see what the budget
+bought.</p>
+<p><code>time_limit</code> reaches the flow solver, which checks it
+between augmentations, so the call returns on the budget rather than on
+the completion of the solve that was running when it ran out. The node
+that solve belonged to goes back on the frontier unopened, which is what
+keeps <code>bound</code> valid for the whole problem, and the incumbent
+stands.</p>
+<p>A pruning heuristic is reachable with
+<code>engine = &quot;heuristic&quot;</code>. It starts from a full match and
+deletes the pairs carrying the worst variable’s imbalance, one variable
+per round, and reports <code>info$pruning_iterations</code> and
+<code>info$pairs_removed</code>. It computes no bound, so
+<code>best_possible</code> and <code>gap</code> come back
+<code>NA</code>:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a>card_heur <span class="ot">&lt;-</span> <span class="fu">cardinality_match</span>(</span>
+<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a>  <span class="at">left =</span> left_data,</span>
+<span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a>  <span class="at">right =</span> right_data,</span>
+<span id="cb38-4"><a href="#cb38-4" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
+<span id="cb38-5"><a href="#cb38-5" tabindex="-1"></a>  <span class="at">max_std_diff =</span> <span class="fl">0.1</span>,</span>
+<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a>  <span class="at">engine =</span> <span class="st">&quot;heuristic&quot;</span>,</span>
+<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a>  <span class="at">scale =</span> <span class="st">&quot;standardize&quot;</span></span>
+<span id="cb38-8"><a href="#cb38-8" tabindex="-1"></a>)</span>
+<span id="cb38-9"><a href="#cb38-9" tabindex="-1"></a></span>
+<span id="cb38-10"><a href="#cb38-10" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Pairs matched:&quot;</span>, card_heur<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb38-11"><a href="#cb38-11" tabindex="-1"></a><span class="co">#&gt; Pairs matched: 81</span></span>
+<span id="cb38-12"><a href="#cb38-12" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Pruning iterations:&quot;</span>, card_heur<span class="sc">$</span>info<span class="sc">$</span>pruning_iterations, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb38-13"><a href="#cb38-13" tabindex="-1"></a><span class="co">#&gt; Pruning iterations: 2</span></span>
+<span id="cb38-14"><a href="#cb38-14" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Pairs removed:&quot;</span>, card_heur<span class="sc">$</span>info<span class="sc">$</span>pairs_removed, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb38-15"><a href="#cb38-15" tabindex="-1"></a><span class="co">#&gt; Pairs removed: 19</span></span></code></pre></div>
+<p>Cardinality matching is useful when balance is a requirement rather
+than a diagnostic, and the question is how large a sample can meet
+it.</p>
 </div>
 <div id="coarsened-exact-matching-cem" class="section level3">
 <h3>Coarsened Exact Matching (CEM)</h3>
 <p>CEM coarsens continuous variables into bins, then performs exact
 matching within strata. This avoids model dependence — results don’t
 rely on a distance function or propensity score model:</p>
-<div class="sourceCode" id="cb37"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" tabindex="-1"></a>cem_result <span class="ot">&lt;-</span> <span class="fu">cem_match</span>(</span>
-<span id="cb37-2"><a href="#cb37-2" tabindex="-1"></a>  <span class="at">left =</span> left_data,</span>
-<span id="cb37-3"><a href="#cb37-3" tabindex="-1"></a>  <span class="at">right =</span> right_data,</span>
-<span id="cb37-4"><a href="#cb37-4" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
-<span id="cb37-5"><a href="#cb37-5" tabindex="-1"></a>  <span class="at">n_bins =</span> <span class="st">&quot;sturges&quot;</span>   <span class="co"># automatic bin width; also &quot;fd&quot;, &quot;scott&quot;, or an integer</span></span>
-<span id="cb37-6"><a href="#cb37-6" tabindex="-1"></a>)</span>
-<span id="cb37-7"><a href="#cb37-7" tabindex="-1"></a></span>
-<span id="cb37-8"><a href="#cb37-8" tabindex="-1"></a>cem_result</span>
-<span id="cb37-9"><a href="#cb37-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb37-10"><a href="#cb37-10" tabindex="-1"></a><span class="co">#&gt; Coarsened Exact Matching Result</span></span>
-<span id="cb37-11"><a href="#cb37-11" tabindex="-1"></a><span class="co">#&gt; ===============================</span></span>
-<span id="cb37-12"><a href="#cb37-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb37-13"><a href="#cb37-13" tabindex="-1"></a><span class="co">#&gt;   Strata: 69 total, 32 matched</span></span>
-<span id="cb37-14"><a href="#cb37-14" tabindex="-1"></a><span class="co">#&gt;   Left:   81 matched, 19 pruned</span></span>
-<span id="cb37-15"><a href="#cb37-15" tabindex="-1"></a><span class="co">#&gt;   Right:  103 matched, 47 pruned</span></span>
-<span id="cb37-16"><a href="#cb37-16" tabindex="-1"></a><span class="co">#&gt;   Variables: age, income</span></span>
-<span id="cb37-17"><a href="#cb37-17" tabindex="-1"></a></span>
-<span id="cb37-18"><a href="#cb37-18" tabindex="-1"></a><span class="co"># Strata summary: how many units in each coarsened cell</span></span>
-<span id="cb37-19"><a href="#cb37-19" tabindex="-1"></a><span class="fu">head</span>(cem_result<span class="sc">$</span>strata_summary)</span>
-<span id="cb37-20"><a href="#cb37-20" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 4</span></span>
-<span id="cb37-21"><a href="#cb37-21" tabindex="-1"></a><span class="co">#&gt;   stratum               n_left n_right matched</span></span>
-<span id="cb37-22"><a href="#cb37-22" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;                  &lt;int&gt;   &lt;int&gt; &lt;lgl&gt;  </span></span>
-<span id="cb37-23"><a href="#cb37-23" tabindex="-1"></a><span class="co">#&gt; 1 (25,30]|(3e+04,4e+04]      0       1 FALSE  </span></span>
-<span id="cb37-24"><a href="#cb37-24" tabindex="-1"></a><span class="co">#&gt; 2 (25,30]|(4e+04,5e+04]      0       1 FALSE  </span></span>
-<span id="cb37-25"><a href="#cb37-25" tabindex="-1"></a><span class="co">#&gt; 3 (25,30]|(5e+04,6e+04]      2       0 FALSE  </span></span>
-<span id="cb37-26"><a href="#cb37-26" tabindex="-1"></a><span class="co">#&gt; 4 (25,30]|(6e+04,7e+04]      1       2 TRUE   </span></span>
-<span id="cb37-27"><a href="#cb37-27" tabindex="-1"></a><span class="co">#&gt; 5 (30,35]|(1e+05, Inf]       1       0 FALSE  </span></span>
-<span id="cb37-28"><a href="#cb37-28" tabindex="-1"></a><span class="co">#&gt; 6 (30,35]|(2e+04,3e+04]      0       2 FALSE</span></span></code></pre></div>
+<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a>cem_result <span class="ot">&lt;-</span> <span class="fu">cem_match</span>(</span>
+<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a>  <span class="at">left =</span> left_data,</span>
+<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a>  <span class="at">right =</span> right_data,</span>
+<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a>  <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>),</span>
+<span id="cb39-5"><a href="#cb39-5" tabindex="-1"></a>  <span class="at">n_bins =</span> <span class="st">&quot;sturges&quot;</span>   <span class="co"># automatic bin width; also &quot;fd&quot;, &quot;scott&quot;, or an integer</span></span>
+<span id="cb39-6"><a href="#cb39-6" tabindex="-1"></a>)</span>
+<span id="cb39-7"><a href="#cb39-7" tabindex="-1"></a></span>
+<span id="cb39-8"><a href="#cb39-8" tabindex="-1"></a>cem_result</span>
+<span id="cb39-9"><a href="#cb39-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb39-10"><a href="#cb39-10" tabindex="-1"></a><span class="co">#&gt; Coarsened Exact Matching Result</span></span>
+<span id="cb39-11"><a href="#cb39-11" tabindex="-1"></a><span class="co">#&gt; ===============================</span></span>
+<span id="cb39-12"><a href="#cb39-12" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb39-13"><a href="#cb39-13" tabindex="-1"></a><span class="co">#&gt;   Strata: 69 total, 32 matched</span></span>
+<span id="cb39-14"><a href="#cb39-14" tabindex="-1"></a><span class="co">#&gt;   Left:   81 matched, 19 pruned</span></span>
+<span id="cb39-15"><a href="#cb39-15" tabindex="-1"></a><span class="co">#&gt;   Right:  103 matched, 47 pruned</span></span>
+<span id="cb39-16"><a href="#cb39-16" tabindex="-1"></a><span class="co">#&gt;   Variables: age, income</span></span>
+<span id="cb39-17"><a href="#cb39-17" tabindex="-1"></a></span>
+<span id="cb39-18"><a href="#cb39-18" tabindex="-1"></a><span class="co"># Strata summary: how many units in each coarsened cell</span></span>
+<span id="cb39-19"><a href="#cb39-19" tabindex="-1"></a><span class="fu">head</span>(cem_result<span class="sc">$</span>strata_summary)</span>
+<span id="cb39-20"><a href="#cb39-20" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 4</span></span>
+<span id="cb39-21"><a href="#cb39-21" tabindex="-1"></a><span class="co">#&gt;   stratum               n_left n_right matched</span></span>
+<span id="cb39-22"><a href="#cb39-22" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;                  &lt;int&gt;   &lt;int&gt; &lt;lgl&gt;  </span></span>
+<span id="cb39-23"><a href="#cb39-23" tabindex="-1"></a><span class="co">#&gt; 1 (25,30]|(3e+04,4e+04]      0       1 FALSE  </span></span>
+<span id="cb39-24"><a href="#cb39-24" tabindex="-1"></a><span class="co">#&gt; 2 (25,30]|(4e+04,5e+04]      0       1 FALSE  </span></span>
+<span id="cb39-25"><a href="#cb39-25" tabindex="-1"></a><span class="co">#&gt; 3 (25,30]|(5e+04,6e+04]      2       0 FALSE  </span></span>
+<span id="cb39-26"><a href="#cb39-26" tabindex="-1"></a><span class="co">#&gt; 4 (25,30]|(6e+04,7e+04]      1       2 TRUE   </span></span>
+<span id="cb39-27"><a href="#cb39-27" tabindex="-1"></a><span class="co">#&gt; 5 (30,35]|(1e+05, Inf]       1       0 FALSE  </span></span>
+<span id="cb39-28"><a href="#cb39-28" tabindex="-1"></a><span class="co">#&gt; 6 (30,35]|(2e+04,3e+04]      0       2 FALSE</span></span></code></pre></div>
 <p>You can supply custom cutpoints per variable with the
 <code>cutpoints</code> argument, or pass categorical grouping variables
 with <code>grouping</code>. Each matched unit receives a weight
@@ -2254,48 +2341,48 @@ strata.</p>
 <p>Subclassification (stratification on the propensity score) divides
 the sample into strata of similar PS, then computes within-stratum
 effects. Unlike one-to-one matching, no units are discarded:</p>
-<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" tabindex="-1"></a><span class="co"># Combine data</span></span>
-<span id="cb38-2"><a href="#cb38-2" tabindex="-1"></a>combined <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
-<span id="cb38-3"><a href="#cb38-3" tabindex="-1"></a>  <span class="fu">transform</span>(left_data[, <span class="fu">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>)], <span class="at">treated =</span> <span class="dv">1</span><span class="dt">L</span>),</span>
-<span id="cb38-4"><a href="#cb38-4" tabindex="-1"></a>  <span class="fu">transform</span>(right_data[, <span class="fu">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>)], <span class="at">treated =</span> <span class="dv">0</span><span class="dt">L</span>)</span>
-<span id="cb38-5"><a href="#cb38-5" tabindex="-1"></a>)</span>
-<span id="cb38-6"><a href="#cb38-6" tabindex="-1"></a></span>
-<span id="cb38-7"><a href="#cb38-7" tabindex="-1"></a>sub_result <span class="ot">&lt;-</span> <span class="fu">subclass_match</span>(</span>
-<span id="cb38-8"><a href="#cb38-8" tabindex="-1"></a>  <span class="at">formula =</span> treated <span class="sc">~</span> age <span class="sc">+</span> income,</span>
-<span id="cb38-9"><a href="#cb38-9" tabindex="-1"></a>  <span class="at">data =</span> combined,</span>
-<span id="cb38-10"><a href="#cb38-10" tabindex="-1"></a>  <span class="at">treatment =</span> <span class="st">&quot;treated&quot;</span>,</span>
-<span id="cb38-11"><a href="#cb38-11" tabindex="-1"></a>  <span class="at">n_subclasses =</span> <span class="dv">5</span>,</span>
-<span id="cb38-12"><a href="#cb38-12" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="st">&quot;ATT&quot;</span></span>
-<span id="cb38-13"><a href="#cb38-13" tabindex="-1"></a>)</span>
-<span id="cb38-14"><a href="#cb38-14" tabindex="-1"></a></span>
-<span id="cb38-15"><a href="#cb38-15" tabindex="-1"></a>sub_result</span>
-<span id="cb38-16"><a href="#cb38-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb38-17"><a href="#cb38-17" tabindex="-1"></a><span class="co">#&gt; Subclassification Result</span></span>
-<span id="cb38-18"><a href="#cb38-18" tabindex="-1"></a><span class="co">#&gt; ========================</span></span>
-<span id="cb38-19"><a href="#cb38-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb38-20"><a href="#cb38-20" tabindex="-1"></a><span class="co">#&gt;   Estimand: ATT</span></span>
-<span id="cb38-21"><a href="#cb38-21" tabindex="-1"></a><span class="co">#&gt;   Subclasses: 5</span></span>
-<span id="cb38-22"><a href="#cb38-22" tabindex="-1"></a><span class="co">#&gt;   Treated (left):  100</span></span>
-<span id="cb38-23"><a href="#cb38-23" tabindex="-1"></a><span class="co">#&gt;   Control (right): 150</span></span>
-<span id="cb38-24"><a href="#cb38-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb38-25"><a href="#cb38-25" tabindex="-1"></a><span class="co">#&gt;   Subclass summary:</span></span>
-<span id="cb38-26"><a href="#cb38-26" tabindex="-1"></a><span class="co">#&gt; # A tibble: 5 × 7</span></span>
-<span id="cb38-27"><a href="#cb38-27" tabindex="-1"></a><span class="co">#&gt;   subclass n_treated n_control mean_ps ps_range_low ps_range_high has_overlap</span></span>
-<span id="cb38-28"><a href="#cb38-28" tabindex="-1"></a><span class="co">#&gt;      &lt;int&gt;     &lt;int&gt;     &lt;int&gt;   &lt;dbl&gt;        &lt;dbl&gt;         &lt;dbl&gt; &lt;lgl&gt;      </span></span>
-<span id="cb38-29"><a href="#cb38-29" tabindex="-1"></a><span class="co">#&gt; 1        1         6        44   0.192       0.0902         0.251 TRUE       </span></span>
-<span id="cb38-30"><a href="#cb38-30" tabindex="-1"></a><span class="co">#&gt; 2        2        15        35   0.296       0.257          0.348 TRUE       </span></span>
-<span id="cb38-31"><a href="#cb38-31" tabindex="-1"></a><span class="co">#&gt; 3        3        20        30   0.391       0.350          0.435 TRUE       </span></span>
-<span id="cb38-32"><a href="#cb38-32" tabindex="-1"></a><span class="co">#&gt; 4        4        32        18   0.491       0.438          0.537 TRUE       </span></span>
-<span id="cb38-33"><a href="#cb38-33" tabindex="-1"></a><span class="co">#&gt; 5        5        27        23   0.630       0.542          0.843 TRUE</span></span>
-<span id="cb38-34"><a href="#cb38-34" tabindex="-1"></a><span class="fu">head</span>(sub_result<span class="sc">$</span>subclass_summary)</span>
-<span id="cb38-35"><a href="#cb38-35" tabindex="-1"></a><span class="co">#&gt; # A tibble: 5 × 7</span></span>
-<span id="cb38-36"><a href="#cb38-36" tabindex="-1"></a><span class="co">#&gt;   subclass n_treated n_control mean_ps ps_range_low ps_range_high has_overlap</span></span>
-<span id="cb38-37"><a href="#cb38-37" tabindex="-1"></a><span class="co">#&gt;      &lt;int&gt;     &lt;int&gt;     &lt;int&gt;   &lt;dbl&gt;        &lt;dbl&gt;         &lt;dbl&gt; &lt;lgl&gt;      </span></span>
-<span id="cb38-38"><a href="#cb38-38" tabindex="-1"></a><span class="co">#&gt; 1        1         6        44   0.192       0.0902         0.251 TRUE       </span></span>
-<span id="cb38-39"><a href="#cb38-39" tabindex="-1"></a><span class="co">#&gt; 2        2        15        35   0.296       0.257          0.348 TRUE       </span></span>
-<span id="cb38-40"><a href="#cb38-40" tabindex="-1"></a><span class="co">#&gt; 3        3        20        30   0.391       0.350          0.435 TRUE       </span></span>
-<span id="cb38-41"><a href="#cb38-41" tabindex="-1"></a><span class="co">#&gt; 4        4        32        18   0.491       0.438          0.537 TRUE       </span></span>
-<span id="cb38-42"><a href="#cb38-42" tabindex="-1"></a><span class="co">#&gt; 5        5        27        23   0.630       0.542          0.843 TRUE</span></span></code></pre></div>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a><span class="co"># Combine data</span></span>
+<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a>combined <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a>  <span class="fu">transform</span>(left_data[, <span class="fu">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>)], <span class="at">treated =</span> <span class="dv">1</span><span class="dt">L</span>),</span>
+<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a>  <span class="fu">transform</span>(right_data[, <span class="fu">c</span>(<span class="st">&quot;id&quot;</span>, <span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>)], <span class="at">treated =</span> <span class="dv">0</span><span class="dt">L</span>)</span>
+<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a>)</span>
+<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a></span>
+<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a>sub_result <span class="ot">&lt;-</span> <span class="fu">subclass_match</span>(</span>
+<span id="cb40-8"><a href="#cb40-8" tabindex="-1"></a>  <span class="at">formula =</span> treated <span class="sc">~</span> age <span class="sc">+</span> income,</span>
+<span id="cb40-9"><a href="#cb40-9" tabindex="-1"></a>  <span class="at">data =</span> combined,</span>
+<span id="cb40-10"><a href="#cb40-10" tabindex="-1"></a>  <span class="at">treatment =</span> <span class="st">&quot;treated&quot;</span>,</span>
+<span id="cb40-11"><a href="#cb40-11" tabindex="-1"></a>  <span class="at">n_subclasses =</span> <span class="dv">5</span>,</span>
+<span id="cb40-12"><a href="#cb40-12" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="st">&quot;ATT&quot;</span></span>
+<span id="cb40-13"><a href="#cb40-13" tabindex="-1"></a>)</span>
+<span id="cb40-14"><a href="#cb40-14" tabindex="-1"></a></span>
+<span id="cb40-15"><a href="#cb40-15" tabindex="-1"></a>sub_result</span>
+<span id="cb40-16"><a href="#cb40-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb40-17"><a href="#cb40-17" tabindex="-1"></a><span class="co">#&gt; Subclassification Result</span></span>
+<span id="cb40-18"><a href="#cb40-18" tabindex="-1"></a><span class="co">#&gt; ========================</span></span>
+<span id="cb40-19"><a href="#cb40-19" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb40-20"><a href="#cb40-20" tabindex="-1"></a><span class="co">#&gt;   Estimand: ATT</span></span>
+<span id="cb40-21"><a href="#cb40-21" tabindex="-1"></a><span class="co">#&gt;   Subclasses: 5</span></span>
+<span id="cb40-22"><a href="#cb40-22" tabindex="-1"></a><span class="co">#&gt;   Treated (left):  100</span></span>
+<span id="cb40-23"><a href="#cb40-23" tabindex="-1"></a><span class="co">#&gt;   Control (right): 150</span></span>
+<span id="cb40-24"><a href="#cb40-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb40-25"><a href="#cb40-25" tabindex="-1"></a><span class="co">#&gt;   Subclass summary:</span></span>
+<span id="cb40-26"><a href="#cb40-26" tabindex="-1"></a><span class="co">#&gt; # A tibble: 5 × 7</span></span>
+<span id="cb40-27"><a href="#cb40-27" tabindex="-1"></a><span class="co">#&gt;   subclass n_treated n_control mean_ps ps_range_low ps_range_high has_overlap</span></span>
+<span id="cb40-28"><a href="#cb40-28" tabindex="-1"></a><span class="co">#&gt;      &lt;int&gt;     &lt;int&gt;     &lt;int&gt;   &lt;dbl&gt;        &lt;dbl&gt;         &lt;dbl&gt; &lt;lgl&gt;      </span></span>
+<span id="cb40-29"><a href="#cb40-29" tabindex="-1"></a><span class="co">#&gt; 1        1         6        44   0.192       0.0902         0.251 TRUE       </span></span>
+<span id="cb40-30"><a href="#cb40-30" tabindex="-1"></a><span class="co">#&gt; 2        2        15        35   0.296       0.257          0.348 TRUE       </span></span>
+<span id="cb40-31"><a href="#cb40-31" tabindex="-1"></a><span class="co">#&gt; 3        3        20        30   0.391       0.350          0.435 TRUE       </span></span>
+<span id="cb40-32"><a href="#cb40-32" tabindex="-1"></a><span class="co">#&gt; 4        4        32        18   0.491       0.438          0.537 TRUE       </span></span>
+<span id="cb40-33"><a href="#cb40-33" tabindex="-1"></a><span class="co">#&gt; 5        5        27        23   0.630       0.542          0.843 TRUE</span></span>
+<span id="cb40-34"><a href="#cb40-34" tabindex="-1"></a><span class="fu">head</span>(sub_result<span class="sc">$</span>subclass_summary)</span>
+<span id="cb40-35"><a href="#cb40-35" tabindex="-1"></a><span class="co">#&gt; # A tibble: 5 × 7</span></span>
+<span id="cb40-36"><a href="#cb40-36" tabindex="-1"></a><span class="co">#&gt;   subclass n_treated n_control mean_ps ps_range_low ps_range_high has_overlap</span></span>
+<span id="cb40-37"><a href="#cb40-37" tabindex="-1"></a><span class="co">#&gt;      &lt;int&gt;     &lt;int&gt;     &lt;int&gt;   &lt;dbl&gt;        &lt;dbl&gt;         &lt;dbl&gt; &lt;lgl&gt;      </span></span>
+<span id="cb40-38"><a href="#cb40-38" tabindex="-1"></a><span class="co">#&gt; 1        1         6        44   0.192       0.0902         0.251 TRUE       </span></span>
+<span id="cb40-39"><a href="#cb40-39" tabindex="-1"></a><span class="co">#&gt; 2        2        15        35   0.296       0.257          0.348 TRUE       </span></span>
+<span id="cb40-40"><a href="#cb40-40" tabindex="-1"></a><span class="co">#&gt; 3        3        20        30   0.391       0.350          0.435 TRUE       </span></span>
+<span id="cb40-41"><a href="#cb40-41" tabindex="-1"></a><span class="co">#&gt; 4        4        32        18   0.491       0.438          0.537 TRUE       </span></span>
+<span id="cb40-42"><a href="#cb40-42" tabindex="-1"></a><span class="co">#&gt; 5        5        27        23   0.630       0.542          0.843 TRUE</span></span></code></pre></div>
 </div>
 <div id="ecosystem-integration" class="section level3">
 <h3>Ecosystem Integration</h3>
@@ -2306,28 +2393,28 @@ marginaleffects.</p>
 frame with <code>treatment</code>, <code>weights</code>,
 <code>subclass</code>, and <code>distance</code> columns — ready for
 downstream modelling:</p>
-<div class="sourceCode" id="cb39"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" tabindex="-1"></a>md <span class="ot">&lt;-</span> couplr<span class="sc">::</span><span class="fu">match_data</span>(result, left_data, right_data)</span>
-<span id="cb39-2"><a href="#cb39-2" tabindex="-1"></a><span class="fu">head</span>(md)</span>
-<span id="cb39-3"><a href="#cb39-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 9</span></span>
-<span id="cb39-4"><a href="#cb39-4" tabindex="-1"></a><span class="co">#&gt;      id   age income education group     treatment weights subclass distance</span></span>
-<span id="cb39-5"><a href="#cb39-5" tabindex="-1"></a><span class="co">#&gt;   &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;     &lt;chr&gt;         &lt;int&gt;   &lt;dbl&gt;    &lt;int&gt;    &lt;dbl&gt;</span></span>
-<span id="cb39-6"><a href="#cb39-6" tabindex="-1"></a><span class="co">#&gt; 1     1  39.4 49344. MA        treatment         1       1        1 0.00324 </span></span>
-<span id="cb39-7"><a href="#cb39-7" tabindex="-1"></a><span class="co">#&gt; 2     2  42.7 63853. MA        treatment         1       1        2 0.00455 </span></span>
-<span id="cb39-8"><a href="#cb39-8" tabindex="-1"></a><span class="co">#&gt; 3     3  60.6 56300. MA        treatment         1       1        3 0.000900</span></span>
-<span id="cb39-9"><a href="#cb39-9" tabindex="-1"></a><span class="co">#&gt; 4     4  45.7 54787. HS        treatment         1       1        4 0.00685 </span></span>
-<span id="cb39-10"><a href="#cb39-10" tabindex="-1"></a><span class="co">#&gt; 5     5  46.3 45726. HS        treatment         1       1        5 0.00447 </span></span>
-<span id="cb39-11"><a href="#cb39-11" tabindex="-1"></a><span class="co">#&gt; 6     6  62.2 59325. MA        treatment         1       1        6 0.00389</span></span></code></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a>md <span class="ot">&lt;-</span> couplr<span class="sc">::</span><span class="fu">match_data</span>(result, left_data, right_data)</span>
+<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a><span class="fu">head</span>(md)</span>
+<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 9</span></span>
+<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a><span class="co">#&gt;      id   age income education group     treatment weights subclass distance</span></span>
+<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a><span class="co">#&gt;   &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;chr&gt;     &lt;chr&gt;         &lt;int&gt;   &lt;dbl&gt;    &lt;int&gt;    &lt;dbl&gt;</span></span>
+<span id="cb41-6"><a href="#cb41-6" tabindex="-1"></a><span class="co">#&gt; 1     1  39.4 49344. MA        treatment         1       1        1   0.530 </span></span>
+<span id="cb41-7"><a href="#cb41-7" tabindex="-1"></a><span class="co">#&gt; 2     2  42.7 63853. MA        treatment         1       1        2   0.299 </span></span>
+<span id="cb41-8"><a href="#cb41-8" tabindex="-1"></a><span class="co">#&gt; 3     3  60.6 56300. MA        treatment         1       1        3   0.0382</span></span>
+<span id="cb41-9"><a href="#cb41-9" tabindex="-1"></a><span class="co">#&gt; 4     4  45.7 54787. HS        treatment         1       1        4   0.691 </span></span>
+<span id="cb41-10"><a href="#cb41-10" tabindex="-1"></a><span class="co">#&gt; 5     5  46.3 45726. HS        treatment         1       1        5   0.425 </span></span>
+<span id="cb41-11"><a href="#cb41-11" tabindex="-1"></a><span class="co">#&gt; 6     6  62.2 59325. MA        treatment         1       1        6   0.133</span></span></code></pre></div>
 <p><strong><code>as_matchit()</code></strong> constructs a
 <code>matchit</code>-class object, enabling direct use with
 <code>cobalt::bal.tab()</code>, <code>cobalt::love.plot()</code>, and
 <code>marginaleffects::avg_comparisons()</code>:</p>
-<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" tabindex="-1"></a>mi <span class="ot">&lt;-</span> <span class="fu">as_matchit</span>(result, left_data, right_data)</span>
-<span id="cb40-2"><a href="#cb40-2" tabindex="-1"></a></span>
-<span id="cb40-3"><a href="#cb40-3" tabindex="-1"></a><span class="co"># cobalt balance table</span></span>
-<span id="cb40-4"><a href="#cb40-4" tabindex="-1"></a>cobalt<span class="sc">::</span><span class="fu">bal.tab</span>(mi)</span>
-<span id="cb40-5"><a href="#cb40-5" tabindex="-1"></a></span>
-<span id="cb40-6"><a href="#cb40-6" tabindex="-1"></a><span class="co"># marginaleffects</span></span>
-<span id="cb40-7"><a href="#cb40-7" tabindex="-1"></a>marginaleffects<span class="sc">::</span><span class="fu">avg_comparisons</span>(model, <span class="at">vcov =</span> <span class="st">&quot;HC3&quot;</span>, <span class="at">newdata =</span> <span class="fu">match.data</span>(mi))</span></code></pre></div>
+<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a>mi <span class="ot">&lt;-</span> <span class="fu">as_matchit</span>(result, left_data, right_data)</span>
+<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a></span>
+<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a><span class="co"># cobalt balance table</span></span>
+<span id="cb42-4"><a href="#cb42-4" tabindex="-1"></a>cobalt<span class="sc">::</span><span class="fu">bal.tab</span>(mi)</span>
+<span id="cb42-5"><a href="#cb42-5" tabindex="-1"></a></span>
+<span id="cb42-6"><a href="#cb42-6" tabindex="-1"></a><span class="co"># marginaleffects</span></span>
+<span id="cb42-7"><a href="#cb42-7" tabindex="-1"></a>marginaleffects<span class="sc">::</span><span class="fu">avg_comparisons</span>(model, <span class="at">vcov =</span> <span class="st">&quot;HC3&quot;</span>, <span class="at">newdata =</span> <span class="fu">match.data</span>(mi))</span></code></pre></div>
 <hr />
 </div>
 </div>
@@ -2337,57 +2424,57 @@ downstream modelling:</p>
 be needed to invalidate the results?</em> Rosenbaum bounds address this
 by computing p-values under varying degrees of unobserved
 confounding.</p>
-<div class="sourceCode" id="cb41"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" tabindex="-1"></a><span class="co"># Simulate a modest treatment effect (small enough that hidden bias matters)</span></span>
-<span id="cb41-2"><a href="#cb41-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">99</span>)</span>
-<span id="cb41-3"><a href="#cb41-3" tabindex="-1"></a>n_sa <span class="ot">&lt;-</span> <span class="dv">50</span></span>
-<span id="cb41-4"><a href="#cb41-4" tabindex="-1"></a>left_sa <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb41-5"><a href="#cb41-5" tabindex="-1"></a>  <span class="at">id =</span> <span class="dv">1</span><span class="sc">:</span>n_sa,</span>
-<span id="cb41-6"><a href="#cb41-6" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">rnorm</span>(n_sa, <span class="dv">5</span>, <span class="dv">2</span>),</span>
-<span id="cb41-7"><a href="#cb41-7" tabindex="-1"></a>  <span class="at">outcome =</span> <span class="fu">rnorm</span>(n_sa, <span class="at">mean =</span> <span class="fl">1.0</span>, <span class="at">sd =</span> <span class="dv">2</span>)</span>
-<span id="cb41-8"><a href="#cb41-8" tabindex="-1"></a>)</span>
-<span id="cb41-9"><a href="#cb41-9" tabindex="-1"></a>right_sa <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
-<span id="cb41-10"><a href="#cb41-10" tabindex="-1"></a>  <span class="at">id =</span> (n_sa <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>(<span class="dv">2</span> <span class="sc">*</span> n_sa),</span>
-<span id="cb41-11"><a href="#cb41-11" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">rnorm</span>(n_sa, <span class="dv">5</span>, <span class="dv">2</span>),</span>
-<span id="cb41-12"><a href="#cb41-12" tabindex="-1"></a>  <span class="at">outcome =</span> <span class="fu">rnorm</span>(n_sa, <span class="at">mean =</span> <span class="fl">0.3</span>, <span class="at">sd =</span> <span class="dv">2</span>)</span>
-<span id="cb41-13"><a href="#cb41-13" tabindex="-1"></a>)</span>
-<span id="cb41-14"><a href="#cb41-14" tabindex="-1"></a></span>
-<span id="cb41-15"><a href="#cb41-15" tabindex="-1"></a><span class="co"># Match on covariate x</span></span>
-<span id="cb41-16"><a href="#cb41-16" tabindex="-1"></a>result_sa <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
-<span id="cb41-17"><a href="#cb41-17" tabindex="-1"></a>  <span class="at">left =</span> left_sa,</span>
-<span id="cb41-18"><a href="#cb41-18" tabindex="-1"></a>  <span class="at">right =</span> right_sa,</span>
-<span id="cb41-19"><a href="#cb41-19" tabindex="-1"></a>  <span class="at">vars =</span> <span class="st">&quot;x&quot;</span>,</span>
-<span id="cb41-20"><a href="#cb41-20" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span></span>
-<span id="cb41-21"><a href="#cb41-21" tabindex="-1"></a>)</span>
-<span id="cb41-22"><a href="#cb41-22" tabindex="-1"></a></span>
-<span id="cb41-23"><a href="#cb41-23" tabindex="-1"></a><span class="co"># How robust is the result to hidden bias?</span></span>
-<span id="cb41-24"><a href="#cb41-24" tabindex="-1"></a>sa <span class="ot">&lt;-</span> <span class="fu">sensitivity_analysis</span>(</span>
-<span id="cb41-25"><a href="#cb41-25" tabindex="-1"></a>  <span class="at">result =</span> result_sa,</span>
-<span id="cb41-26"><a href="#cb41-26" tabindex="-1"></a>  <span class="at">left =</span> left_sa,</span>
-<span id="cb41-27"><a href="#cb41-27" tabindex="-1"></a>  <span class="at">right =</span> right_sa,</span>
-<span id="cb41-28"><a href="#cb41-28" tabindex="-1"></a>  <span class="at">outcome_var =</span> <span class="st">&quot;outcome&quot;</span>,</span>
-<span id="cb41-29"><a href="#cb41-29" tabindex="-1"></a>  <span class="at">gamma =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="at">by =</span> <span class="fl">0.25</span>)</span>
-<span id="cb41-30"><a href="#cb41-30" tabindex="-1"></a>)</span>
-<span id="cb41-31"><a href="#cb41-31" tabindex="-1"></a></span>
-<span id="cb41-32"><a href="#cb41-32" tabindex="-1"></a>sa</span>
-<span id="cb41-33"><a href="#cb41-33" tabindex="-1"></a><span class="co">#&gt; Rosenbaum Sensitivity Analysis</span></span>
-<span id="cb41-34"><a href="#cb41-34" tabindex="-1"></a><span class="co">#&gt; ==============================</span></span>
-<span id="cb41-35"><a href="#cb41-35" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb41-36"><a href="#cb41-36" tabindex="-1"></a><span class="co">#&gt; Matched pairs: 50 </span></span>
-<span id="cb41-37"><a href="#cb41-37" tabindex="-1"></a><span class="co">#&gt; Alternative: greater </span></span>
-<span id="cb41-38"><a href="#cb41-38" tabindex="-1"></a><span class="co">#&gt; Test statistic (T+): 889.0 </span></span>
-<span id="cb41-39"><a href="#cb41-39" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb41-40"><a href="#cb41-40" tabindex="-1"></a><span class="co">#&gt; Gamma    p (upper bound)</span></span>
-<span id="cb41-41"><a href="#cb41-41" tabindex="-1"></a><span class="co">#&gt; -----    ---------------</span></span>
-<span id="cb41-42"><a href="#cb41-42" tabindex="-1"></a><span class="co">#&gt; 1.00     0.0077 *</span></span>
-<span id="cb41-43"><a href="#cb41-43" tabindex="-1"></a><span class="co">#&gt; 1.25     0.0401 *</span></span>
-<span id="cb41-44"><a href="#cb41-44" tabindex="-1"></a><span class="co">#&gt; 1.50     0.1118</span></span>
-<span id="cb41-45"><a href="#cb41-45" tabindex="-1"></a><span class="co">#&gt; 1.75     0.2195</span></span>
-<span id="cb41-46"><a href="#cb41-46" tabindex="-1"></a><span class="co">#&gt; 2.00     0.3467</span></span>
-<span id="cb41-47"><a href="#cb41-47" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb41-48"><a href="#cb41-48" tabindex="-1"></a><span class="co">#&gt; * significant at alpha = 0.05</span></span>
-<span id="cb41-49"><a href="#cb41-49" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb41-50"><a href="#cb41-50" tabindex="-1"></a><span class="co">#&gt; Insensitive to hidden bias up to Gamma = 1.25</span></span>
-<span id="cb41-51"><a href="#cb41-51" tabindex="-1"></a><span class="co">#&gt; To explain away the effect, hidden bias would need Gamma &gt;= 1.50</span></span></code></pre></div>
+<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" tabindex="-1"></a><span class="co"># Simulate a modest treatment effect (small enough that hidden bias matters)</span></span>
+<span id="cb43-2"><a href="#cb43-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">99</span>)</span>
+<span id="cb43-3"><a href="#cb43-3" tabindex="-1"></a>n_sa <span class="ot">&lt;-</span> <span class="dv">50</span></span>
+<span id="cb43-4"><a href="#cb43-4" tabindex="-1"></a>left_sa <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb43-5"><a href="#cb43-5" tabindex="-1"></a>  <span class="at">id =</span> <span class="dv">1</span><span class="sc">:</span>n_sa,</span>
+<span id="cb43-6"><a href="#cb43-6" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">rnorm</span>(n_sa, <span class="dv">5</span>, <span class="dv">2</span>),</span>
+<span id="cb43-7"><a href="#cb43-7" tabindex="-1"></a>  <span class="at">outcome =</span> <span class="fu">rnorm</span>(n_sa, <span class="at">mean =</span> <span class="fl">1.0</span>, <span class="at">sd =</span> <span class="dv">2</span>)</span>
+<span id="cb43-8"><a href="#cb43-8" tabindex="-1"></a>)</span>
+<span id="cb43-9"><a href="#cb43-9" tabindex="-1"></a>right_sa <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb43-10"><a href="#cb43-10" tabindex="-1"></a>  <span class="at">id =</span> (n_sa <span class="sc">+</span> <span class="dv">1</span>)<span class="sc">:</span>(<span class="dv">2</span> <span class="sc">*</span> n_sa),</span>
+<span id="cb43-11"><a href="#cb43-11" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">rnorm</span>(n_sa, <span class="dv">5</span>, <span class="dv">2</span>),</span>
+<span id="cb43-12"><a href="#cb43-12" tabindex="-1"></a>  <span class="at">outcome =</span> <span class="fu">rnorm</span>(n_sa, <span class="at">mean =</span> <span class="fl">0.3</span>, <span class="at">sd =</span> <span class="dv">2</span>)</span>
+<span id="cb43-13"><a href="#cb43-13" tabindex="-1"></a>)</span>
+<span id="cb43-14"><a href="#cb43-14" tabindex="-1"></a></span>
+<span id="cb43-15"><a href="#cb43-15" tabindex="-1"></a><span class="co"># Match on covariate x</span></span>
+<span id="cb43-16"><a href="#cb43-16" tabindex="-1"></a>result_sa <span class="ot">&lt;-</span> <span class="fu">match_couples</span>(</span>
+<span id="cb43-17"><a href="#cb43-17" tabindex="-1"></a>  <span class="at">left =</span> left_sa,</span>
+<span id="cb43-18"><a href="#cb43-18" tabindex="-1"></a>  <span class="at">right =</span> right_sa,</span>
+<span id="cb43-19"><a href="#cb43-19" tabindex="-1"></a>  <span class="at">vars =</span> <span class="st">&quot;x&quot;</span>,</span>
+<span id="cb43-20"><a href="#cb43-20" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;hungarian&quot;</span></span>
+<span id="cb43-21"><a href="#cb43-21" tabindex="-1"></a>)</span>
+<span id="cb43-22"><a href="#cb43-22" tabindex="-1"></a></span>
+<span id="cb43-23"><a href="#cb43-23" tabindex="-1"></a><span class="co"># How robust is the result to hidden bias?</span></span>
+<span id="cb43-24"><a href="#cb43-24" tabindex="-1"></a>sa <span class="ot">&lt;-</span> <span class="fu">sensitivity_analysis</span>(</span>
+<span id="cb43-25"><a href="#cb43-25" tabindex="-1"></a>  <span class="at">result =</span> result_sa,</span>
+<span id="cb43-26"><a href="#cb43-26" tabindex="-1"></a>  <span class="at">left =</span> left_sa,</span>
+<span id="cb43-27"><a href="#cb43-27" tabindex="-1"></a>  <span class="at">right =</span> right_sa,</span>
+<span id="cb43-28"><a href="#cb43-28" tabindex="-1"></a>  <span class="at">outcome_var =</span> <span class="st">&quot;outcome&quot;</span>,</span>
+<span id="cb43-29"><a href="#cb43-29" tabindex="-1"></a>  <span class="at">gamma =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="at">by =</span> <span class="fl">0.25</span>)</span>
+<span id="cb43-30"><a href="#cb43-30" tabindex="-1"></a>)</span>
+<span id="cb43-31"><a href="#cb43-31" tabindex="-1"></a></span>
+<span id="cb43-32"><a href="#cb43-32" tabindex="-1"></a>sa</span>
+<span id="cb43-33"><a href="#cb43-33" tabindex="-1"></a><span class="co">#&gt; Rosenbaum Sensitivity Analysis</span></span>
+<span id="cb43-34"><a href="#cb43-34" tabindex="-1"></a><span class="co">#&gt; ==============================</span></span>
+<span id="cb43-35"><a href="#cb43-35" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb43-36"><a href="#cb43-36" tabindex="-1"></a><span class="co">#&gt; Matched pairs: 50 </span></span>
+<span id="cb43-37"><a href="#cb43-37" tabindex="-1"></a><span class="co">#&gt; Alternative: greater </span></span>
+<span id="cb43-38"><a href="#cb43-38" tabindex="-1"></a><span class="co">#&gt; Test statistic (T+): 889.0 </span></span>
+<span id="cb43-39"><a href="#cb43-39" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb43-40"><a href="#cb43-40" tabindex="-1"></a><span class="co">#&gt; Gamma    p (upper bound)</span></span>
+<span id="cb43-41"><a href="#cb43-41" tabindex="-1"></a><span class="co">#&gt; -----    ---------------</span></span>
+<span id="cb43-42"><a href="#cb43-42" tabindex="-1"></a><span class="co">#&gt; 1.00     0.0077 *</span></span>
+<span id="cb43-43"><a href="#cb43-43" tabindex="-1"></a><span class="co">#&gt; 1.25     0.0401 *</span></span>
+<span id="cb43-44"><a href="#cb43-44" tabindex="-1"></a><span class="co">#&gt; 1.50     0.1118</span></span>
+<span id="cb43-45"><a href="#cb43-45" tabindex="-1"></a><span class="co">#&gt; 1.75     0.2195</span></span>
+<span id="cb43-46"><a href="#cb43-46" tabindex="-1"></a><span class="co">#&gt; 2.00     0.3467</span></span>
+<span id="cb43-47"><a href="#cb43-47" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb43-48"><a href="#cb43-48" tabindex="-1"></a><span class="co">#&gt; * significant at alpha = 0.05</span></span>
+<span id="cb43-49"><a href="#cb43-49" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb43-50"><a href="#cb43-50" tabindex="-1"></a><span class="co">#&gt; Insensitive to hidden bias up to Gamma = 1.25</span></span>
+<span id="cb43-51"><a href="#cb43-51" tabindex="-1"></a><span class="co">#&gt; To explain away the effect, hidden bias would need Gamma &gt;= 1.50</span></span></code></pre></div>
 <p>The <strong>critical gamma</strong> (<span class="math inline">\(\Gamma\)</span>) is the smallest value at which
 the upper-bound p-value crosses 0.05. A larger critical gamma means the
 finding is more robust: a critical gamma of 1.75, for example, means an
@@ -2399,23 +2486,23 @@ factor of 1.75 to explain away the result.</p>
 <h2>Visualizing Results with autoplot</h2>
 <p>If <code>ggplot2</code> is available, <code>autoplot()</code> methods
 produce publication-ready plots:</p>
-<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;ggplot2&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
-<span id="cb42-2"><a href="#cb42-2" tabindex="-1"></a>  <span class="fu">library</span>(ggplot2)</span>
-<span id="cb42-3"><a href="#cb42-3" tabindex="-1"></a></span>
-<span id="cb42-4"><a href="#cb42-4" tabindex="-1"></a>  <span class="co"># Distance distribution</span></span>
-<span id="cb42-5"><a href="#cb42-5" tabindex="-1"></a>  <span class="fu">autoplot</span>(result, <span class="at">type =</span> <span class="st">&quot;histogram&quot;</span>)</span>
-<span id="cb42-6"><a href="#cb42-6" tabindex="-1"></a>}</span></code></pre></div>
-<p><img role="img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAqAAAAGACAMAAABFpiBcAAABF1BMVEUAAAAAADoAAGYAOjoAOmYAOpAAZpAAZrY6AAA6ADo6AGY6OgA6OmY6ZmY6ZpA6ZrY6kLY6kNtGgrRNTU1NTW5NTY5NbqtNjshmAABmADpmOgBmOjpmOmZmZjpmkJBmkLZmkNtmtpBmtttmtv9uTU1uTW5uTY5ubqtuq+SOTU2OTW6OTY6OyP+QOgCQZgCQZjqQZmaQkDqQkLaQtpCQttuQ27aQ2/+rbk2rbm6rbo6ryKur5P+2ZgC2Zjq2kDq2tpC2ttu225C229u22/+2/9u2///Ijk3I///bkDrbkGbbtmbbtpDb27bb29vb/7bb///kq27k////tmb/yI7/25D/27b/29v/5Kv//7b//8j//9v//+T////U3lfZAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAMb0lEQVR4nO3cCVsbxwGHcQnblRynSagwJrRN2+AD26inC4lRkqYuSLbbCIRcHez3/xydmT0ldKylEfvf9P09jy0B0kiY1zOzK6ASAMIqRT8BYBEChTQChTQChTQChTQChTQChTQChbQVA219+iq69v7X29kP9H9zlr4xbt7rTl+bpVNxPn1z45YTw32k4ZfHcz7y/kGlctc+WPBhP3rY9Fpre869UIRVA61sheX065WJL2hna/VAK5WD6VtODPexz3FeaT33WFWT73DPXrOPkV7r35/XNQqwaqDVB+GXv3OnnifQxcI7jd/Wq9NtrBFob95dx83qq2D8faVm/2d80TXXtrPXglZt1YeEf6sGuvUX1964+ZUL9J1ZNKu/N2+aaci8/a5euXvsAv1p377fpWr+/PDAveVuUP1dMy4hzrBn7uuiHv/JDPd1Olw4ejA1wl2Xc7I2R3eKjO3o6R3CGdJNkn33jKNn1J2+xhSqZeVAf3Rfxv4nP9a3kzX6ICqqFy2h4+bd/XDlDiNI1vHo9tOBxqlEt4yHi0cPMiPED2H3GPGDxR9z+nW3X4jvkAk0iB6rZt5ZCz+Zs/RalDZErBzov5rhcmjno3Fz641Noha2ZtbQ4+Cdmw0rZkp6a0KMsqt1TW02DLPIfmjeCNQGYm/Zr3/ezQ4Xj56OkHkIO2m+Nx9M75SOmd7hho6pNpxLg071OL0WRJlCw8qBnnVMe8O9g+hL+58f/lyvREX1422pScsdf8SBxm/13F5vKqZo2DDQO1/9M/uRaPR0hOQh4rLsyh3fKRwqXLPjO0x7Z5/snEA7N7bCKMzqgfbMl7EX7ejCdTYNNFpn451dbWKfV4sKGN/Yg8aBBi072mdvoo8ko6cjJA/Ri1ZuM2Jyp+xDx3eYXOLH31XcbnN2oL1kn4DCrR7ocG/bHvDaL6356v/yr//4aW/dQNNbvd8PW7IfSUdfHGhyp+xDzwzUrPyuR/sppJ9MEC/uBCpk9UDtgVI93MeFuSSbxswSPzvQeUt8chRv/fuPppO093APmgaaLPETMbk7ZR86vkPWcD862J99FE+gStYItFf9bVSjiadrT/eYL2/HHU+bv/p72SQnA519kDR+W3eHRPe6vcoX3WD8vRnFDpeOnh0veQgzlBnLbDmSO4XPcH6grWSP2bJnP7+z/13Sa+xBpawRqFk1owON+GyODTQ5zRSdXJoV6I3TTFOvJEXjRcOlo2dGiB8iXuOTJxG/NOAqmxlotKWthJ9CZfqVJI7ipawRqJl1DqIDDXuy/O4rV+2+PbFjz8N/PX+JD0/U/2FvMtDqZ8lr8e6c++fdIBwuGX16BLdQ981H79hryZ2c6DzojEDjbav9FNzQyWvx4TXOgyop8LuZogOTDVk9M15JUlJIoP36L8ws2drssUhv1Z0kr8UrKSTQqe3ihqz4fXNMoFKKWeInt4sbMv/7QRfi+0Gl8B31kEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkEagkLYw0MHTdhBcNBqNh+1g9Lyxe3lbzwqILAr0yoYZnB/Z69cnR8HFo1t6UkBsQaDnO6/NDHr9zal9Y/SyHU6owG1ausSbpb3ROAoGzy6D0YvT23paQGhpoIMnp3YWvdolUBRg+UGSdX7EDIpC5A30I/agv5q2/rPE/62lgdq1/frb9vXJYd6jeAKFP7nOg+6YpT3/eVAChT8beCWJQOEPgUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIagUIa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" /><!-- --></p>
-<div class="sourceCode" id="cb43"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;ggplot2&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
-<span id="cb43-2"><a href="#cb43-2" tabindex="-1"></a>  <span class="co"># Balance diagnostics love plot</span></span>
-<span id="cb43-3"><a href="#cb43-3" tabindex="-1"></a>  bal <span class="ot">&lt;-</span> <span class="fu">balance_diagnostics</span>(result, left_data, right_data, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>))</span>
-<span id="cb43-4"><a href="#cb43-4" tabindex="-1"></a>  <span class="fu">autoplot</span>(bal, <span class="at">type =</span> <span class="st">&quot;love&quot;</span>)</span>
-<span id="cb43-5"><a href="#cb43-5" tabindex="-1"></a>}</span></code></pre></div>
-<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
 <div class="sourceCode" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;ggplot2&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
-<span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a>  <span class="co"># Sensitivity analysis curve</span></span>
-<span id="cb44-3"><a href="#cb44-3" tabindex="-1"></a>  <span class="fu">autoplot</span>(sa)</span>
-<span id="cb44-4"><a href="#cb44-4" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb44-2"><a href="#cb44-2" tabindex="-1"></a>  <span class="fu">library</span>(ggplot2)</span>
+<span id="cb44-3"><a href="#cb44-3" tabindex="-1"></a></span>
+<span id="cb44-4"><a href="#cb44-4" tabindex="-1"></a>  <span class="co"># Distance distribution</span></span>
+<span id="cb44-5"><a href="#cb44-5" tabindex="-1"></a>  <span class="fu">autoplot</span>(result, <span class="at">type =</span> <span class="st">&quot;histogram&quot;</span>)</span>
+<span id="cb44-6"><a href="#cb44-6" tabindex="-1"></a>}</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode" id="cb45"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;ggplot2&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb45-2"><a href="#cb45-2" tabindex="-1"></a>  <span class="co"># Balance diagnostics love plot</span></span>
+<span id="cb45-3"><a href="#cb45-3" tabindex="-1"></a>  bal <span class="ot">&lt;-</span> <span class="fu">balance_diagnostics</span>(result, left_data, right_data, <span class="at">vars =</span> <span class="fu">c</span>(<span class="st">&quot;age&quot;</span>, <span class="st">&quot;income&quot;</span>))</span>
+<span id="cb45-4"><a href="#cb45-4" tabindex="-1"></a>  <span class="fu">autoplot</span>(bal, <span class="at">type =</span> <span class="st">&quot;love&quot;</span>)</span>
+<span id="cb45-5"><a href="#cb45-5" tabindex="-1"></a>}</span></code></pre></div>
+<p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode" id="cb46"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;ggplot2&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb46-2"><a href="#cb46-2" tabindex="-1"></a>  <span class="co"># Sensitivity analysis curve</span></span>
+<span id="cb46-3"><a href="#cb46-3" tabindex="-1"></a>  <span class="fu">autoplot</span>(sa)</span>
+<span id="cb46-4"><a href="#cb46-4" tabindex="-1"></a>}</span></code></pre></div>
 <p><img role="img" src="data:image/png;base64,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" /><!-- --></p>
 <p>All <code>autoplot()</code> methods return <code>ggplot</code>
 objects, so you can add layers, themes, and labels as needed.</p>

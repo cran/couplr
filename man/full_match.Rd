@@ -64,8 +64,10 @@ distance; \code{"greedy"} uses a fast two-pass heuristic.}
 dense cost matrix would consume a large fraction of free system RAM.
 \code{full_match()} uses a different (min-cost-flow) solver backend than
 \code{match_couples()}/\code{assignment()}, so \code{memory_mode = "lazy"} is not
-available here yet and errors if requested; "dense" skips the RAM check
-entirely.}
+available here yet and errors if requested. \code{memory_mode = "implicit"}
+errors for a further reason: a full matching's column nodes carry
+capacities above one, so a column dual is not the assignment dual the
+pricing loop reads. "dense" skips the RAM check entirely.}
 }
 \value{
 An S3 object of class \code{c("full_matching_result", "couplr_result")}
@@ -73,11 +75,28 @@ containing:
 \describe{
 \item{groups}{Tibble with columns \code{group_id}, \code{id}, \code{side}
 (\code{"left"}/\code{"right"}), and \code{weight}}
+\item{status}{What the solver terminated on, one of
+\code{"optimal"} (every unit placed in a group meeting
+\code{min_controls}, at minimum total distance),
+\code{"partial"} (groups formed, some units left over, under a
+maximum-cardinality-then-minimum-cost objective),
+\code{"infeasible"} (no group meets the requested bounds), or
+\code{"heuristic"} (\code{method = "greedy"}, which neither claims nor
+checks optimality). See \code{\link{solver_status_values}}.}
 \item{info}{List with \code{n_groups}, \code{n_left}, \code{n_right},
 \code{n_unmatched_left}, \code{n_unmatched_right}, \code{method},
 \code{vars}}
-\item{unmatched}{List of unmatched left and right IDs (if caliper excludes
-units)}
+\item{unmatched}{Left and right IDs that no group contains. Every unit is
+either a row of \code{groups} or an entry here.}
+\item{potentials}{Node potentials from the flow solve, a list with elements
+\code{left} and \code{right} holding one value per unit. They are one
+representative of the dual, in the gauge the solver fixes. Present for
+\code{method = "optimal"} only.}
+\item{certificate}{A \code{flow_certificate} from
+\code{\link{verify_flow}}, checking the solved flow and its potentials
+against the optimality conditions. \code{status} says what the solver
+terminated on; this says what was proven. Present for
+\code{method = "optimal"} only.}
 }
 }
 \description{

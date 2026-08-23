@@ -1,6 +1,75 @@
 # ==============================================================================
 # Full Matching - Variable-ratio group matching
 # ==============================================================================
+# The optimal route compiles the design into the package's flow model and
+# solves it there. The network is the one src/flow/flow_compile.h describes:
+# the auxiliary source feeds every group centre through an arc bounded by
+# [min_controls, max_controls], each centre reaches the units its distances
+# admit, and every unit passes one unit of flow to the sink. Group centres are
+# the smaller side, so an instance with more left units than right ones is
+# compiled from the transpose and read back through it.
+#
+# Solving there is what makes the node potentials and the optimality
+# certificate available: both are properties of the flow, and the group
+# memberships alone cannot reconstruct either.
+
+# Read a solved flow back as group memberships in the caller's left/right
+# terms. A centre holding fewer than min_controls units did not meet the lower
+# bound on its own arc, so it holds no group and its units stay unmatched.
+.full_match_groups <- function(compiled, flow, min_controls) {
+  n_centres <- as.integer(compiled$shape$n_centres)
+  n_units <- as.integer(compiled$shape$n_units)
+
+  block <- compiled$block
+  placed <- flow[seq_len(block$n_arcs) + block$first_arc - 1] > 0
+  centre_of_unit <- integer(n_units)
+  centre_of_unit[block$col[placed]] <- block$row[placed]
+
+  held <- tabulate(block$row[placed], nbins = n_centres) >= min_controls
+  centre_group <- integer(n_centres)
+  centre_group[held] <- seq_len(sum(held))
+
+  group_of_unit <- integer(n_units)
+  in_group <- centre_of_unit > 0L
+  group_of_unit[in_group] <- centre_group[centre_of_unit[in_group]]
+
+  if (isTRUE(compiled$shape$transposed)) {
+    list(group_of_left = group_of_unit, group_of_right = centre_group,
+         n_groups = sum(held))
+  } else {
+    list(group_of_left = centre_group, group_of_right = group_of_unit,
+         n_groups = sum(held))
+  }
+}
+
+# Node potentials in the caller's left/right terms. They are one representative
+# of the dual, in the gauge the solver fixes: the potential at the auxiliary
+# source is zero.
+.full_match_potentials <- function(compiled, potential) {
+  layout <- compiled$layout
+  rows <- potential[layout$row_base + seq_len(layout$n_rows) - 1L]
+  cols <- potential[layout$col_base + seq_len(layout$n_cols) - 1L]
+  if (isTRUE(compiled$shape$transposed)) {
+    list(left = cols, right = rows)
+  } else {
+    list(left = rows, right = cols)
+  }
+}
+
+# What the solve terminated on, with one reading applied to it. A shortfall
+# leaves centres below min_controls, and those groups dissolve; a partial
+# matching that lost every one of them has nothing left to report but
+# infeasibility. Bounds the compiler rejects never reach a solver at all.
+.full_match_status <- function(bounds_feasible, solver_status, n_groups) {
+  if (!isTRUE(bounds_feasible)) {
+    return(.validate_status("infeasible"))
+  }
+  status <- .validate_status(solver_status)
+  if (!identical(status, "optimal") && n_groups == 0L) {
+    return(.validate_status("infeasible"))
+  }
+  status
+}
 
 #' Full Matching
 #'
@@ -34,19 +103,38 @@
 #'   dense cost matrix would consume a large fraction of free system RAM.
 #'   `full_match()` uses a different (min-cost-flow) solver backend than
 #'   `match_couples()`/`assignment()`, so `memory_mode = "lazy"` is not
-#'   available here yet and errors if requested; "dense" skips the RAM check
-#'   entirely.
+#'   available here yet and errors if requested. `memory_mode = "implicit"`
+#'   errors for a further reason: a full matching's column nodes carry
+#'   capacities above one, so a column dual is not the assignment dual the
+#'   pricing loop reads. "dense" skips the RAM check entirely.
 #'
 #' @return An S3 object of class \code{c("full_matching_result", "couplr_result")}
 #'   containing:
 #' \describe{
 #'   \item{groups}{Tibble with columns \code{group_id}, \code{id}, \code{side}
 #'     (\code{"left"}/\code{"right"}), and \code{weight}}
+#'   \item{status}{What the solver terminated on, one of
+#'     \code{"optimal"} (every unit placed in a group meeting
+#'     \code{min_controls}, at minimum total distance),
+#'     \code{"partial"} (groups formed, some units left over, under a
+#'     maximum-cardinality-then-minimum-cost objective),
+#'     \code{"infeasible"} (no group meets the requested bounds), or
+#'     \code{"heuristic"} (\code{method = "greedy"}, which neither claims nor
+#'     checks optimality). See \code{\link{solver_status_values}}.}
 #'   \item{info}{List with \code{n_groups}, \code{n_left}, \code{n_right},
 #'     \code{n_unmatched_left}, \code{n_unmatched_right}, \code{method},
 #'     \code{vars}}
-#'   \item{unmatched}{List of unmatched left and right IDs (if caliper excludes
-#'     units)}
+#'   \item{unmatched}{Left and right IDs that no group contains. Every unit is
+#'     either a row of \code{groups} or an entry here.}
+#'   \item{potentials}{Node potentials from the flow solve, a list with elements
+#'     \code{left} and \code{right} holding one value per unit. They are one
+#'     representative of the dual, in the gauge the solver fixes. Present for
+#'     \code{method = "optimal"} only.}
+#'   \item{certificate}{A \code{flow_certificate} from
+#'     \code{\link{verify_flow}}, checking the solved flow and its potentials
+#'     against the optimality conditions. \code{status} says what the solver
+#'     terminated on; this says what was proven. Present for
+#'     \code{method = "optimal"} only.}
 #' }
 #'
 #' @details
@@ -174,53 +262,81 @@ full_match <- function(left, right, vars,
   n_left <- nrow(cost_matrix)
   n_right <- ncol(cost_matrix)
 
+  potentials <- NULL
+  certificate <- NULL
+
   if (method == "optimal") {
-    # --- Optimal full matching via min-cost max-flow ---
-    max_controls_int <- if (is.infinite(max_controls)) {
-      .Machine$integer.max
+    # --- Optimal full matching, compiled and solved as a flow ---
+    compiled <- lap_flow_compile_full_match(
+      cost_matrix, as.numeric(min_controls),
+      if (is.infinite(max_controls)) Inf else as.numeric(max_controls)
+    )
+
+    if (isTRUE(compiled$bounds_feasible)) {
+      solved <- .flow_solve(.flow_problem(
+        n_nodes = compiled$problem$n_nodes,
+        supply = compiled$problem$supply,
+        arcs = tibble::tibble(tail = compiled$problem$tail,
+                              head = compiled$problem$head,
+                              lower = compiled$problem$lower,
+                              upper = compiled$problem$upper,
+                              cost = compiled$problem$cost)
+      ))
+      read <- .full_match_groups(compiled, solved$flow, min_controls)
+      potentials <- .full_match_potentials(compiled, solved$potential)
+      certificate <- verify_flow(solved)
     } else {
-      as.integer(max_controls)
+      solved <- NULL
+      read <- list(group_of_left = integer(n_left),
+                   group_of_right = integer(n_right), n_groups = 0L)
     }
 
-    mcmf_result <- lap_solve_full_matching(cost_matrix, min_controls,
-                                           max_controls_int)
-
     # group_of_left / group_of_right: 1-based group IDs, 0 = unmatched
-    gol <- mcmf_result$group_of_left
-    gor <- mcmf_result$group_of_right
+    gol <- read$group_of_left
+    gor <- read$group_of_right
 
     groups_rows <- list()
-    n_groups_out <- mcmf_result$n_groups
+    n_groups_out <- 0L
+    matched_left_idx <- integer(0)
+    matched_right_idx <- integer(0)
 
-    for (g in seq_len(n_groups_out)) {
+    for (g in seq_len(read$n_groups)) {
       left_in_g <- which(gol == g)
       right_in_g <- which(gor == g)
       n_right_in_group <- length(right_in_g)
       n_left_in_group <- length(left_in_g)
 
-      if (n_left_in_group > 0 && n_right_in_group > 0) {
-        # Weights: the smaller side gets weight 1, the larger side gets
-        # weight (n_small / n_large) so total weights balance.
-        # Standard convention: left weight = 1, right weight = n_left / n_right
-        left_weight <- 1.0
-        right_weight <- n_left_in_group / n_right_in_group
-        groups_rows[[length(groups_rows) + 1L]] <- tibble::tibble(
-          group_id = rep(g, n_left_in_group),
-          id = l_ids[left_in_g],
-          side = rep("left", n_left_in_group),
-          weight = rep(left_weight, n_left_in_group)
-        )
-        groups_rows[[length(groups_rows) + 1L]] <- tibble::tibble(
-          group_id = rep(g, n_right_in_group),
-          id = r_ids[right_in_g],
-          side = rep("right", n_right_in_group),
-          weight = rep(right_weight, n_right_in_group)
-        )
-      }
+      # A group needs a unit on each side: it is the pairing that carries the
+      # weight ratio and the matched distance. A one-sided group holds no
+      # match, so its members stay unmatched.
+      if (n_left_in_group == 0L || n_right_in_group == 0L) next
+
+      n_groups_out <- n_groups_out + 1L
+      matched_left_idx <- c(matched_left_idx, left_in_g)
+      matched_right_idx <- c(matched_right_idx, right_in_g)
+
+      # Weights: the smaller side gets weight 1, the larger side gets
+      # weight (n_small / n_large) so total weights balance.
+      # Standard convention: left weight = 1, right weight = n_left / n_right
+      left_weight <- 1.0
+      right_weight <- n_left_in_group / n_right_in_group
+      groups_rows[[length(groups_rows) + 1L]] <- tibble::tibble(
+        group_id = rep(n_groups_out, n_left_in_group),
+        id = l_ids[left_in_g],
+        side = rep("left", n_left_in_group),
+        weight = rep(left_weight, n_left_in_group)
+      )
+      groups_rows[[length(groups_rows) + 1L]] <- tibble::tibble(
+        group_id = rep(n_groups_out, n_right_in_group),
+        id = r_ids[right_in_g],
+        side = rep("right", n_right_in_group),
+        weight = rep(right_weight, n_right_in_group)
+      )
     }
 
-    unmatched_left_idx <- which(gol == 0)
-    unmatched_right_idx <- which(gor == 0)
+    status <- .full_match_status(compiled$bounds_feasible,
+                                 if (is.null(solved)) NULL else solved$status,
+                                 n_groups_out)
 
   } else {
     # --- Greedy group formation ---
@@ -237,15 +353,11 @@ full_match <- function(left, right, vars,
 
     group_id <- 0L
     groups_list <- vector("list", n_left)
-    unmatched_left_idx <- integer(0)
 
     for (i in left_order) {
       row <- cost_matrix[i, ]
       available <- which(is.finite(row) & !right_assigned)
-      if (length(available) == 0) {
-        unmatched_left_idx <- c(unmatched_left_idx, i)
-        next
-      }
+      if (length(available) == 0) next
       best_j <- available[which.min(row[available])]
       group_id <- group_id + 1L
       left_to_right[i] <- best_j
@@ -256,7 +368,6 @@ full_match <- function(left, right, vars,
 
     # Step 2: Assign remaining right units to nearest already-matched left unit
     remaining_right <- which(!right_assigned)
-    unmatched_right_idx <- integer(0)
 
     if (length(remaining_right) > 0) {
       matched_left_idxs <- which(group_of_left > 0)
@@ -273,10 +384,7 @@ full_match <- function(left, right, vars,
           }
         }
         eligible <- eligible & is.finite(col)
-        if (!any(eligible)) {
-          unmatched_right_idx <- c(unmatched_right_idx, j)
-          next
-        }
+        if (!any(eligible)) next
         best_k <- which(eligible)[which.min(col[eligible])]
         best_left <- matched_left_idxs[best_k]
         gi <- group_of_left[best_left]
@@ -290,21 +398,25 @@ full_match <- function(left, right, vars,
       for (g in seq_len(group_id)) {
         if (is.null(groups_list[[g]])) { keep[g] <- FALSE; next }
         if (length(groups_list[[g]]$right_idxs) < min_controls) {
-          unmatched_left_idx <- c(unmatched_left_idx, groups_list[[g]]$left_idx)
-          unmatched_right_idx <- c(unmatched_right_idx, groups_list[[g]]$right_idxs)
           keep[g] <- FALSE
         }
       }
       groups_list <- groups_list[keep]
     }
 
+    status <- "heuristic"
+
     groups_rows <- list()
     n_groups_out <- 0L
+    matched_left_idx <- integer(0)
+    matched_right_idx <- integer(0)
     for (g in seq_along(groups_list)) {
       grp <- groups_list[[g]]
       if (is.null(grp)) next
       n_groups_out <- n_groups_out + 1L
       n_right_in_group <- length(grp$right_idxs)
+      matched_left_idx <- c(matched_left_idx, grp$left_idx)
+      matched_right_idx <- c(matched_right_idx, grp$right_idxs)
       right_weight <- 1 / n_right_in_group
       groups_rows[[length(groups_rows) + 1]] <- tibble::tibble(
         group_id = n_groups_out,
@@ -331,7 +443,12 @@ full_match <- function(left, right, vars,
     )
   }
 
-  # Unmatched IDs
+  # Unmatched is whatever the emitted groups do not cover, so every unit is
+  # either a row of `groups` or an entry of `unmatched`, and the counts in
+  # `info` describe the rows that were actually written.
+  unmatched_left_idx <- setdiff(seq_len(n_left), matched_left_idx)
+  unmatched_right_idx <- setdiff(seq_len(n_right), matched_right_idx)
+
   unmatched <- list(
     left = l_ids[unmatched_left_idx],
     right = r_ids[unmatched_right_idx]
@@ -349,12 +466,19 @@ full_match <- function(left, right, vars,
     distance_metric = if (is.function(distance)) "custom" else distance,
     vars = vars
   )
+  info <- c(info, design_estimand(n_left, info$n_matched_left))
 
   result <- list(
     groups = groups_tbl,
+    status = status,
     info = info,
     unmatched = unmatched
   )
+
+  # Both sit at the top level rather than inside info, which callers routinely
+  # truncate.
+  if (!is.null(potentials)) result$potentials <- potentials
+  if (!is.null(certificate)) result$certificate <- certificate
 
   structure(result, class = c("full_matching_result", "couplr_result"))
 }
@@ -370,6 +494,7 @@ full_match <- function(left, right, vars,
 print.full_matching_result <- function(x, ...) {
   cat("\nFull Matching Result\n")
   cat("====================\n\n")
+  cat(sprintf("  Status: %s\n", x$status))
   cat(sprintf("  Groups formed: %d\n", x$info$n_groups))
   cat(sprintf("  Left units:  %d matched, %d unmatched (of %d)\n",
               x$info$n_matched_left, x$info$n_unmatched_left, x$info$n_left))

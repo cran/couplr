@@ -9,6 +9,13 @@
 #' @keywords internal
 BIG_COST <- .Machine$double.xmax / 2
 
+# The admissibility test every path shares: a cost stands for an allowed pair
+# when it is finite and below the forbidden marker. `NA`, `Inf` and a cost at or
+# above `BIG_COST` all say the same thing, which is that there is no edge there.
+.is_valid_cost <- function(cost) {
+  is.finite(cost) & cost < BIG_COST
+}
+
 #' Apply maximum distance constraint
 #'
 #' @return Modified cost matrix with forbidden pairs marked.
@@ -73,9 +80,6 @@ apply_calipers <- function(cost_matrix, left, right, calipers, vars) {
     return(cost_matrix)
   }
 
-  n_left <- nrow(left)
-  n_right <- nrow(right)
-
   # For each variable with a caliper
   for (var_name in names(calipers)) {
     if (!(var_name %in% vars)) {
@@ -84,18 +88,10 @@ apply_calipers <- function(cost_matrix, left, right, calipers, vars) {
 
     caliper_value <- calipers[[var_name]]
 
-    left_vals <- left[[var_name]]
-    right_vals <- right[[var_name]]
-
-    # Compute absolute differences for this variable
-    for (i in seq_len(n_left)) {
-      for (j in seq_len(n_right)) {
-        abs_diff <- abs(left_vals[i] - right_vals[j])
-        if (abs_diff > caliper_value) {
-          cost_matrix[i, j] <- Inf
-        }
-      }
-    }
+    # The whole n_left x n_right table of absolute differences on this
+    # variable, in one pass, and the cells beyond the caliper are forbidden.
+    over <- abs(outer(left[[var_name]], right[[var_name]], `-`)) > caliper_value
+    cost_matrix[over] <- Inf
   }
 
   cost_matrix
@@ -161,7 +157,7 @@ has_valid_pairs <- function(cost_matrix) {
     # already catch and translate into the same "no valid pairs" outcome.
     return(TRUE)
   }
-  any(is.finite(cost_matrix) & cost_matrix < BIG_COST)
+  any(.is_valid_cost(cost_matrix))
 }
 
 #' Count valid pairs in cost matrix
@@ -169,5 +165,5 @@ has_valid_pairs <- function(cost_matrix) {
 #' @return Integer count of valid (non-forbidden) pairs.
 #' @keywords internal
 count_valid_pairs <- function(cost_matrix) {
-  sum(is.finite(cost_matrix) & cost_matrix < BIG_COST)
+  sum(.is_valid_cost(cost_matrix))
 }

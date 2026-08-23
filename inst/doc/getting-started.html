@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-07-25" />
+<meta name="date" content="2026-08-23" />
 
 <title>Quick Start</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Quick Start</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-07-25</h4>
+<h4 class="date">2026-08-23</h4>
 
 
 
@@ -643,7 +643,7 @@ pairings. Use <code>max_distance</code> to set a caliper:</p>
 <span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>)</span>
 <span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
 <span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt; Warning: 94.9% of pairs are forbidden!</span></span>
-<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="co">#&gt;   Only 0 valid pairs for 50 left units - the matching pool is shallow!</span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="co">#&gt;   Only 205 valid pairs for 50 left units - the matching pool is shallow!</span></span>
 <span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co">#&gt;   Your constraints might be critically strict.</span></span>
 <span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="co">#&gt;   Consider:</span></span>
 <span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="co">#&gt;     - Relaxing max_distance threshold</span></span>
@@ -654,7 +654,7 @@ pairings. Use <code>max_distance</code> to set a caliper:</p>
 <span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Without caliper:&quot;</span>, result_loose<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;pairs</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a><span class="co">#&gt; Without caliper: 50 pairs</span></span>
 <span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;With caliper:&quot;</span>, result_strict<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;pairs</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="co">#&gt; With caliper: 37 pairs</span></span></code></pre></div>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="co">#&gt; With caliper: 40 pairs</span></span></code></pre></div>
 <p>Stricter calipers mean fewer but better matches.</p>
 <hr />
 </div>
@@ -728,23 +728,24 @@ total distance:</p>
 <span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co">#&gt; Full Matching Result</span></span>
 <span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt; ====================</span></span>
 <span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt;   Groups formed: 50</span></span>
-<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt;   Left units:  50 matched, 0 unmatched (of 50)</span></span>
-<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt;   Right units: 80 matched, 0 unmatched (of 80)</span></span>
-<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt;   Right units per group: min=1, median=1, max=13</span></span>
-<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a></span>
-<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co"># Each group has one or more left and right units with matching weights</span></span>
-<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="fu">head</span>(result_full<span class="sc">$</span>groups)</span>
-<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 4</span></span>
-<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a><span class="co">#&gt;   group_id id    side  weight</span></span>
-<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a><span class="co">#&gt;      &lt;int&gt; &lt;chr&gt; &lt;chr&gt;  &lt;dbl&gt;</span></span>
-<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a><span class="co">#&gt; 1        1 1     left       1</span></span>
-<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a><span class="co">#&gt; 2        1 42    right      1</span></span>
-<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="co">#&gt; 3        2 2     left       1</span></span>
-<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a><span class="co">#&gt; 4        2 11    right      1</span></span>
-<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="co">#&gt; 5        3 3     left       1</span></span>
-<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="co">#&gt; 6        3 59    right      1</span></span></code></pre></div>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt;   Status: optimal</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt;   Groups formed: 50</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt;   Left units:  50 matched, 0 unmatched (of 50)</span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt;   Right units: 80 matched, 0 unmatched (of 80)</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co">#&gt;   Right units per group: min=1, median=1, max=13</span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co"># Each group has one or more left and right units with matching weights</span></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a><span class="fu">head</span>(result_full<span class="sc">$</span>groups)</span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 4</span></span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a><span class="co">#&gt;   group_id id    side  weight</span></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a><span class="co">#&gt;      &lt;int&gt; &lt;chr&gt; &lt;chr&gt;  &lt;dbl&gt;</span></span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a><span class="co">#&gt; 1        1 1     left       1</span></span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="co">#&gt; 2        1 42    right      1</span></span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a><span class="co">#&gt; 3        2 2     left       1</span></span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="co">#&gt; 4        2 11    right      1</span></span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="co">#&gt; 5        3 3     left       1</span></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a><span class="co">#&gt; 6        3 59    right      1</span></span></code></pre></div>
 <p>Full matching is useful when your control pool is much larger than
 treatment and you don’t want to waste data. See
 <code>vignette(&quot;matching-workflows&quot;)</code> for details on constraints
@@ -802,29 +803,37 @@ interoperability with cobalt and marginaleffects.</p>
 <span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a>  <span class="at">auto_scale =</span> <span class="cn">TRUE</span></span>
 <span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a>)</span>
 <span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a><span class="co">#&gt; Auto-selected scaling method: standardize</span></span>
-<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a></span>
-<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a><span class="co"># 3. Check how many matched</span></span>
-<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Treated patients:&quot;</span>, <span class="fu">nrow</span>(patients_treated), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a><span class="co">#&gt; Treated patients: 100</span></span>
-<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Successfully matched:&quot;</span>, matched<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a><span class="co">#&gt; Successfully matched: 100</span></span>
-<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Match rate:&quot;</span>, <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> matched<span class="sc">$</span>info<span class="sc">$</span>n_matched <span class="sc">/</span> <span class="fu">nrow</span>(patients_treated), <span class="dv">1</span>), <span class="st">&quot;%</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a><span class="co">#&gt; Match rate: 100 %</span></span>
+<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a><span class="co">#&gt; Warning: No id column found in left, so ids left_1 ... left_100 were used.</span></span>
+<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a><span class="co">#&gt; Downstream verbs (join_matched(), match_data(), balance_diagnostics()) join on</span></span>
+<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="co">#&gt; these values, so pass left_id = &quot;&lt;column&gt;&quot; to key the matching on your own</span></span>
+<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a><span class="co">#&gt; identifier.</span></span>
+<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a><span class="co">#&gt; Warning: No id column found in right, so ids right_1 ... right_200 were used.</span></span>
+<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a><span class="co">#&gt; Downstream verbs (join_matched(), match_data(), balance_diagnostics()) join on</span></span>
+<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a><span class="co">#&gt; these values, so pass right_id = &quot;&lt;column&gt;&quot; to key the matching on your own</span></span>
+<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a><span class="co">#&gt; identifier.</span></span>
 <span id="cb10-33"><a href="#cb10-33" tabindex="-1"></a></span>
-<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a><span class="co"># 4. Extract matched samples for analysis</span></span>
-<span id="cb10-35"><a href="#cb10-35" tabindex="-1"></a>treated_matched <span class="ot">&lt;-</span> patients_treated[matched<span class="sc">$</span>pairs<span class="sc">$</span>left_id, ]</span>
-<span id="cb10-36"><a href="#cb10-36" tabindex="-1"></a>control_matched <span class="ot">&lt;-</span> patients_control[matched<span class="sc">$</span>pairs<span class="sc">$</span>right_id, ]</span>
-<span id="cb10-37"><a href="#cb10-37" tabindex="-1"></a></span>
-<span id="cb10-38"><a href="#cb10-38" tabindex="-1"></a><span class="co"># 5. Verify balance</span></span>
-<span id="cb10-39"><a href="#cb10-39" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">Balance check (difference in means):</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb10-40"><a href="#cb10-40" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb10-41"><a href="#cb10-41" tabindex="-1"></a><span class="co">#&gt; Balance check (difference in means):</span></span>
-<span id="cb10-42"><a href="#cb10-42" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Age:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(treated_matched<span class="sc">$</span>age) <span class="sc">-</span> <span class="fu">mean</span>(control_matched<span class="sc">$</span>age), <span class="dv">2</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb10-43"><a href="#cb10-43" tabindex="-1"></a><span class="co">#&gt;   Age: NA</span></span>
-<span id="cb10-44"><a href="#cb10-44" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  BMI:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(treated_matched<span class="sc">$</span>bmi) <span class="sc">-</span> <span class="fu">mean</span>(control_matched<span class="sc">$</span>bmi), <span class="dv">2</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb10-45"><a href="#cb10-45" tabindex="-1"></a><span class="co">#&gt;   BMI: NA</span></span>
-<span id="cb10-46"><a href="#cb10-46" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Smoker %:&quot;</span>, <span class="fu">round</span>(<span class="dv">100</span><span class="sc">*</span>(<span class="fu">mean</span>(treated_matched<span class="sc">$</span>smoker) <span class="sc">-</span> <span class="fu">mean</span>(control_matched<span class="sc">$</span>smoker)), <span class="dv">1</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb10-47"><a href="#cb10-47" tabindex="-1"></a><span class="co">#&gt;   Smoker %: NA</span></span></code></pre></div>
+<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a><span class="co"># 3. Check how many matched</span></span>
+<span id="cb10-35"><a href="#cb10-35" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Treated patients:&quot;</span>, <span class="fu">nrow</span>(patients_treated), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb10-36"><a href="#cb10-36" tabindex="-1"></a><span class="co">#&gt; Treated patients: 100</span></span>
+<span id="cb10-37"><a href="#cb10-37" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Successfully matched:&quot;</span>, matched<span class="sc">$</span>info<span class="sc">$</span>n_matched, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb10-38"><a href="#cb10-38" tabindex="-1"></a><span class="co">#&gt; Successfully matched: 100</span></span>
+<span id="cb10-39"><a href="#cb10-39" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Match rate:&quot;</span>, <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> matched<span class="sc">$</span>info<span class="sc">$</span>n_matched <span class="sc">/</span> <span class="fu">nrow</span>(patients_treated), <span class="dv">1</span>), <span class="st">&quot;%</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb10-40"><a href="#cb10-40" tabindex="-1"></a><span class="co">#&gt; Match rate: 100 %</span></span>
+<span id="cb10-41"><a href="#cb10-41" tabindex="-1"></a></span>
+<span id="cb10-42"><a href="#cb10-42" tabindex="-1"></a><span class="co"># 4. Extract matched samples for analysis</span></span>
+<span id="cb10-43"><a href="#cb10-43" tabindex="-1"></a>treated_matched <span class="ot">&lt;-</span> patients_treated[matched<span class="sc">$</span>pairs<span class="sc">$</span>left_id, ]</span>
+<span id="cb10-44"><a href="#cb10-44" tabindex="-1"></a>control_matched <span class="ot">&lt;-</span> patients_control[matched<span class="sc">$</span>pairs<span class="sc">$</span>right_id, ]</span>
+<span id="cb10-45"><a href="#cb10-45" tabindex="-1"></a></span>
+<span id="cb10-46"><a href="#cb10-46" tabindex="-1"></a><span class="co"># 5. Verify balance</span></span>
+<span id="cb10-47"><a href="#cb10-47" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">Balance check (difference in means):</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb10-48"><a href="#cb10-48" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-49"><a href="#cb10-49" tabindex="-1"></a><span class="co">#&gt; Balance check (difference in means):</span></span>
+<span id="cb10-50"><a href="#cb10-50" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Age:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(treated_matched<span class="sc">$</span>age) <span class="sc">-</span> <span class="fu">mean</span>(control_matched<span class="sc">$</span>age), <span class="dv">2</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb10-51"><a href="#cb10-51" tabindex="-1"></a><span class="co">#&gt;   Age: NA</span></span>
+<span id="cb10-52"><a href="#cb10-52" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  BMI:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(treated_matched<span class="sc">$</span>bmi) <span class="sc">-</span> <span class="fu">mean</span>(control_matched<span class="sc">$</span>bmi), <span class="dv">2</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb10-53"><a href="#cb10-53" tabindex="-1"></a><span class="co">#&gt;   BMI: NA</span></span>
+<span id="cb10-54"><a href="#cb10-54" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Smoker %:&quot;</span>, <span class="fu">round</span>(<span class="dv">100</span><span class="sc">*</span>(<span class="fu">mean</span>(treated_matched<span class="sc">$</span>smoker) <span class="sc">-</span> <span class="fu">mean</span>(control_matched<span class="sc">$</span>smoker)), <span class="dv">1</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb10-55"><a href="#cb10-55" tabindex="-1"></a><span class="co">#&gt;   Smoker %: NA</span></span></code></pre></div>
 <hr />
 </div>
 <div id="next-steps" class="section level2">

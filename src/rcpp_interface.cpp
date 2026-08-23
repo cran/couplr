@@ -31,9 +31,14 @@ Rcpp::IntegerVector sinkhorn_round_impl(Rcpp::NumericMatrix P);
 Rcpp::List solve_ramshaw_tarjan_impl(Rcpp::NumericMatrix cost, bool maximize);
 Rcpp::List solve_push_relabel_impl(Rcpp::NumericMatrix cost, bool maximize);
 Rcpp::List solve_jv_duals_impl(Rcpp::NumericMatrix cost, bool maximize);
+Rcpp::List solve_jv_duals_lazy_impl(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat,
+                                    std::string metric, Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
+                                    double max_distance, Rcpp::List calipers,
+                                    Rcpp::CharacterVector var_names, bool maximize);
 Rcpp::List solve_network_simplex_rcpp(const Rcpp::NumericMatrix& cost_matrix);
 // =======================
 Rcpp::List prepare_cost_matrix_impl(NumericMatrix cost, bool maximize);
+Rcpp::List probe_cost_matrix_impl(SEXP cost);
 Rcpp::List solve_bruteforce_impl(NumericMatrix cost, bool maximize);
 Rcpp::List solve_jv_impl(NumericMatrix cost, bool maximize);
 Rcpp::List solve_jv_lazy_impl(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat,
@@ -64,7 +69,51 @@ Rcpp::List solve_line_metric_impl(const Rcpp::NumericVector& x,
                                   const std::string& cost,
                                   bool maximize);
 Rcpp::List solve_ssap_bucket_impl(Rcpp::NumericMatrix cost, bool maximize);
-Rcpp::List solve_full_matching_impl(Rcpp::NumericMatrix cost, int min_controls, int max_controls_val);
+
+// =======================
+// Forward decls for the flow model (implemented in flow/flow_rcpp.cpp)
+Rcpp::List flow_solve_impl(int n_nodes, Rcpp::NumericVector supply,
+                           Rcpp::IntegerVector tail, Rcpp::IntegerVector head,
+                           Rcpp::NumericVector lower, Rcpp::NumericVector upper,
+                           Rcpp::NumericVector cost,
+                           Rcpp::NumericVector warm_flow,
+                           Rcpp::NumericVector warm_potential,
+                           double time_limit, double tol, double relax_eps,
+                           double max_augmentations, bool return_potentials);
+Rcpp::List flow_certify_impl(int n_nodes, Rcpp::NumericVector supply,
+                             Rcpp::IntegerVector tail, Rcpp::IntegerVector head,
+                             Rcpp::NumericVector lower, Rcpp::NumericVector upper,
+                             Rcpp::NumericVector cost, Rcpp::NumericVector flow,
+                             Rcpp::NumericVector potential, double tol);
+Rcpp::List flow_compile_full_match_impl(Rcpp::NumericMatrix cost,
+                                        double min_controls, double max_controls);
+Rcpp::List flow_compile_couples_impl(std::string design, double n_rows,
+                                     double n_cols, double ratio);
+Rcpp::List flow_trace_assignment_impl(Rcpp::NumericMatrix cost, bool maximize);
+Rcpp::List flow_trace_push_relabel_impl(Rcpp::NumericMatrix cost, bool maximize);
+
+// Forward decls for the edge-generation loop (implemented in
+// flow/flow_implicit_rcpp.cpp)
+Rcpp::List implicit_dense_impl(Rcpp::NumericMatrix cost, bool maximize,
+                               double keep_per_row, double width, double tol,
+                               double max_rounds, bool certify);
+Rcpp::List implicit_lazy_impl(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat,
+                              std::string distance,
+                              Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
+                              double max_distance, Rcpp::List calipers,
+                              Rcpp::CharacterVector vars, bool maximize,
+                              double keep_per_row, double width, double tol,
+                              double max_rounds, bool certify);
+
+// Forward decl for the design path (implemented in flow/flow_path_rcpp.cpp)
+Rcpp::List match_path_lazy_impl(Rcpp::NumericMatrix left_mat,
+                                Rcpp::NumericMatrix right_mat,
+                                std::string distance,
+                                Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
+                                Rcpp::NumericVector values, Rcpp::List calipers,
+                                Rcpp::CharacterVector vars, bool maximize,
+                                double keep_per_row, double width, double tol,
+                                double max_rounds, bool certify);
 
 // =======================
 // Pixel morphing core (implemented in morph_pixel_level.cpp)
@@ -115,6 +164,14 @@ Rcpp::List lap_prepare_cost_matrix(NumericMatrix cost, bool maximize) {
   return prepare_cost_matrix_impl(cost, maximize);
 }
 
+// Takes SEXP rather than NumericMatrix so an integer cost matrix is read in
+// place; a NumericMatrix parameter would coerce it and allocate the copy this
+// probe exists to avoid.
+// [[Rcpp::export]]
+Rcpp::List lap_probe_cost_matrix(SEXP cost) {
+  return probe_cost_matrix_impl(cost);
+}
+
 // [[Rcpp::export]]
 Rcpp::List lap_solve_bruteforce(NumericMatrix cost, bool maximize) {
   return solve_bruteforce_impl(cost, maximize);
@@ -142,6 +199,46 @@ Rcpp::List cpp_lap_solve_auction_lazy(Rcpp::NumericMatrix left_mat, Rcpp::Numeri
                                       Rcpp::Nullable<double> eps = R_NilValue) {
   return solve_auction_lazy_impl(left_mat, right_mat, metric, inv_cov, max_distance,
                                  calipers, var_names, maximize, eps);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_certify_dense(Rcpp::NumericMatrix cost, Rcpp::IntegerVector match,
+                             Rcpp::NumericVector u, Rcpp::NumericVector v,
+                             bool maximize, double tol) {
+  return certify_dense_impl(cost, match, u, v, maximize, tol);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_certify_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat,
+                            std::string distance,
+                            Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
+                            double max_distance, Rcpp::List calipers,
+                            Rcpp::CharacterVector vars,
+                            Rcpp::IntegerVector match, Rcpp::NumericVector u,
+                            Rcpp::NumericVector v, bool maximize, double tol) {
+  return certify_lazy_impl(left_mat, right_mat, distance, inv_cov, max_distance,
+                           calipers, vars, match, u, v, maximize, tol);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_scan_reduced_costs(Rcpp::NumericMatrix cost, Rcpp::NumericVector u,
+                                  Rcpp::NumericVector v, double tol) {
+  return scan_reduced_costs_impl(cost, u, v, tol);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_hall_witness_dense(Rcpp::NumericMatrix cost) {
+  return hall_witness_dense_impl(cost);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_hall_witness_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat,
+                                 std::string distance,
+                                 Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
+                                 double max_distance, Rcpp::List calipers,
+                                 Rcpp::CharacterVector vars) {
+  return hall_witness_lazy_impl(left_mat, right_mat, distance, inv_cov,
+                                max_distance, calipers, vars);
 }
 
 // [[Rcpp::export]]
@@ -280,13 +377,118 @@ Rcpp::List lap_solve_jv_duals(Rcpp::NumericMatrix cost, bool maximize) {
 }
 
 // [[Rcpp::export]]
+Rcpp::List cpp_lap_solve_jv_duals_lazy(Rcpp::NumericMatrix left_mat,
+                                       Rcpp::NumericMatrix right_mat,
+                                       std::string metric,
+                                       Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
+                                       double max_distance, Rcpp::List calipers,
+                                       Rcpp::CharacterVector var_names, bool maximize) {
+  return solve_jv_duals_lazy_impl(left_mat, right_mat, metric, inv_cov, max_distance,
+                                  calipers, var_names, maximize);
+}
+
+// [[Rcpp::export]]
 Rcpp::List lap_solve_network_simplex(Rcpp::NumericMatrix cost) {
   return solve_network_simplex_rcpp(cost);
 }
 
+// =======================
+// Flow model exports
+// =======================
+
 // [[Rcpp::export]]
-Rcpp::List lap_solve_full_matching(Rcpp::NumericMatrix cost, int min_controls, int max_controls_val) {
-  return solve_full_matching_impl(cost, min_controls, max_controls_val);
+Rcpp::List lap_flow_solve(int n_nodes, Rcpp::NumericVector supply,
+                          Rcpp::IntegerVector tail, Rcpp::IntegerVector head,
+                          Rcpp::NumericVector lower, Rcpp::NumericVector upper,
+                          Rcpp::NumericVector cost,
+                          Rcpp::NumericVector warm_flow,
+                          Rcpp::NumericVector warm_potential,
+                          double time_limit, double tol = 1e-12,
+                          double relax_eps = 1e-18, double max_augmentations = 0.0,
+                          bool return_potentials = true) {
+  return flow_solve_impl(n_nodes, supply, tail, head, lower, upper, cost,
+                         warm_flow, warm_potential, time_limit, tol, relax_eps,
+                         max_augmentations, return_potentials);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_flow_certify(int n_nodes, Rcpp::NumericVector supply,
+                            Rcpp::IntegerVector tail, Rcpp::IntegerVector head,
+                            Rcpp::NumericVector lower, Rcpp::NumericVector upper,
+                            Rcpp::NumericVector cost, Rcpp::NumericVector flow,
+                            Rcpp::NumericVector potential, double tol) {
+  return flow_certify_impl(n_nodes, supply, tail, head, lower, upper, cost, flow,
+                           potential, tol);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_flow_compile_full_match(Rcpp::NumericMatrix cost,
+                                       double min_controls, double max_controls) {
+  return flow_compile_full_match_impl(cost, min_controls, max_controls);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_flow_compile_couples(std::string design, double n_rows,
+                                    double n_cols, double ratio = 1.0) {
+  return flow_compile_couples_impl(design, n_rows, n_cols, ratio);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_flow_trace_assignment(Rcpp::NumericMatrix cost,
+                                     bool maximize = false) {
+  return flow_trace_assignment_impl(cost, maximize);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_flow_trace_push_relabel(Rcpp::NumericMatrix cost,
+                                       bool maximize = false) {
+  return flow_trace_push_relabel_impl(cost, maximize);
+}
+
+// =======================
+// Edge generation exports
+// =======================
+// The assignment over a complete implicit graph, solved by generating the pairs
+// it turns out to need. The caller states the cost source and the search knobs;
+// the loop keeps the problem, the candidate set and every round on the C++ side
+// and crosses once.
+
+// [[Rcpp::export]]
+Rcpp::List lap_implicit_dense(Rcpp::NumericMatrix cost, bool maximize = false,
+                              double keep_per_row = 5.0, double width = 5.0,
+                              double tol = 1e-9, double max_rounds = 60.0,
+                              bool certify = true) {
+  return implicit_dense_impl(cost, maximize, keep_per_row, width, tol, max_rounds,
+                             certify);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_implicit_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat,
+                             std::string distance,
+                             Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
+                             double max_distance, Rcpp::List calipers,
+                             Rcpp::CharacterVector vars, bool maximize = false,
+                             double keep_per_row = 5.0, double width = 5.0,
+                             double tol = 1e-9, double max_rounds = 60.0,
+                             bool certify = true) {
+  return implicit_lazy_impl(left_mat, right_mat, distance, inv_cov, max_distance,
+                            calipers, vars, maximize, keep_per_row, width, tol,
+                            max_rounds, certify);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_match_path_lazy(Rcpp::NumericMatrix left_mat,
+                               Rcpp::NumericMatrix right_mat,
+                               std::string distance,
+                               Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
+                               Rcpp::NumericVector values, Rcpp::List calipers,
+                               Rcpp::CharacterVector vars, bool maximize = false,
+                               double keep_per_row = 5.0, double width = 5.0,
+                               double tol = 1e-9, double max_rounds = 60.0,
+                               bool certify = true) {
+  return match_path_lazy_impl(left_mat, right_mat, distance, inv_cov, values,
+                              calipers, vars, maximize, keep_per_row, width, tol,
+                              max_rounds, certify);
 }
 
 // =======================
@@ -463,6 +665,16 @@ Rcpp::NumericVector gt_duals_to_r(const DualVec& duals) {
   return out;
 }
 
+// Column view of a row-side matching, which is what the solver reads.
+MatchVec gt_col_match_of(const MatchVec& row_match, int m) {
+  MatchVec out(m, NIL);
+  for (int i = 0; i < static_cast<int>(row_match.size()); ++i) {
+    const int j = row_match[i];
+    if (j >= 0 && j < m) out[j] = i;
+  }
+  return out;
+}
+
 Rcpp::List gt_paths_to_r(const std::vector<std::vector<std::pair<int, int>>>& paths) {
   Rcpp::List out(paths.size());
   for (int p = 0; p < static_cast<int>(paths.size()); ++p) {
@@ -494,8 +706,8 @@ bool gt_check_one_feasible(Rcpp::NumericMatrix cost,
                            Rcpp::IntegerVector col_match,
                            Rcpp::NumericVector y_u,
                            Rcpp::NumericVector y_v) {
+  (void)row_match;  // the matching is read from the column side
   return check_one_feasible(gt_cost_from_r(cost),
-                            gt_match_from_r(row_match),
                             gt_match_from_r(col_match),
                             gt_duals_from_r(y_u),
                             gt_duals_from_r(y_v));
@@ -507,7 +719,8 @@ Rcpp::List gt_build_equality_graph(Rcpp::NumericMatrix cost,
                                    Rcpp::NumericVector y_u,
                                    Rcpp::NumericVector y_v) {
   auto graph = build_equality_graph(gt_cost_from_r(cost),
-                                    gt_match_from_r(row_match),
+                                    gt_col_match_of(gt_match_from_r(row_match),
+                                                    cost.ncol()),
                                     gt_duals_from_r(y_u),
                                     gt_duals_from_r(y_v));
   Rcpp::List out(graph.size());
@@ -551,9 +764,8 @@ Rcpp::List gt_find_maximal_augmenting_paths(Rcpp::List eq_graph,
       graph[i].push_back(j - 1);
     }
   }
-  auto paths = find_maximal_augmenting_paths(graph,
-                                             gt_match_from_r(row_match),
-                                             gt_match_from_r(col_match));
+  (void)row_match;  // the search reads the matching from the column side
+  auto paths = find_maximal_augmenting_paths(graph, gt_match_from_r(col_match));
   return gt_paths_to_r(paths);
 }
 

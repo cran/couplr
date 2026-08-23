@@ -26,13 +26,35 @@ constexpr int NODE_ROW = 1;
 constexpr int NODE_COL = 2;
 constexpr int NODE_SINK = 3;
 
-// Result structure
+// Why the pivot loop stopped. Optimality means pricing scanned every non-tree
+// arc and none had a negative reduced cost, which is the simplex optimality
+// condition. PivotLimit means the cap below was reached while an improving arc
+// was still available, so the basis is feasible but not proven optimal.
+enum class Termination {
+    Optimality,
+    PivotLimit
+};
+
+// Pivot cap for one solve. Bounds the number of basis exchanges, not the work
+// inside one exchange. This is the only cap on the pivot loop; every caller
+// reaches that loop through lap::solve_network_simplex(). A solve that reaches
+// the cap terminates with Termination::PivotLimit and status "iteration_limit".
+// Evaluated in 64-bit: 4 * num_nodes^2 passes a 32-bit int at num_nodes 23171.
+constexpr long long PIVOT_LIMIT_FACTOR = 4;
+
+inline long long pivot_limit(int num_nodes) {
+    return PIVOT_LIMIT_FACTOR * static_cast<long long>(num_nodes)
+                              * static_cast<long long>(num_nodes);
+}
+
+// Result structure. Costs are the working costs held in NSState, which are
+// negated for maximization and carry the forbidden sentinel.
 struct NSResult {
-    std::vector<int> assignment;  // row i -> col assignment[i] (0-indexed)
-    double total_cost;
-    bool optimal;
-    int pivot_count;
-    std::string status;
+    std::vector<int> assignment;   // row i -> col assignment[i] (0-indexed), -1 unmatched
+    double total_cost = 0.0;
+    int pivot_count = 0;
+    int n_unmatched = 0;           // rows the final basis leaves without a column
+    std::string status;            // "optimal" or "iteration_limit"
 };
 
 // Main state structure
@@ -54,15 +76,12 @@ struct NSState {
     std::vector<int> arc_flow;     // Current flow (0 or 1)
     std::vector<int> arc_state;    // STATE_LOWER, STATE_TREE, or STATE_UPPER
 
-    // Spanning tree representation (threaded)
+    // Spanning tree representation
     // All arrays indexed by node (0..num_nodes-1)
     std::vector<int> parent;       // Parent node in tree (-1 for root)
     std::vector<int> parent_arc;   // Arc connecting to parent (-1 for root)
     std::vector<bool> arc_to_parent_up;  // True if arc points toward parent
-    std::vector<int> thread;       // Next node in DFS preorder
-    std::vector<int> rev_thread;   // Previous node in DFS preorder
     std::vector<int> depth;        // Depth in tree (root = 0)
-    std::vector<int> subtree_size; // Number of nodes in subtree
 
     // Dual variables
     std::vector<double> potential; // Node potentials pi[i]

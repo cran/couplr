@@ -8,6 +8,8 @@ match_couples(
   left,
   right = NULL,
   vars = NULL,
+  left_id = NULL,
+  right_id = NULL,
   distance = "euclidean",
   weights = NULL,
   scale = FALSE,
@@ -26,7 +28,8 @@ match_couples(
   ratio = 1L,
   check_costs = TRUE,
   sigma = NULL,
-  memory_mode = "auto"
+  memory_mode = "auto",
+  certify = NULL
 )
 }
 \arguments{
@@ -35,6 +38,15 @@ match_couples(
 \item{right}{Data frame of "right" units (e.g., control, controls)}
 
 \item{vars}{Variable names to use for distance computation}
+
+\item{left_id, right_id}{Name of the column holding the unit identifier, or
+NULL (default) to use a column called \code{id}, then meaningful row names,
+then synthesized ids \verb{left_1 ... left_n} / \verb{right_1 ... right_m} with a
+warning. The values of this column are what \code{pairs$left_id} and
+\code{pairs$right_id} carry, and what \code{\link[=join_matched]{join_matched()}}, \code{\link[=match_data]{match_data()}},
+\code{\link[=balance_diagnostics]{balance_diagnostics()}}, \code{\link[=sensitivity_analysis]{sensitivity_analysis()}} and \code{\link[=as_matchit]{as_matchit()}} join
+on, so the same column name is passed to those verbs. Ids read from the
+data must be unique.}
 
 \item{distance}{Distance metric: "euclidean", "manhattan", "mahalanobis",
 or a custom function}
@@ -98,16 +110,29 @@ and provide helpful warnings before matching (default: TRUE)}
 (default), the pooled sample covariance is used. Only relevant when
 \code{distance = "mahalanobis"}.}
 
-\item{memory_mode}{One of "auto" (default), "dense", or "lazy". "auto"
-warns (or, when \code{method} is \code{"jv"}/\code{"auction"} with a built-in distance
-metric, switches) when the dense cost matrix would consume a large
+\item{memory_mode}{One of "auto" (default), "dense", "lazy" or "implicit".
+"auto" warns (or, when \code{method} is \code{"jv"}/\code{"auction"} with a built-in
+distance metric, switches) when the dense cost matrix would consume a large
 fraction of free system RAM. "lazy" computes each pairwise distance from
 the underlying feature data as the solver needs it, instead of
 allocating the full n_left x n_right matrix; supported for \code{method = "jv"}/\code{"auction"} with a built-in distance metric, and not yet for
 \code{replace = TRUE}, \code{ratio > 1}, \code{method = "greedy"}, or custom distance
 functions (blocking via \code{block_id} is the other option that reduces
-memory, by solving smaller sub-problems). "dense" skips the RAM check
-entirely.}
+memory, by solving smaller sub-problems). "implicit" states the problem
+over every pair and solves it over a fraction of them, generating the pairs
+the answer turns out to need and proving that the ones it never generated
+could not have improved it; same requirements as "lazy", and 1:1 only. It
+is slower than "lazy" on every shape measured so far, and the time goes to
+the restricted solve rather than to the pair scan, so what it buys today is
+the certificate over the complete problem rather than speed. "auto" never
+selects it. "dense" skips the RAM check entirely.}
+
+\item{certify}{Logical; whether the result carries a checked
+\code{assignment_certificate} as \code{certificate}. Applies to
+\code{memory_mode = "implicit"}, where it defaults to \code{TRUE}: the certificate is
+what separates the answer from an approximate one. On the other paths the
+matching is certified after the fact with \code{\link[=verify_assignment]{verify_assignment()}}, against
+the cost matrix it was solved from.}
 }
 \value{
 A list with class "matching_result" containing:
@@ -115,7 +140,20 @@ A list with class "matching_result" containing:
 \item \code{pairs}: Tibble of matched pairs with distances
 \item \code{unmatched}: List of unmatched left and right IDs
 \item \code{info}: Matching diagnostics and metadata
+\item \code{status}: One of \code{\link[=solver_status_values]{solver_status_values()}}, computed from what the solve
+achieved. \code{"optimal"} when every left unit found a partner under an
+optimal method, \code{"partial"} when constraints left some unmatched,
+\code{"heuristic"} when a greedy method ran, either because it was asked for
+or because the constrained path fell back to it, and \code{"infeasible"} when
+nothing could be matched.
 }
+
+Under \code{memory_mode = "implicit"} it also carries \code{certificate}, the checked
+proof of optimality (see \code{\link[=verify_assignment]{verify_assignment()}}), and \code{search}: the pairs
+the loop generated out of the pairs the problem states, the pairs a cost
+was computed for, and one row per round of what each round did. An
+infeasible answer carries \code{witness} instead, naming the units that could
+not be matched and the partners they have between them.
 }
 \description{
 Performs one-to-one matching between two datasets. Supports blocking,
