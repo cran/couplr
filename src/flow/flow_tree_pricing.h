@@ -37,6 +37,7 @@
 #include "flow_topk.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -51,13 +52,19 @@ namespace detail {
 // The smallest reduced cost an admissible column of node `id` could carry, and
 // infinite when the node holds no reachable column at all.
 inline double node_cbar_lo(const BallTree& tree, const LazyCostMatrix& src,
-                           const double* q_whitened, const double* q_original,
-                           int32_t id, double ui) {
-    const double floor_c = node_cost_floor(tree, src, q_whitened, q_original, id);
+                           const double* q_whitened, double q_g,
+                           const double* q_original, int32_t id, double ui) {
+    const double floor_c =
+        node_cost_floor(tree, src, q_whitened, q_g, q_original, id);
     if (!(floor_c < std::numeric_limits<double>::infinity())) {
         return std::numeric_limits<double>::infinity();
     }
-    return floor_c - ui - tree.max_v[static_cast<std::size_t>(id)];
+    // The cost floor already carries the tree's allowance. The two
+    // subtractions that turn it into a reduced cost are their own rounding,
+    // and the duals are the solver's numbers rather than the tree's, so the
+    // result is stepped down once for each.
+    const double less_u = next_down(floor_c - ui);
+    return next_down(less_u - tree.max_v[static_cast<std::size_t>(id)]);
 }
 
 }  // namespace detail
@@ -117,14 +124,15 @@ inline BlockPricing price_tree(const LazyCostMatrix& src, BallTree& tree,
 
         const double ui = u[static_cast<std::size_t>(i)];
         const double* x = src.left_row(i);
-        whiten_point(tree, x, q.data());
+        const double q_g = whiten_point(tree, x, q.data());
 
         double rmin = kInf;
         int64_t rmin_j = -1;
         row_violators.clear();
 
         stack.clear();
-        const double root_lb = detail::node_cbar_lo(tree, src, q.data(), x, 0, ui);
+        const double root_lb =
+            detail::node_cbar_lo(tree, src, q.data(), q_g, x, 0, ui);
         if (root_lb < kInf) stack.emplace_back(root_lb, 0);
 
         while (!stack.empty()) {
@@ -136,7 +144,10 @@ inline BlockPricing price_tree(const LazyCostMatrix& src, BallTree& tree,
             // the bound is re-tested against it here rather than where it was
             // measured.
             const double threshold = rmin > -tol ? rmin : -tol;
-            if (lb >= threshold) continue;
+            if (lb >= threshold) {
+                if (lb < out.proven_floor) out.proven_floor = lb;
+                continue;
+            }
 
             if (tree.is_leaf(id)) {
                 const int32_t end = tree.hi[static_cast<std::size_t>(id)];
@@ -164,18 +175,27 @@ inline BlockPricing price_tree(const LazyCostMatrix& src, BallTree& tree,
 
             const int32_t l = tree.left[static_cast<std::size_t>(id)];
             const int32_t r = tree.right[static_cast<std::size_t>(id)];
-            const double lb_l = detail::node_cbar_lo(tree, src, q.data(), x, l, ui);
-            const double lb_r = detail::node_cbar_lo(tree, src, q.data(), x, r, ui);
+            const double lb_l =
+                detail::node_cbar_lo(tree, src, q.data(), q_g, x, l, ui);
+            const double lb_r =
+                detail::node_cbar_lo(tree, src, q.data(), q_g, x, r, ui);
 
             // The weaker bound is pushed first so the stronger one is taken
             // first: the row's best tightens on the promising side, and the
             // other side is often skipped by the time it is reached.
+            // A child that is not pushed is never visited again, and every pair
+            // under it prices at or above its own bound, so that bound is what
+            // the scan can still claim for them.
             if (lb_l <= lb_r) {
                 if (lb_r < threshold) stack.emplace_back(lb_r, r);
+                else if (lb_r < out.proven_floor) out.proven_floor = lb_r;
                 if (lb_l < threshold) stack.emplace_back(lb_l, l);
+                else if (lb_l < out.proven_floor) out.proven_floor = lb_l;
             } else {
                 if (lb_l < threshold) stack.emplace_back(lb_l, l);
+                else if (lb_l < out.proven_floor) out.proven_floor = lb_l;
                 if (lb_r < threshold) stack.emplace_back(lb_r, r);
+                else if (lb_r < out.proven_floor) out.proven_floor = lb_r;
             }
         }
 
@@ -204,6 +224,12 @@ inline BlockPricing price_tree(const LazyCostMatrix& src, BallTree& tree,
         out.violators.push_back(PricedPair{i, j, cbar});
     });
     cand.note_evaluated(out.n_evaluated);
+    // The evaluated pairs are bounded below by the observed minimum and the
+    // skipped ones by the bounds they were skipped against, so the smaller of
+    // the two holds over every omitted admissible pair.
+    if (out.min_reduced_cost < out.proven_floor) {
+        out.proven_floor = out.min_reduced_cost;
+    }
     return out;
 }
 

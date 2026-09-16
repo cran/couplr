@@ -40,7 +40,9 @@
 // poisons a minimum or a sum beyond recovery.
 #pragma once
 
+#include "lap_types.h"
 #include "lap_cost_source.h"
+#include "lap_exact.h"
 #include "lap_neighbours.h"
 
 #include <vector>
@@ -72,11 +74,31 @@ inline void compensated_add(double& sum, double& comp, double x) {
 }
 
 struct CompensatedSum {
-    double sum = 0.0;
-    double comp = 0.0;
+    double  sum = 0.0;
+    double  comp = 0.0;
+    // What the sum's own rounding is charged against. Neumaier's error is
+    // bounded by (2u + O(n^2 u^2)) times the sum of the magnitudes, so both
+    // the magnitudes and the term count have to be carried to state it.
+    double  abs_sum = 0.0;
+    int64_t n_terms = 0;
 
-    void add(double x) { compensated_add(sum, comp, x); }
+    void add(double x) {
+        compensated_add(sum, comp, x);
+        abs_sum += std::fabs(x);
+        ++n_terms;
+    }
     double value() const { return sum + comp; }
+
+    // An upper bound on |value() - exact|, rounded away from zero. The
+    // O(n^2 u^2) term is charged as gamma_n^2, which dominates it and is
+    // negligible beside 2u at any term count a solve reaches.
+    double envelope() const {
+        const double u = 0.5 * std::numeric_limits<double>::epsilon();
+        const double g = gamma_of(n_terms);
+        const double rel = 2.0 * u + g * g;
+        if (!(abs_sum > 0.0)) return 0.0;
+        return next_up(rel * abs_sum);
+    }
 };
 
 }  // namespace detail
@@ -91,6 +113,20 @@ struct ReducedCostScan {
     int64_t arg_j = -1;
     int64_t n_violations = 0;       // admissible pairs with cbar < -tol
     int64_t n_admissible = 0;       // admissible pairs scanned
+
+    // A lower bound on the reduced cost of every admissible pair the scan
+    // covers, the ones it never evaluated included. A scan that visits every
+    // pair proves min_reduced_cost itself; one that prunes proves only the
+    // bounds it pruned against. The suboptimality bound rests on this, since
+    // min_reduced_cost says nothing about a pair nobody looked at.
+    double  proven_floor = std::numeric_limits<double>::infinity();
+
+    // Set by a scan asked for the exact sign of every pair it visited, which
+    // is what an exact certificate needs and what a pricing loop does not pay
+    // for. A scan that was not asked leaves `exact_checked` false, and a
+    // certificate built on it reports its conclusion in double arithmetic.
+    bool    exact_checked = false;
+    int64_t n_exact_violations = 0; // admissible pairs with c - u - v < 0 exactly
 };
 
 // Full certificate for a candidate matching and a candidate pair of dual
@@ -99,6 +135,18 @@ struct ReducedCostScan {
 // sound.
 struct CertificateReport {
     // primal
+    //
+    // `structurally_valid_matching` reads the match vector as a matching:
+    // every entry in range, no column claimed twice, no forbidden pair
+    // matched. It permits unmatched rows, which is what separates it from
+    // primal feasibility. The primal constrains every row of the short side to
+    // hold exactly one pair, so a matching that leaves a row free is a valid
+    // partial matching and not a feasible solution, and neither conclusion may
+    // rest on it. The objective is summed under the weaker of the two, since
+    // the cost of a partial matching is a meaningful number while the cost of
+    // a vector claiming one column twice is not.
+    bool    structurally_valid_matching = false;
+    bool    all_rows_matched = false;
     bool    primal_feasible = false;
     int64_t n_rows = 0;
     int64_t n_cols = 0;
@@ -123,14 +171,74 @@ struct CertificateReport {
     double  max_v_unmatched = std::numeric_limits<double>::quiet_NaN();
     bool    complementary_slackness = false;
 
+    // exact arithmetic
+    //
+    // The same conditions decided with no tolerance at all. Where the
+    // numerical conclusion closes on the objective gap, the exact one closes
+    // on the row count already required for primal feasibility: given dual
+    // feasibility, tight matched arcs and free unmatched columns, the two
+    // objectives are equal exactly when every row is matched, so no tolerance
+    // decides the exact conclusion.
+    bool    exact_dual_feasible = false;
+    bool    exact_cs_matched_tight = false;
+    bool    exact_cs_unmatched_free = false;
+    bool    exact_certificate = false;
+    bool    exact_available = false;  // every condition was asked exactly
+    int64_t n_exact_violations = 0;   // admissible pairs with c - u - v < 0
+    int64_t n_exact_untight = 0;      // matched pairs with c - u - v != 0
+
     // conclusion
     double  duality_gap = std::numeric_limits<double>::quiet_NaN();
     bool    certified_optimal = false;
+    bool    conclusion_is_exact = false;  // which arithmetic the conclusion is in
     double  tolerance = 0.0;
+
+    // The lower bound the scan proves for the reduced cost of every admissible
+    // pair, the ones it never evaluated included. Equal to min_reduced_cost
+    // when the scan visited every pair; below it when a pricer pruned, since a
+    // skipped subtree is known only by the bound it was skipped against.
+    double  certified_reduced_cost_floor = -std::numeric_limits<double>::infinity();
+
+    // The most any feasible solution of the complete problem can beat this one
+    // by, in the cost unit.
+    //
+    // Write eps = max(0, -certified_reduced_cost_floor) and, where the sign
+    // condition applies, s = max(0, max_v). Then u_i - eps and v_j - s satisfy
+    // both dual conditions exactly: every reduced cost gains eps + s and was at
+    // least -eps, and every column dual is at most zero. Their dual objective
+    // is the reported one less n_rows * eps + n_cols * s, and weak duality puts
+    // the optimum above it, so
+    //
+    //     primal - optimum <= duality_gap + n_rows * eps + n_cols * s.
+    //
+    // Zero exactly when the duals are feasible with no slack and the two
+    // objectives agree, which is the case certified_optimal reports. A pruning
+    // pricer that proves only its threshold leaves n_rows * tol here, and that
+    // is the price of not having visited every pair.
+    double  max_suboptimality = std::numeric_limits<double>::quiet_NaN();
 };
+
+// Which arithmetic the conclusion is taken in.
+//
+// Auto reports the exact conclusion when the exact conditions hold and the
+// numerical one otherwise, which is the strongest statement the instance
+// supports: the exact conditions imply the numerical ones at any non-negative
+// tolerance, so Auto never certifies anything Double would refuse.
+//
+// Exact refuses to fall back, and is the mode to ask for when the point is the
+// strength of the proof rather than the answer.
+enum class Arithmetic { Auto, Exact, Double };
 
 // min over admissible (i, j) of c_ij - u_i - v_j, with its argmin and the
 // number of pairs violating dual feasibility by more than tol.
+//
+// With `exact` set the scan also counts the pairs whose reduced cost is
+// negative in exact arithmetic, which is the count an exact certificate reads
+// and is a different question from the count against tol: a pair at -1e-17
+// violates exactly and does not violate at 1e-9, and a pair the double
+// evaluation puts at 0 may be negative. The reported minimum stays the double
+// evaluation, which is what a reader wants to see and what a pricing loop
+// compares against; the exact count is what the conclusion rests on.
 //
 // Returns the empty scan (infinite minimum, argmin -1) on an empty problem or
 // on a dual vector whose length does not match the source, rather than
@@ -139,8 +247,10 @@ template <class Source>
 ReducedCostScan scan_reduced_costs(const Source& src,
                                    const std::vector<double>& u,
                                    const std::vector<double>& v,
-                                   double tol) {
+                                   double tol,
+                                   bool exact = false) {
     ReducedCostScan out;
+    out.exact_checked = exact;
 
     const int64_t nrow = src.nrow;
     const int64_t ncol = src.ncol;
@@ -164,10 +274,16 @@ ReducedCostScan scan_reduced_costs(const Source& src,
                 out.arg_j = j;
             }
             if (cbar < -tol) ++out.n_violations;
+            if (exact &&
+                exact::sign_reduced_cost(c, ui, v[static_cast<std::size_t>(j)]) < 0) {
+                ++out.n_exact_violations;
+            }
             return true;
         });
     }
 
+    // Every admissible pair was evaluated, so the observed minimum is the floor.
+    out.proven_floor = out.min_reduced_cost;
     return out;
 }
 
@@ -184,6 +300,15 @@ inline ReducedCostScan merge_scans(const ReducedCostScan& a, const ReducedCostSc
     ReducedCostScan out;
     out.n_admissible = a.n_admissible + b.n_admissible;
     out.n_violations = a.n_violations + b.n_violations;
+    // The union was checked exactly only if both halves were. A half that was
+    // not carries no exact count, and adding its zero to the other half's
+    // would report the union as exactly feasible on the strength of pairs
+    // nobody asked the question of.
+    out.exact_checked = a.exact_checked && b.exact_checked;
+    out.n_exact_violations = a.n_exact_violations + b.n_exact_violations;
+    // A bound over the union is a bound over each half, so the union can claim
+    // only the weaker of the two.
+    out.proven_floor = std::min(a.proven_floor, b.proven_floor);
 
     const bool b_wins = b.min_reduced_cost < a.min_reduced_cost ||
                         (b.min_reduced_cost == a.min_reduced_cost && a.arg_i < 0) ||
@@ -209,6 +334,13 @@ inline ReducedCostScan merge_scans(const ReducedCostScan& a, const ReducedCostSc
 //   4. objective equality  - |primal - dual| within a magnitude-scaled
 //      tolerance.
 //
+// The same four are also decided with no tolerance at all, and the report
+// carries both readings. Groups 2 and 3 come down to the sign of
+// c_ij - u_i - v_j, which lap_exact.h evaluates exactly; group 4 is not
+// measured exactly but derived, since tight matched arcs, free unmatched
+// columns and a matched row count equal to nrow make the two objectives the
+// same sum. `mode` decides which reading the conclusion is taken from.
+//
 // Condition 3's second half is not redundant. A matching can be perfect,
 // dual-feasible everywhere, tight on every matched arc, and carry a dual
 // bound equal to the true optimum while its primal cost sits above the
@@ -229,9 +361,11 @@ CertificateReport certify_assignment_impl(const Source& src,
                                           const std::vector<double>& u,
                                           const std::vector<double>& v,
                                           double tol,
-                                          const ReducedCostScan* supplied) {
+                                          const ReducedCostScan* supplied,
+                                          Arithmetic mode) {
     CertificateReport rep;
     rep.tolerance = tol;
+    const bool want_exact = (mode != Arithmetic::Double);
 
     const int64_t nrow = src.nrow;
     const int64_t ncol = src.ncol;
@@ -259,15 +393,22 @@ CertificateReport certify_assignment_impl(const Source& src,
     for (int64_t j = 0; j < ncol; ++j) {
         if (col_claims[static_cast<std::size_t>(j)] > 1) ++rep.n_duplicate_cols;
     }
-    rep.primal_feasible = (rep.n_out_of_range == 0) &&
-                          (rep.n_duplicate_cols == 0) &&
-                          (rep.n_forbidden_matched == 0);
+    rep.structurally_valid_matching = (rep.n_out_of_range == 0) &&
+                                      (rep.n_duplicate_cols == 0) &&
+                                      (rep.n_forbidden_matched == 0);
+    rep.all_rows_matched = (rep.n_matched == nrow);
+    rep.primal_feasible = rep.structurally_valid_matching && rep.all_rows_matched;
 
     // The primal objective is only meaningful once the matching is a matching:
     // summing over a duplicated column or a forbidden arc produces a number
     // that invites comparison with the dual bound but does not correspond to
-    // any feasible solution.
-    if (rep.primal_feasible) {
+    // any feasible solution. An unmatched row costs nothing and leaves the sum
+    // meaningful, so the objective is reported for a partial matching even
+    // though no conclusion may be drawn from it.
+    // Infinity until the sum runs, so a bound assembled without one reports
+    // no bound rather than a smaller number than it can justify.
+    double env_primal = std::numeric_limits<double>::infinity();
+    if (rep.structurally_valid_matching) {
         detail::CompensatedSum primal;
         for (int64_t i = 0; i < nrow; ++i) {
             const int64_t j = static_cast<int64_t>(match[static_cast<std::size_t>(i)]);
@@ -275,13 +416,15 @@ CertificateReport certify_assignment_impl(const Source& src,
             primal.add(src.at(i, j));
         }
         rep.primal_objective = primal.value();
+        env_primal = primal.envelope();
     }
 
     // ---- dual feasibility ----
     const ReducedCostScan scan = (supplied != nullptr)
         ? *supplied
-        : scan_reduced_costs(src, u, v, tol);
+        : scan_reduced_costs(src, u, v, tol, want_exact);
     rep.min_reduced_cost = scan.min_reduced_cost;
+    rep.certified_reduced_cost_floor = scan.proven_floor;
     rep.worst_i = scan.arg_i;
     rep.worst_j = scan.arg_j;
 
@@ -296,6 +439,15 @@ CertificateReport certify_assignment_impl(const Source& src,
     rep.dual_feasible = (rep.min_reduced_cost >= -tol) &&
                         (!sign_condition_applies || rep.max_v <= tol);
 
+    // The same condition with the band around zero removed. The sign condition
+    // is one double against zero and is already exact; what needed the
+    // expansion is the reduced cost of every admissible pair, which the scan
+    // has counted.
+    rep.n_exact_violations = scan.n_exact_violations;
+    rep.exact_dual_feasible = scan.exact_checked &&
+                              (scan.n_exact_violations == 0) &&
+                              (!sign_condition_applies || rep.max_v <= 0.0);
+
     // Summed over ALL rows and ALL columns, unmatched columns included. That
     // is what turns a nonzero v_j on a freed column into a visible duality
     // gap instead of a term quietly dropped from the bound.
@@ -303,6 +455,7 @@ CertificateReport certify_assignment_impl(const Source& src,
     for (int64_t i = 0; i < nrow; ++i) dual.add(u[static_cast<std::size_t>(i)]);
     for (int64_t j = 0; j < ncol; ++j) dual.add(v[static_cast<std::size_t>(j)]);
     rep.dual_objective = dual.value();
+    const double env_dual = dual.envelope();
 
     // ---- complementary slackness ----
     double max_matched_slack = 0.0;
@@ -314,13 +467,17 @@ CertificateReport certify_assignment_impl(const Source& src,
         // into the slack would report 1e100 instead of the real worst arc.
         double c = 0.0;
         if (!cost_if_allowed(src, i, j, c)) continue;
-        const double slack = std::abs(c -
-                                      u[static_cast<std::size_t>(i)] -
-                                      v[static_cast<std::size_t>(j)]);
+        const double ui = u[static_cast<std::size_t>(i)];
+        const double vj = v[static_cast<std::size_t>(j)];
+        const double slack = std::abs(c - ui - vj);
         if (slack > max_matched_slack) max_matched_slack = slack;
+        if (want_exact && exact::sign_reduced_cost(c, ui, vj) != 0) {
+            ++rep.n_exact_untight;
+        }
     }
     rep.max_matched_slack = max_matched_slack;
     rep.cs_matched_tight = (max_matched_slack <= tol);
+    rep.exact_cs_matched_tight = want_exact && (rep.n_exact_untight == 0);
 
     double max_v_unmatched = 0.0;
     for (int64_t j = 0; j < ncol; ++j) {
@@ -330,11 +487,49 @@ CertificateReport certify_assignment_impl(const Source& src,
     }
     rep.max_v_unmatched = max_v_unmatched;
     rep.cs_unmatched_free = (max_v_unmatched <= tol);
+    rep.exact_cs_unmatched_free = (max_v_unmatched == 0.0);
 
     rep.complementary_slackness = rep.cs_matched_tight && rep.cs_unmatched_free;
 
     // ---- conclusion ----
     rep.duality_gap = rep.primal_objective - rep.dual_objective;
+
+    // The shifted duals of the derivation on max_suboptimality. Clamped at zero
+    // because a feasible primal cannot sit below the optimum, so a negative
+    // total is rounding in the two objective sums and not a solution better
+    // than optimal.
+    //
+    // The bound answers "how much can a feasible solution beat this one by",
+    // which is a question about a feasible candidate. A partial matching has a
+    // real objective and is not feasible, so the arithmetic below still
+    // produces a number for it, and that number reads as a guarantee the
+    // candidate cannot carry: a zero-cost problem with an uncovered row and
+    // zero duals reported max_suboptimality = 0 beside primal_feasible = false.
+    // No bound is reported unless the primal is feasible.
+    if (!rep.primal_feasible) {
+        rep.max_suboptimality = std::numeric_limits<double>::quiet_NaN();
+    } else {
+        // The gap is a difference of two compensated sums, and compensated
+        // summation buys back the accumulation error rather than removing it.
+        // Each sum's own envelope is charged here, so the number reported is an
+        // upper bound in double arithmetic and not an estimate of one. Every
+        // step of the assembly is rounded up, for the same reason.
+        const double eps = std::max(0.0, -rep.certified_reduced_cost_floor);
+        const double s = sign_condition_applies ? std::max(0.0, rep.max_v) : 0.0;
+        // Adding nothing costs nothing: rounding up on a zero term would
+        // turn an exactly zero bound into a denormal and report slack
+        // where the arithmetic proved none.
+        const auto add_up = [](double acc, double term) {
+            return term > 0.0 ? next_up(acc + term) : acc;
+        };
+        double bound = rep.duality_gap;
+        bound = add_up(bound, static_cast<double>(nrow) * eps);
+        bound = add_up(bound, static_cast<double>(ncol) * s);
+        bound = add_up(bound, env_primal);
+        bound = add_up(bound, env_dual);
+        rep.max_suboptimality =
+            std::isnan(bound) ? bound : (bound > 0.0 ? bound : 0.0);
+    }
 
     // The gap tolerance scales with the magnitude of the objective. Both sums
     // carry a relative rounding error of order eps per term, so an absolute
@@ -343,10 +538,41 @@ CertificateReport certify_assignment_impl(const Source& src,
     // summation buys back the accumulation error, not the fact that the
     // objective's own last bits are worth |objective| * eps.
     const double tol_gap = tol * std::max(1.0, std::abs(rep.primal_objective));
-    rep.certified_optimal = rep.primal_feasible &&
-                            rep.dual_feasible &&
-                            rep.complementary_slackness &&
-                            (std::abs(rep.duality_gap) <= tol_gap);
+    const bool numerical = rep.primal_feasible &&
+                           rep.dual_feasible &&
+                           rep.complementary_slackness &&
+                           (std::abs(rep.duality_gap) <= tol_gap);
+
+    // The exact conclusion drops the objective comparison. Tight matched arcs
+    // make the primal cost the sum of u over matched rows plus v over used
+    // columns; free unmatched columns make the second sum the sum of v over
+    // all columns; the row cover primal feasibility already requires makes the
+    // first the sum of u over all rows. Those three together are the dual
+    // objective, so the gap is zero and no tolerance decides it. The gap is
+    // still computed and reported, as the independent numerical cross-check it
+    // is.
+    rep.exact_available = want_exact && scan.exact_checked;
+    rep.exact_certificate = rep.exact_available &&
+                            rep.primal_feasible &&
+                            rep.exact_dual_feasible &&
+                            rep.exact_cs_matched_tight &&
+                            rep.exact_cs_unmatched_free;
+
+    switch (mode) {
+        case Arithmetic::Exact:
+            rep.certified_optimal = rep.exact_certificate;
+            rep.conclusion_is_exact = true;
+            break;
+        case Arithmetic::Double:
+            rep.certified_optimal = numerical;
+            rep.conclusion_is_exact = false;
+            break;
+        case Arithmetic::Auto:
+        default:
+            rep.certified_optimal = rep.exact_certificate || numerical;
+            rep.conclusion_is_exact = rep.exact_certificate;
+            break;
+    }
 
     return rep;
 }
@@ -358,8 +584,9 @@ CertificateReport certify_assignment(const Source& src,
                                      const std::vector<int>& match,
                                      const std::vector<double>& u,
                                      const std::vector<double>& v,
-                                     double tol) {
-    return detail::certify_assignment_impl(src, match, u, v, tol, nullptr);
+                                     double tol,
+                                     Arithmetic mode = Arithmetic::Auto) {
+    return detail::certify_assignment_impl(src, match, u, v, tol, nullptr, mode);
 }
 
 // The same certificate against a scan the caller already holds.
@@ -378,8 +605,9 @@ CertificateReport certify_assignment(const Source& src,
                                      const std::vector<double>& u,
                                      const std::vector<double>& v,
                                      double tol,
-                                     const ReducedCostScan& scan) {
-    return detail::certify_assignment_impl(src, match, u, v, tol, &scan);
+                                     const ReducedCostScan& scan,
+                                     Arithmetic mode = Arithmetic::Auto) {
+    return detail::certify_assignment_impl(src, match, u, v, tol, &scan, mode);
 }
 
 }  // namespace lap

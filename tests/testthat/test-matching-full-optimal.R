@@ -96,15 +96,21 @@ test_that("optimal full_match min_controls filters small groups", {
   left <- data.frame(id = 1:3, x = c(1, 50, 100))
   right <- data.frame(id = 4:6, x = c(1.1, 50.1, 50.2))
 
+  # Three left units each needing two right ones is six against three, so
+  # the request cannot be met. Guarding the assertion on a group count made
+  # this an empty test on exactly the case it names.
   result <- full_match(left, right, vars = "x", min_controls = 2,
                        method = "optimal")
+  expect_identical(result$status, "infeasible")
+  expect_equal(result$info$n_groups, 0)
 
-  if (result$info$n_groups > 0) {
-    right_per_group <- table(
-      result$groups$group_id[result$groups$side == "right"]
-    )
-    expect_true(all(right_per_group >= 2))
-  }
+  right2 <- data.frame(id = 4:9,
+                       x = c(1.1, 1.2, 50.1, 50.2, 100.1, 100.2))
+  ok <- full_match(left, right2, vars = "x", min_controls = 2,
+                   method = "optimal")
+  expect_gt(ok$info$n_groups, 0)
+  right_per_group <- table(ok$groups$group_id[ok$groups$side == "right"])
+  expect_true(all(right_per_group >= 2))
 })
 
 
@@ -236,4 +242,77 @@ test_that("optimal full_match known optimal solution", {
     expect_equal(sum(grp$side == "left"), 1)
     expect_equal(sum(grp$side == "right"), 2)
   }
+})
+
+test_that("min_controls counts right units whichever side is larger", {
+  # Six left units against two right ones cannot give every left unit two
+  # right partners, so the request is infeasible. Compiling the smaller side
+  # as the group centres instead answered a different question: it returned
+  # two groups of three left units and one right unit each, with status
+  # "optimal", against a stated minimum of two right units per group.
+  left  <- data.frame(id = paste0("L", 1:6), x = c(0, 0.1, 0.2, 5, 5.1, 5.2))
+  right <- data.frame(id = paste0("R", 1:2), x = c(0.1, 5.1))
+
+  res <- full_match(left, right, vars = "x", min_controls = 2)
+  expect_identical(res$status, "infeasible")
+  expect_equal(nrow(res$groups), 0L)
+
+  # The orientation that can satisfy it still does, and every group holds at
+  # least the requested number of right units.
+  ok <- full_match(right, left, vars = "x", min_controls = 2)
+  expect_identical(ok$status, "optimal")
+  for (g in unique(ok$groups$group_id)) {
+    grp <- ok$groups[ok$groups$group_id == g, ]
+    expect_equal(sum(grp$side == "left"), 1)
+    expect_gte(sum(grp$side == "right"), 2)
+  }
+})
+
+test_that("full_match() refuses negative distances rather than mis-solving them", {
+  # A cheapest edge cover is inclusion-minimal only under non-negative costs.
+  # With -100 on the diagonal and -1 off it the solve takes all four arcs and
+  # the minimality prune then drops the diagonal, returning the off-diagonal
+  # pairing at -2 and reporting status "optimal" against a full matching that
+  # costs -200.
+  left  <- data.frame(id = c("a", "b"), x = c(0, 1))
+  right <- data.frame(id = c("c", "d"), x = c(0, 1))
+  neg <- function(lm, rm) {
+    outer(lm[, 1], rm[, 1], function(u, v) ifelse(u == v, -100, -1))
+  }
+  expect_error(full_match(left, right, vars = "x", distance = neg),
+               "non-negative distances")
+
+  # A shifted version of the same function is accepted and solved.
+  shifted <- function(lm, rm) {
+    outer(lm[, 1], rm[, 1], function(u, v) ifelse(u == v, 0, 99))
+  }
+  ok <- full_match(left, right, vars = "x", distance = shifted)
+  expect_identical(ok$status, "optimal")
+  expect_equal(sum(ok$groups$side == "left"), 2)
+})
+
+test_that("a group centred on a right unit weighs it by the leaves it carries", {
+  # More left units than right, so at min_controls = 1 the groups are centred
+  # on the right units and a group is k left units around one right unit. Every
+  # left unit weighs 1 and the group's right unit weighs k, so the two sides of
+  # a group weigh the same.
+  set.seed(2)
+  left  <- data.frame(id = paste0("L", 1:9), age = runif(9, 20, 70))
+  right <- data.frame(id = paste0("R", 1:3), age = runif(3, 20, 70))
+  res <- full_match(left, right, vars = "age")
+  expect_identical(res$status, "optimal")
+
+  g <- res$groups
+  expect_true(all(g$weight[g$side == "left"] == 1))
+  for (gid in unique(g$group_id)) {
+    grp <- g[g$group_id == gid, ]
+    n_left  <- sum(grp$side == "left")
+    n_right <- sum(grp$side == "right")
+    expect_equal(sum(grp$weight[grp$side == "right"]), n_left)
+    expect_equal(grp$weight[grp$side == "right"],
+                 rep(n_left / n_right, n_right))
+  }
+
+  # The fixture has to hold the shape the test is about.
+  expect_true(any(tapply(g$side, g$group_id, function(s) sum(s == "left")) > 1))
 })

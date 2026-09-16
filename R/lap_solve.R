@@ -31,18 +31,33 @@
 #'
 #'   **Specialized solvers:**
 #'   \itemize{
-#'     \item `"sap"` / `"ssp"` — Shortest augmenting path, handles sparsity well
+#'     \item `"sap"` — Shortest augmenting path over the shared flow model,
+#'       handles sparsity well. `"ssp"` is accepted as a second spelling of this
+#'       method and resolves to `"sap"`.
+#'     \item `"sap_dense"` — Shortest augmenting path with a linear scan in place
+#'       of a heap, O(n * m^2), suited to a dense cost matrix
 #'     \item `"lapmod"` — Sparse JV variant, faster when >50\% entries are NA/Inf
-#'     \item `"hk01"` — 'Hopcroft-Karp' for binary (0/1) costs only
+#'     \item `"hk01"` — 'Hopcroft-Karp' for binary (0/1) or constant costs.
+#'       Constant costs make every perfect matching optimal. On a `{0,1}` matrix
+#'       the search runs over the zero-cost edges alone, where a perfect matching
+#'       totals zero and is therefore optimal; if none exists the problem is
+#'       passed to the weighted solver on the original costs.
 #'     \item `"ssap_bucket"` — 'Dial' algorithm for integer costs
 #'     \item `"bruteforce"` — Exact enumeration for tiny problems (n <= 8)
 #'   }
 #'
 #'   **Advanced solvers:**
 #'   \itemize{
-#'     \item `"csa"` — 'Goldberg-Kennedy' cost-scaling, often fastest for medium-large
+#'     \item `"csa"` — 'Goldberg-Kennedy' cost-scaling assignment (CSA-Q):
+#'       epsilon starts at the span of the costs and is divided by 10 each
+#'       refine, rows are discharged from a stack by double-push, and each row
+#'       keeps its three cheapest arcs between scans (the fourth-best
+#'       heuristic). Real-valued costs are read as supplied; the final
+#'       epsilon-optimal assignment is repaired to an optimal one
 #'     \item `"gabow_tarjan"` — 'Gabow-Tarjan' bit-scaling with complementary
-#'       slackness O(n^3 log C). Its optimality bound holds for a matching that
+#'       slackness. On a graph of `V` vertices and `E` edges the bound is
+#'       O(sqrt(V) * E * log(V * C)), which for an `n` by `n` cost matrix is
+#'       O(n^2.5 * log(n * C)). Its optimality bound holds for a matching that
 #'       saturates both sides, so a rectangular problem gains a dummy side of
 #'       zero cost. The dummies are copies of one node and are carried as a
 #'       single unit holding as many partners as there are dummies, so the
@@ -50,7 +65,6 @@
 #'     \item `"cycle_cancel"` — Cycle-canceling with 'Karp' algorithm
 #'     \item `"csflow"` — Successive shortest paths with 'Johnson' potentials
 #'     \item `"network_simplex"` — 'Network simplex' with spanning tree representation
-#'     \item `"orlin"` — 'Orlin-Ahuja' scaling O(sqrt(n) * m * log(nC))
 #'     \item `"push_relabel"` — 'Goldberg-Tarjan' cost-scaling push-relabel
 #'     \item `"ramshaw_tarjan"` — 'Ramshaw-Tarjan', optimized for rectangular matrices (n != m)
 #'   }
@@ -66,12 +80,13 @@
 #'       than setting up a general solver;
 #'     \item finite entries all equal, or all either 0 or 1: `"hk01"`, which
 #'       exploits the absence of a real cost scale;
-#'     \item more than half the entries non-finite: `"lapmod"`, which carries
-#'       forbidden edges in its adjacency structure;
-#'     \item at least 3 times as many columns as rows: `"sap"`, avoiding the
-#'       padding a square-oriented solver would need;
 #'     \item everything else: `"jv"`.
 #'   }
+#'   Sparsity and aspect ratio used to divert the choice to `"lapmod"` and
+#'   `"sap"`. Neither beat `"jv"` on the regime grid, at any of the four
+#'   admissibility densities or three aspect ratios measured, so both now fall
+#'   through to it; each stays reachable by naming it.
+#'
 #'   Naming a method skips the pass. Rectangular problems are transposed
 #'   internally so the solver always sees at least as many columns as rows, and
 #'   the assignment is mapped back afterwards.
@@ -90,9 +105,11 @@
 #'   specification; `"implicit"` also accepts a matrix, where it solves the same
 #'   problem by generating the pairs it needs and saves nothing, which is what
 #'   makes it a check on the complete solve rather than a faster one.
-#'   `"implicit"` is slower than `"lazy"` on every shape measured so far, and
-#'   the time goes to the restricted solve rather than to the pair scan, so what
-#'   it buys today is the certificate over the complete problem.
+#'   Against `"lazy"` on a lazy cost specification, `"implicit"` leads from
+#'   5,000 units upward on the eight-covariate problem the benchmarks use, by
+#'   1.1x at 5,000 rising to 3.1x at 50,000, and loses below that where the
+#'   loop's fixed costs are still visible. What it buys at every size is the
+#'   certificate over the complete problem.
 #' @param certify Logical; whether to attach a checked `assignment_certificate`
 #'   as `certificate`. `NULL`, the default, takes the path's own answer: `TRUE`
 #'   under `memory_mode = "implicit"`, where the certificate is what
@@ -138,23 +155,59 @@
 #'         checked. See `certify`.
 #' }
 #' Under `memory_mode = "implicit"` the result also carries `u` and `v`, the
-#' duals the last restricted master produced, and `search`: the pairs the
-#' candidate set ended up holding (`candidate_edges`) out of `possible_edges`,
-#' the pairs a cost was computed for (`edges_evaluated`), the round count, and
-#' `rounds`, one row per round of what the master held, what priced out and what
-#' each step cost.
+#' duals the last restricted master produced, and `search`: the columns the
+#' first round gave each row (`seed_width`), the pairs the candidate set ended
+#' up holding (`candidate_edges`) out of `possible_edges`, the pairs a cost was
+#' computed for (`edges_evaluated`), the round count, and `rounds`, one row per
+#' round of what the master held, what priced out and what each step cost.
 #'
 #' @details
-#' `method = "auto"` selects an algorithm based on problem size/shape and data
-#' characteristics:
+#' `method = "auto"` selects an algorithm based on problem size and the costs:
 #' \itemize{
 #'   \item Very small (n <= 8 and m <= 8): `"bruteforce"` — exact enumeration
 #'   \item Binary/constant costs: `"hk01"` — specialized for 0/1 costs
-#'   \item Sparse (>50\% NA/Inf): `"lapmod"` — sparse JV variant, at every size
-#'   \item Very rectangular (m >= 3n): `"sap"` — handles rectangular well
-#'   \item Otherwise: `"jv"` — fastest general-purpose solver at every size
+#'   \item Otherwise: `"jv"`
 #' }
-#' The other solvers are available by naming them explicitly.
+#' [explain_dispatch()] reports which rule fired and why. The other solvers are
+#' available by naming them explicitly.
+#'
+#' @section Integer conversion for bit-scaling:
+#'
+#' `"gabow_tarjan"` is a bit-scaling algorithm and runs on integer costs. The
+#' conversion is part of the method, so the rule it follows and what it claims
+#' afterwards are both properties of the solve rather than of the caller's
+#' preparation.
+#'
+#' Finite costs are shifted so the smallest is zero, multiplied by a scale
+#' factor `s`, and rounded to the nearest integer. `s` is set so that
+#' `K * s * (max - min)` stays at or below `10^13`, where `K` is `n + 1` on a
+#' square problem and `2 * min(n, m) + 1` on a rectangular one. `K` is the
+#' separation the algorithm needs between the optimum and a 1-optimal matching,
+#' and the bound holds every scaled cost clear of the sentinel that marks a
+#' forbidden pair while keeping the path sums the solver forms inside 64-bit
+#' arithmetic. Forbidden pairs take the sentinel and take part in neither the
+#' range nor the conversion.
+#'
+#' A matrix whose finite entries are each within `1e-9` of an integer is taken
+#' as an integer matrix: `s` is one, the shift is an integer, and every cost
+#' reaches the solver as the integer nearest to it. Where those entries are
+#' integers the conversion is exact and the optimum is the optimum of the
+#' instance as supplied; where they are merely near one, each cost moves by at
+#' most `1e-9`, so the matching returned costs at most `2 * min(n, m) * 1e-9`
+#' more than that optimum. Such a matrix is refused when its range exceeds
+#' `1.25 * 10^14 / K`, since a scale of one is the only one available and no
+#' choice brings the instance inside the bound; the error names the limit and
+#' points at `"jv"` or `"auction"`.
+#'
+#' Costs that are not integers are solved on the rounded instance. Rounding
+#' moves each cost by at most `1 / (2 * s)`, so the matching returned costs at
+#' most `min(n, m) * K * (max - min) / 10^13` more than the optimum of the
+#' matrix as supplied. On a square problem that is about
+#' `n^2 * (max - min) / 10^13`, which is `10^-7` of the range at `n = 1000` and
+#' `10^-5` of it at `n = 10000`. Duals are divided by `s` and shifted back, so
+#' they belong to the original matrix; whether the matching is optimal for that
+#' matrix and not only for the rounded one is a question
+#' [verify_assignment()] answers rather than one this bound settles.
 #'
 #' @seealso
 #' \itemize{
@@ -173,9 +226,9 @@
 #' @export
 assignment <- function(cost, maximize = FALSE,
                        method = c("auto","jv","hungarian","munkres","auction","auction_gs","auction_scaled",
-                                  "sap","ssp","csflow","hk01","bruteforce",
+                                  "sap","ssp","sap_dense","csflow","hk01","bruteforce",
                                   "ssap_bucket","cycle_cancel","gabow_tarjan","lapmod","csa",
-                                  "ramshaw_tarjan","push_relabel","orlin","network_simplex"),
+                                  "ramshaw_tarjan","push_relabel","network_simplex"),
                        auction_eps = NULL, eps = NULL, memory_mode = "auto",
                        certify = NULL,
                        cardinality = c("complete", "maximum", "fixed"),
@@ -304,7 +357,7 @@ assignment <- function(cost, maximize = FALSE,
     "csa"           = lap_solve_csa(work, maximize),
     "ramshaw_tarjan"= lap_solve_ramshaw_tarjan(work, maximize),
     "push_relabel"  = lap_solve_push_relabel(work, maximize),
-    "orlin"           = lap_solve_orlin(work, maximize),
+    "sap_dense"     = lap_solve_sap_dense(work, maximize),
     "network_simplex"= lap_solve_network_simplex_wrapper(work, maximize),
     stop("Unknown or unimplemented method: ", method)
   )
@@ -959,21 +1012,21 @@ print.bottleneck_result <- function(x, ...) {
 }
 
 # ==============================================================================
-# Internal: Orlin-Ahuja Wrapper
+# Internal: Dense-scan Successive Shortest Path Wrapper
 # ==============================================================================
-# Wrapper for the Orlin-Ahuja scaling algorithm that returns standard LAP format
+# Returns standard LAP format
 
 #' @keywords internal
-lap_solve_orlin <- function(cost, maximize = FALSE) {
-  # Orlin-Ahuja epsilon-scaling algorithm with hybrid auction/SSP
-  # O(sqrt(n) * m * log(nC)) complexity
+lap_solve_sap_dense <- function(cost, maximize = FALSE) {
+  # Successive shortest paths, Dijkstra with a linear scan over the columns
+  # O(n * m^2) complexity
   work <- if (maximize) -cost else cost
   # Treat NA *and* non-finite (e.g. -Inf produced by negating +Inf in maximize
   # mode) as forbidden. The plain `is.na(work)` check missed -Inf and let
   # forbidden cells slip into the solver as extreme-cost real edges.
   work[!is.finite(work)] <- Inf
 
-  result <- oa_solve(work, alpha = 5.0, auction_rounds = 10)
+  result <- sap_dense_solve(work)
 
   # Recompute total_cost from original cost matrix
   n <- nrow(cost)
@@ -1017,9 +1070,10 @@ lap_solve_network_simplex_wrapper <- function(cost, maximize = FALSE) {
 # ==============================================================================
 # Note on Specialized Algorithms
 # ==============================================================================
-# For specialized algorithms like ssap_bucket, cycle_cancel, gabow_tarjan, and orlin,
-# use assignment(cost, method = "ssap_bucket"), assignment(cost, method = "cycle_cancel"),
-# assignment(cost, method = "gabow_tarjan"), or assignment(cost, method = "orlin").
+# For specialized algorithms like ssap_bucket, cycle_cancel, gabow_tarjan, and
+# sap_dense, use assignment(cost, method = "ssap_bucket"),
+# assignment(cost, method = "cycle_cancel"), assignment(cost, method = "gabow_tarjan"),
+# or assignment(cost, method = "sap_dense").
 #
 # These are accessed via the method parameter in assignment() rather than
 # separate wrapper functions to keep the API clean.

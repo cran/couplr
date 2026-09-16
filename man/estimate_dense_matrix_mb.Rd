@@ -6,14 +6,29 @@
 \usage{
 estimate_dense_matrix_mb(n, m, overhead_factor = 4)
 }
-\description{
-The true peak footprint is not 8 bytes/cell: \code{matrix(0, n, m)} at the R
-level (8B) is followed by \code{rcpp_to_cost_matrix()}'s copy into a
-\code{lap::CostMatrix} (8B data + 4B mask), then \code{prepare_for_solve()}'s
-unconditional copy (another 12B), and a possible \code{t()} transpose copy (8B).
-Several of these are transient but can coexist during GC lag. A conservative
-multiplier avoids systematically under-warning; \code{n}/\code{m} are coerced to
-\code{double} before multiplying so the estimate itself can't overflow the way
-\code{lap::CostMatrix}'s old \code{int} flat-index arithmetic did.
+\arguments{
+\item{n, m}{Problem dimensions.}
+
+\item{overhead_factor}{Multiplier on the raw cell bytes.}
 }
-\keyword{internal}
+\value{
+Numeric scalar, the estimated footprint of the matrix in megabytes.
+}
+\description{
+What the matrix itself costs a process, which is more than the 8 bytes a cell
+occupies: \code{matrix(0, n, m)} at the R level is copied into a
+\code{lap::CostMatrix} (8B data + 4B mask), and the two coexist while garbage
+collection lags. Building the matrix and stopping there peaked at 1.8, 1.7
+and 1.5 times the raw cell bytes at 5,000, 10,000 and 20,000 units on the
+memory benchmark, so the default multiplier is above what has been measured
+rather than fitted to it. \code{n}/\code{m}
+are coerced to \code{double} before multiplying so the estimate itself can't
+overflow the way \code{lap::CostMatrix}'s old \code{int} flat-index arithmetic did.
+}
+\details{
+This is the matrix, not the solve. \code{\link[=estimate_dense_solve_mb]{estimate_dense_solve_mb()}} is what the
+memory guard reads; see there for why the two differ by more than a copy.
+}
+\examples{
+estimate_dense_matrix_mb(5000, 5000)
+}

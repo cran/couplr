@@ -25,6 +25,14 @@
 # complementary slackness in both halves: matched arcs tight, and v_j = 0 on
 # every column no row matched.
 #
+# Each of those conditions is the sign of c_ij - u_i - v_j, and a double is a
+# rational number, so each has an exact answer. The check evaluates that sign
+# exactly rather than reading the sign of a rounded difference, and the
+# certificate says which arithmetic its conclusion is in. The tolerance is what
+# remains for the case the exact conditions do not hold: duals that are optimal
+# for the matrix in the reals but miss exact tightness by the rounding of the
+# arithmetic that produced them.
+#
 # The sign condition is conditional because the dual objective sums v over all
 # columns while a feasible assignment only pays for the ones it uses. With more
 # columns than rows any column can be left out, so none may contribute a
@@ -42,8 +50,39 @@
 #'
 #' Checks a solved assignment against the linear-programming optimality
 #' conditions and returns the result of each check. Unlike the `status` field on
-#' a solve result, which records what the solver terminated on, this is a proof:
-#' `certified_optimal` is `TRUE` only when every condition holds.
+#' a solve result, which records what the solver terminated on, this is a
+#' statement about the matching: `certified_optimal` is `TRUE` only when every
+#' condition holds.
+#'
+#' # What the certificate proves
+#'
+#' The conditions are decided in one of two arithmetics, and the certificate
+#' says which one it used.
+#'
+#' An **exact certificate** decides every condition in exact arithmetic, with no
+#' tolerance anywhere. It proves that the matching attains the minimum total
+#' cost of the cost matrix as supplied. The three quantities in each condition
+#' are IEEE doubles, and a double is a rational number, so `c_ij - u_i - v_j`
+#' has an exact sign; the check evaluates that sign exactly rather than reading
+#' the sign of a rounded difference. A cost matrix that is itself a rounding of
+#' something else — Mahalanobis distances, say — is still certified as the
+#' matrix it is, which is the problem the solver was given.
+#'
+#' A **numerical certificate** decides the same conditions within `tol`. It
+#' establishes optimality up to that tolerance and no further. It is what is
+#' available when the potentials are not exactly optimal for the matrix: a
+#' potential computed as `c_ij - v_j` misses exact tightness by the rounding of
+#' that subtraction, and a matched arc off by one unit in the last place is
+#' enough to put the exact conclusion out of reach.
+#'
+#' Which of the two an instance supports is a property of the arithmetic that
+#' produced the potentials, so it is worth checking rather than assuming.
+#' Integer costs and costs drawn on the unit interval have given an exact
+#' certificate on every instance we have measured, across problem sizes, both
+#' orientations of a rectangular problem, and every solver. Costs that are
+#' themselves computed, such as Euclidean distances between covariate vectors,
+#' have given a numerical one, with matched arcs off by a relative `1e-16` to
+#' `1e-15`.
 #'
 #' The check needs dual variables. If `x` carries them (as
 #' [assignment_duals()] results do), they are used. Otherwise they are obtained
@@ -66,23 +105,70 @@
 #'   potentials in the orientation of `cost`. Overrides any duals on `x`.
 #' @param maximize Logical; whether the assignment maximized rather than
 #'   minimized. Defaults to `FALSE`.
-#' @param tol Numeric tolerance for the feasibility and slackness comparisons.
-#'   The duality-gap comparison scales this by the magnitude of the objective,
-#'   since an absolute tolerance on a sum of many terms is not reachable in
-#'   double precision.
+#' @param tol Numeric tolerance for the feasibility and slackness comparisons of
+#'   a numerical certificate, ignored by an exact one. The duality-gap
+#'   comparison scales it by the magnitude of the objective, since an absolute
+#'   tolerance on a sum of many terms is not reachable in double precision.
+#' @param arithmetic One of `"auto"`, `"exact"` or `"double"`. `"auto"`, the
+#'   default, reports the exact conclusion when the exact conditions hold and
+#'   the numerical one otherwise, which is the strongest statement the instance
+#'   supports; the exact conditions imply the numerical ones at any
+#'   non-negative `tol`, so `"auto"` certifies nothing `"double"` would refuse.
+#'   `"exact"` refuses to fall back, so `certified_optimal` is then `TRUE` only
+#'   on an exact certificate. `"double"` decides everything within `tol`.
 #'
 #' @return An object of class `assignment_certificate`, a list with elements:
 #' \itemize{
 #'   \item `certified_optimal` — logical, the conclusion. `TRUE` only when
 #'         every condition below holds.
-#'   \item `primal_feasible` — logical; no column claimed twice, no forbidden
-#'         pair matched, no index out of range.
+#'   \item `arithmetic` — `"exact"` or `"double"`, the arithmetic the
+#'         conclusion was reached in.
+#'   \item `exact_certificate` — logical; whether the conditions hold in exact
+#'         arithmetic. `arithmetic = "double"` does not ask the question, and
+#'         reports `FALSE` here and in `exact_available`.
+#'   \item `exact_available` — logical; whether the exact question was asked of
+#'         every condition. It is `FALSE` under `arithmetic = "double"`, and on
+#'         a certificate assembled from a scan that priced part of the problem
+#'         against a tolerance rather than evaluating it, which is what the
+#'         edge-generation loop hands back.
+#'   \item `n_exact_violations`, `n_exact_untight` — pairs failing exact dual
+#'         feasibility, and matched pairs not exactly tight.
+#'   \item `structurally_valid_matching` — logical; no column claimed twice, no
+#'         forbidden pair matched, no index out of range. Unmatched rows are
+#'         permitted, so this holds for a partial matching.
+#'   \item `all_rows_matched` — logical; every row of the short side holds a
+#'         column.
+#'   \item `primal_feasible` — logical; both of the two above. The primal
+#'         constrains every row of the short side to hold exactly one pair, so
+#'         a partial matching is a valid matching and not a feasible solution,
+#'         and no conclusion rests on it. `primal_objective` is still reported
+#'         for one, since an unmatched row costs nothing and leaves the sum
+#'         meaningful.
 #'   \item `dual_feasible` — logical; `c_ij - u_i - v_j >= -tol` over every
 #'         admissible pair, and, when there are more columns than rows,
 #'         `v_j <= tol` for every column.
 #'   \item `complementary_slackness` — logical; both halves.
 #'   \item `cs_matched_tight`, `cs_unmatched_free` — the two halves separately.
 #'   \item `primal_objective`, `dual_objective`, `duality_gap` — numeric.
+#'   \item `max_suboptimality` — numeric; the most any feasible solution can
+#'         beat this one by, in the cost unit. It adds to the duality gap the
+#'         slack the dual conditions were allowed: `n_rows` times the depth the
+#'         reduced costs were permitted below zero, plus, where the sign
+#'         condition applies, `n_cols` times the height the column duals were
+#'         permitted above it, plus an envelope for each objective's own
+#'         rounding. Compensated summation buys back the accumulation error
+#'         rather than removing it, so each sum is charged
+#'         `(2u + gamma_n^2)` times the sum of its terms' magnitudes and the
+#'         assembly is rounded outward at every step. The number is an upper
+#'         bound in double arithmetic and not an estimate of one. It is zero
+#'         only where every one of those terms is exactly zero, which is what
+#'         `certified_optimal` reports. `NA` when `primal_feasible` is
+#'         `FALSE`: the quantity is what a feasible solution can beat this
+#'         one by, and there is no answer for a candidate that is not one.
+#'   \item `certified_reduced_cost_floor` — numeric; the lower bound proved for
+#'         the reduced cost of every admissible pair, the ones never evaluated
+#'         included. Equal to `min_reduced_cost` when every pair was visited,
+#'         and below it when a pruning pricer proved only its own threshold.
 #'   \item `min_reduced_cost`, `worst_i`, `worst_j` — the most violated pair, if
 #'         any.
 #'   \item `max_matched_slack`, `max_v_unmatched`, `max_v` — the quantities the
@@ -102,9 +188,17 @@
 #' rect <- matrix(runif(120), 6, 20)
 #' verify_assignment(assignment_duals(rect), rect)
 #'
+#' # Integer costs carry an integer optimal dual solution, so the conditions
+#' # hold with no tolerance and the certificate is exact.
+#' int_cost <- matrix(sample(1:100, 64, replace = TRUE), 8, 8)
+#' cert <- verify_assignment(assignment(int_cost), int_cost)
+#' cert$arithmetic
+#'
 #' @export
 verify_assignment <- function(x, cost = NULL, duals = NULL,
-                              maximize = FALSE, tol = 1e-9) {
+                              maximize = FALSE, tol = 1e-9,
+                              arithmetic = c("auto", "exact", "double")) {
+  arithmetic <- match.arg(arithmetic)
   if (!is.numeric(tol) || length(tol) != 1L || is.na(tol) || tol < 0) {
     stop("`tol` must be a single non-negative number.", call. = FALSE)
   }
@@ -124,7 +218,7 @@ verify_assignment <- function(x, cost = NULL, duals = NULL,
   }
 
   if (is_lazy_cost_spec(cost)) {
-    return(.certify_lazy(cost, match_vec, duals, maximize, tol))
+    return(.certify_lazy(cost, match_vec, duals, maximize, tol, arithmetic))
   }
 
   cost <- as.matrix(cost)
@@ -160,11 +254,11 @@ verify_assignment <- function(x, cost = NULL, duals = NULL,
 
   report <- lap_certify_dense(cost, as.integer(match_vec),
                               as.numeric(duals$u), as.numeric(duals$v),
-                              maximize, tol)
+                              maximize, tol, arithmetic)
   .new_assignment_certificate(report, transposed = transposed, tol = tol)
 }
 
-.certify_lazy <- function(cost, match_vec, duals, maximize, tol) {
+.certify_lazy <- function(cost, match_vec, duals, maximize, tol, arithmetic) {
   n <- cost$n_left
   m <- cost$n_right
   if (length(match_vec) != n) {
@@ -192,7 +286,7 @@ verify_assignment <- function(x, cost = NULL, duals = NULL,
                              inv_cov, cost$max_distance, caliper_list,
                              cost$vars, as.integer(match_vec),
                              as.numeric(duals$u), as.numeric(duals$v),
-                             maximize, tol)
+                             maximize, tol, arithmetic)
   .new_assignment_certificate(report, transposed = transposed, tol = tol)
 }
 
@@ -253,6 +347,8 @@ verify_assignment <- function(x, cost = NULL, duals = NULL,
                     else as.integer(report$worst_j) + 1L
   report$transposed <- transposed
   report$tolerance <- tol
+  report$arithmetic <- if (isTRUE(report$conclusion_is_exact)) "exact" else "double"
+  report$conclusion_is_exact <- NULL
   class(report) <- "assignment_certificate"
   report
 }
@@ -269,6 +365,9 @@ print.assignment_certificate <- function(x, ...) {
   cat("Assignment certificate\n")
   cat("======================\n\n")
   cat(sprintf("  primal_feasible          %s\n", flag(x$primal_feasible)))
+  cat(sprintf("    valid matching         %s\n",
+              flag(x$structurally_valid_matching)))
+  cat(sprintf("    all rows matched       %s\n", flag(x$all_rows_matched)))
   cat(sprintf("  dual_feasible            %s\n", flag(x$dual_feasible)))
   cat(sprintf("  complementary_slackness  %s\n", flag(x$complementary_slackness)))
   cat(sprintf("    matched arcs tight     %s   (max slack %.3e)\n",
@@ -276,7 +375,18 @@ print.assignment_certificate <- function(x, ...) {
   cat(sprintf("    unmatched columns free %s   (max |v_j| %.3e)\n",
               flag(x$cs_unmatched_free), x$max_v_unmatched))
   cat(sprintf("  duality_gap              %.6e\n", x$duality_gap))
-  cat(sprintf("  certified_optimal        %s\n\n", flag(x$certified_optimal)))
+  if (is.na(x$max_suboptimality)) {
+    cat("  max_suboptimality        not reported (primal not feasible)\n")
+  } else {
+    cat(sprintf("  max_suboptimality        %.6e\n", x$max_suboptimality))
+  }
+  cat(sprintf("  certified_optimal        %s\n", flag(x$certified_optimal)))
+  if (identical(x$arithmetic, "exact")) {
+    cat("  arithmetic               exact, no tolerance\n\n")
+  } else {
+    cat(sprintf("  arithmetic               double, tolerance %.1e\n\n",
+                x$tolerance))
+  }
 
   cat(sprintf("  primal objective  %.10g\n", x$primal_objective))
   cat(sprintf("  dual objective    %.10g\n", x$dual_objective))

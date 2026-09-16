@@ -99,7 +99,9 @@
 #'   then synthesized ids with a warning. See [match_couples()].
 #' @param keep_per_row,width,tol,max_rounds The edge-generation loop's search
 #'   knobs, shared with `memory_mode = "implicit"`. Each point converges on any
-#'   of them.
+#'   of them. `width` is the columns the seed gives a row, and 0, the default,
+#'   sizes it from the number of columns; `$search$seed_width` reports what the
+#'   path used.
 #'
 #' @return An object of class `couplr_path`: `$path`, one row per point,
 #'   `$balance`, one row per point per variable, and the match vector,
@@ -157,7 +159,7 @@ match_path <- function(left, right, vars,
     stop("`tol` must be a single non-negative number.", call. = FALSE)
   }
   .check_positive_count(keep_per_row, "keep_per_row")
-  .check_positive_count(width, "width")
+  .check_seed_width(width)
   .check_positive_count(max_rounds, "max_rounds")
 
   if (auto_scale) {
@@ -258,18 +260,40 @@ match_path <- function(left, right, vars,
   })
 
   pts <- raw$points
+  status <- as.character(pts$status)
+  n_matched <- as.integer(pts$n_matched)
+  total <- as.numeric(pts$total_cost)
+
+  # A value too tight for a complete matching still admits a largest one, and
+  # a single call at that value returns it, so the point does too: the
+  # one-to-one design solved by the design loop at that cut. The witness saying
+  # why no complete matching exists stays beside it.
+  for (k in which(status == "infeasible")) {
+    at <- spec
+    at$max_distance <- as.numeric(pts$value)[k]
+    partial <- suppressWarnings(.lazy_partial_matching(at))
+    rows <- partial$matched_rows
+    m <- integer(n_left)
+    m[rows] <- partial$matched_cols
+    match_out[[k]] <- m
+    n_matched[k] <- length(rows)
+    if (length(rows)) {
+      status[k] <- "partial"
+      total[k] <- sum(lazy_pair_distances(spec, rows, partial$matched_cols))
+    }
+  }
+
   # A point that found no matching has no total to report. Zero is what summing
   # nothing gives and it plots as the cheapest point on the path, which is the
   # opposite of what a caliper too tight to match under means.
-  total <- as.numeric(pts$total_cost)
-  total[as.character(pts$status) != "optimal"] <- NA_real_
+  total[!(status %in% c("optimal", "partial"))] <- NA_real_
 
   balance <- .path_balance(match_out, left, right, vars)
 
   path <- tibble::tibble(
     value             = as.numeric(pts$value),
-    status            = as.character(pts$status),
-    n_matched         = as.integer(pts$n_matched),
+    status            = status,
+    n_matched         = n_matched,
     total_distance    = total,
     mean_abs_std_diff = vapply(balance, function(b) b$overall$mean_abs_std_diff,
                                numeric(1)),
@@ -306,6 +330,7 @@ match_path <- function(left, right, vars,
       rounds      = lapply(raw$rounds, tibble::as_tibble),
       witness     = witness,
       search      = list(
+        seed_width      = as.integer(raw$seed_width),
         possible_edges  = as.numeric(raw$possible_edges),
         candidate_edges = as.numeric(raw$candidate_edges),
         edges_evaluated = as.numeric(raw$edges_evaluated)

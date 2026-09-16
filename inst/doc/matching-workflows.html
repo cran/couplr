@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-08-23" />
+<meta name="date" content="2026-09-16" />
 
 <title>Matching Workflows</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Matching Workflows</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-08-23</h4>
+<h4 class="date">2026-09-16</h4>
 
 
 
@@ -877,18 +877,18 @@ matters</p></li>
 <span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Optimal matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a><span class="co">#&gt; Optimal matching:</span></span>
 <span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 0.84 seconds</span></span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a><span class="co">#&gt;   Time: 0.51 seconds</span></span>
 <span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_optimal<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.3368</span></span>
 <span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a></span>
 <span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy matching:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a><span class="co">#&gt; Greedy matching:</span></span>
 <span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Time:&quot;</span>, <span class="fu">round</span>(time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">3</span>), <span class="st">&quot;seconds</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 0.1 seconds</span></span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a><span class="co">#&gt;   Time: 0.06 seconds</span></span>
 <span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Mean distance:&quot;</span>, <span class="fu">round</span>(<span class="fu">mean</span>(result_greedy<span class="sc">$</span>pairs<span class="sc">$</span>distance), <span class="dv">4</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a><span class="co">#&gt;   Mean distance: 0.4667</span></span>
 <span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Speedup:&quot;</span>, <span class="fu">round</span>(time_optimal[<span class="st">&quot;elapsed&quot;</span>] <span class="sc">/</span> time_greedy[<span class="st">&quot;elapsed&quot;</span>], <span class="dv">1</span>), <span class="st">&quot;x</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 8.4 x</span></span></code></pre></div>
+<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="co">#&gt;   Speedup: 8.5 x</span></span></code></pre></div>
 </div>
 <div id="greedy-strategies" class="section level3">
 <h3>Greedy Strategies</h3>
@@ -973,7 +973,7 @@ default):</p>
 <span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt;          strategy time_sec mean_distance total_distance</span></span>
 <span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; elapsed    sorted     0.02        0.0912          18.24</span></span>
 <span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; elapsed1 row_best     0.00        0.0968          19.36</span></span>
-<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.02        0.0912          18.24</span></span></code></pre></div>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; elapsed2       pq     0.01        0.0912          18.24</span></span></code></pre></div>
 <p><strong>Recommendation:</strong></p>
 <ul>
 <li><p>Default to <code>strategy = &quot;row_best&quot;</code> for good
@@ -1971,7 +1971,7 @@ sample size while preserving balance.</p>
 <span id="cb29-12"><a href="#cb29-12" tabindex="-1"></a><span class="co">#&gt; ====================</span></span>
 <span id="cb29-13"><a href="#cb29-13" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb29-14"><a href="#cb29-14" tabindex="-1"></a><span class="co">#&gt;   Status: optimal</span></span>
-<span id="cb29-15"><a href="#cb29-15" tabindex="-1"></a><span class="co">#&gt;   Groups formed: 100</span></span>
+<span id="cb29-15"><a href="#cb29-15" tabindex="-1"></a><span class="co">#&gt;   Groups formed: 78</span></span>
 <span id="cb29-16"><a href="#cb29-16" tabindex="-1"></a><span class="co">#&gt;   Left units:  100 matched, 0 unmatched (of 100)</span></span>
 <span id="cb29-17"><a href="#cb29-17" tabindex="-1"></a><span class="co">#&gt;   Right units: 150 matched, 0 unmatched (of 150)</span></span>
 <span id="cb29-18"><a href="#cb29-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
@@ -1998,7 +1998,7 @@ optimal.</p></li>
 <span id="cb30-9"><a href="#cb30-9" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Optimal: &quot;</span>, result_full<span class="sc">$</span>info<span class="sc">$</span>n_groups, <span class="st">&quot;groups,&quot;</span>,</span>
 <span id="cb30-10"><a href="#cb30-10" tabindex="-1"></a>    result_full<span class="sc">$</span>info<span class="sc">$</span>n_unmatched_left, <span class="st">&quot;unmatched left,&quot;</span>,</span>
 <span id="cb30-11"><a href="#cb30-11" tabindex="-1"></a>    result_full<span class="sc">$</span>info<span class="sc">$</span>n_unmatched_right, <span class="st">&quot;unmatched right</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb30-12"><a href="#cb30-12" tabindex="-1"></a><span class="co">#&gt; Optimal:  100 groups, 0 unmatched left, 0 unmatched right</span></span>
+<span id="cb30-12"><a href="#cb30-12" tabindex="-1"></a><span class="co">#&gt; Optimal:  78 groups, 0 unmatched left, 0 unmatched right</span></span>
 <span id="cb30-13"><a href="#cb30-13" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Greedy:  &quot;</span>, result_full_greedy<span class="sc">$</span>info<span class="sc">$</span>n_groups, <span class="st">&quot;groups,&quot;</span>,</span>
 <span id="cb30-14"><a href="#cb30-14" tabindex="-1"></a>    result_full_greedy<span class="sc">$</span>info<span class="sc">$</span>n_unmatched_left, <span class="st">&quot;unmatched left,&quot;</span>,</span>
 <span id="cb30-15"><a href="#cb30-15" tabindex="-1"></a>    result_full_greedy<span class="sc">$</span>info<span class="sc">$</span>n_unmatched_right, <span class="st">&quot;unmatched right</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
@@ -2034,13 +2034,13 @@ unbiased estimation:</p>
 <span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a><span class="co">#&gt;  1        1 1     left       1</span></span>
 <span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="co">#&gt;  2        1 140   right      1</span></span>
 <span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a><span class="co">#&gt;  3        2 2     left       1</span></span>
-<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a><span class="co">#&gt;  4        2 50    right      1</span></span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a><span class="co">#&gt;  4        2 69    right      1</span></span>
 <span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a><span class="co">#&gt;  5        3 3     left       1</span></span>
-<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a><span class="co">#&gt;  6        3 62    right      1</span></span>
-<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a><span class="co">#&gt;  7        4 4     left       1</span></span>
-<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a><span class="co">#&gt;  8        4 5     right      1</span></span>
-<span id="cb32-13"><a href="#cb32-13" tabindex="-1"></a><span class="co">#&gt;  9        5 5     left       1</span></span>
-<span id="cb32-14"><a href="#cb32-14" tabindex="-1"></a><span class="co">#&gt; 10        5 63    right      1</span></span></code></pre></div>
+<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a><span class="co">#&gt;  6        3 24    left       1</span></span>
+<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a><span class="co">#&gt;  7        3 121   right      2</span></span>
+<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a><span class="co">#&gt;  8        4 4     left       1</span></span>
+<span id="cb32-13"><a href="#cb32-13" tabindex="-1"></a><span class="co">#&gt;  9        4 58    left       1</span></span>
+<span id="cb32-14"><a href="#cb32-14" tabindex="-1"></a><span class="co">#&gt; 10        4 60    left       1</span></span></code></pre></div>
 <p><strong>When to use full matching vs one-to-one:</strong></p>
 <table>
 <thead>

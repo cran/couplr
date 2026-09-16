@@ -114,6 +114,15 @@ std::vector<int> match_to_zero_based(const Rcpp::IntegerVector& match) {
     return out;
 }
 
+// The mode arrives as the string R validated, so an unknown one is a bug in
+// the wrapper rather than a user error, and defaulting it would hide that.
+lap::Arithmetic arithmetic_from_string(const std::string& name) {
+    if (name == "exact") return lap::Arithmetic::Exact;
+    if (name == "double") return lap::Arithmetic::Double;
+    if (name == "auto") return lap::Arithmetic::Auto;
+    Rcpp::stop("unknown arithmetic mode: " + name);
+}
+
 std::vector<double> duals_to_internal(const Rcpp::NumericVector& x, bool negate) {
     std::vector<double> out(static_cast<std::size_t>(x.size()));
     for (R_xlen_t k = 0; k < x.size(); ++k) {
@@ -125,8 +134,10 @@ std::vector<double> duals_to_internal(const Rcpp::NumericVector& x, bool negate)
 }  // namespace
 
 Rcpp::List certificate_report_to_list(const lap::CertificateReport& rep) {
-    ListBuilder out(22);
+    ListBuilder out(34);
 
+    out.add_flag("structurally_valid_matching", rep.structurally_valid_matching);
+    out.add_flag("all_rows_matched", rep.all_rows_matched);
     out.add_flag("primal_feasible", rep.primal_feasible);
     out.add_count("n_rows", rep.n_rows);
     out.add_count("n_cols", rep.n_cols);
@@ -150,8 +161,19 @@ Rcpp::List certificate_report_to_list(const lap::CertificateReport& rep) {
     out.add_number("max_v_unmatched", rep.max_v_unmatched);
     out.add_flag("complementary_slackness", rep.complementary_slackness);
 
+    out.add_flag("exact_dual_feasible", rep.exact_dual_feasible);
+    out.add_flag("exact_cs_matched_tight", rep.exact_cs_matched_tight);
+    out.add_flag("exact_cs_unmatched_free", rep.exact_cs_unmatched_free);
+    out.add_flag("exact_certificate", rep.exact_certificate);
+    out.add_flag("exact_available", rep.exact_available);
+    out.add_count("n_exact_violations", rep.n_exact_violations);
+    out.add_count("n_exact_untight", rep.n_exact_untight);
+
     out.add_number("duality_gap", rep.duality_gap);
+    out.add_number("certified_reduced_cost_floor", rep.certified_reduced_cost_floor);
+    out.add_number("max_suboptimality", rep.max_suboptimality);
     out.add_flag("certified_optimal", rep.certified_optimal);
+    out.add_flag("conclusion_is_exact", rep.conclusion_is_exact);
     out.add_number("tolerance", rep.tolerance);
 
     return out.finish();
@@ -169,14 +191,15 @@ void restore_certificate_sign(lap::CertificateReport& rep, bool maximize) {
 
 Rcpp::List certify_dense_impl(Rcpp::NumericMatrix cost, Rcpp::IntegerVector match,
                               Rcpp::NumericVector u, Rcpp::NumericVector v,
-                              bool maximize, double tol) {
+                              bool maximize, double tol, std::string arithmetic) {
     try {
         const lap::CostMatrix cm = cost_matrix_for_certify(cost, maximize);
         const std::vector<int> m0 = match_to_zero_based(match);
         const std::vector<double> u0 = duals_to_internal(u, maximize);
         const std::vector<double> v0 = duals_to_internal(v, maximize);
 
-        lap::CertificateReport rep = lap::certify_assignment(cm, m0, u0, v0, tol);
+        lap::CertificateReport rep = lap::certify_assignment(
+            cm, m0, u0, v0, tol, arithmetic_from_string(arithmetic));
         restore_certificate_sign(rep, maximize);
 
         return certificate_report_to_list(rep);
@@ -189,12 +212,12 @@ Rcpp::List certify_dense_impl(Rcpp::NumericMatrix cost, Rcpp::IntegerVector matc
 }
 
 Rcpp::List certify_lazy_impl(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat,
-                             std::string distance,
+                             SEXP distance,
                              Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
                              double max_distance, Rcpp::List calipers,
                              Rcpp::CharacterVector vars,
                              Rcpp::IntegerVector match, Rcpp::NumericVector u,
-                             Rcpp::NumericVector v, bool maximize, double tol) {
+                             Rcpp::NumericVector v, bool maximize, double tol, std::string arithmetic) {
     try {
         // The inverse covariance is only read for Mahalanobis; every other
         // metric passes NULL, matching lazy_cost_spec_inv_cov() in
@@ -208,7 +231,7 @@ Rcpp::List certify_lazy_impl(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix r
 
         // The lazy source bakes the maximize negation into at() itself
         // (negate = maximize), so it is already the internal minimization.
-        const lap::LazyCostMatrix cm = rcpp_to_lazy_cost_matrix(
+        const LazySource source = rcpp_lazy_source(
             left_mat, right_mat, distance, inv_cov_arg, max_distance,
             calipers, vars, maximize);
 
@@ -216,7 +239,10 @@ Rcpp::List certify_lazy_impl(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix r
         const std::vector<double> u0 = duals_to_internal(u, maximize);
         const std::vector<double> v0 = duals_to_internal(v, maximize);
 
-        lap::CertificateReport rep = lap::certify_assignment(cm, m0, u0, v0, tol);
+        lap::CertificateReport rep = std::visit([&](const auto& cm) {
+            return lap::certify_assignment(cm, m0, u0, v0, tol,
+                                           arithmetic_from_string(arithmetic));
+        }, source);
         restore_certificate_sign(rep, maximize);
 
         return certificate_report_to_list(rep);
@@ -253,21 +279,21 @@ Rcpp::List scan_reduced_costs_impl(Rcpp::NumericMatrix cost, Rcpp::NumericVector
 namespace lap {
 
 template ReducedCostScan scan_reduced_costs<CostMatrix>(
-    const CostMatrix&, const std::vector<double>&, const std::vector<double>&, double);
+    const CostMatrix&, const std::vector<double>&, const std::vector<double>&, double, bool);
 template ReducedCostScan scan_reduced_costs<LazyCostMatrix>(
-    const LazyCostMatrix&, const std::vector<double>&, const std::vector<double>&, double);
+    const LazyCostMatrix&, const std::vector<double>&, const std::vector<double>&, double, bool);
 template ReducedCostScan scan_reduced_costs<PaddedCostView<CostMatrix> >(
     const PaddedCostView<CostMatrix>&, const std::vector<double>&,
-    const std::vector<double>&, double);
+    const std::vector<double>&, double, bool);
 
 template CertificateReport certify_assignment<CostMatrix>(
     const CostMatrix&, const std::vector<int>&, const std::vector<double>&,
-    const std::vector<double>&, double);
+    const std::vector<double>&, double, Arithmetic);
 template CertificateReport certify_assignment<LazyCostMatrix>(
     const LazyCostMatrix&, const std::vector<int>&, const std::vector<double>&,
-    const std::vector<double>&, double);
+    const std::vector<double>&, double, Arithmetic);
 template CertificateReport certify_assignment<PaddedCostView<CostMatrix> >(
     const PaddedCostView<CostMatrix>&, const std::vector<int>&,
-    const std::vector<double>&, const std::vector<double>&, double);
+    const std::vector<double>&, const std::vector<double>&, double, Arithmetic);
 
 }  // namespace lap

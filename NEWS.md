@@ -1,3 +1,469 @@
+# couplr 1.7.1
+
+1.7.0 was tagged but never released. A critical review of the release
+candidate found two exported paths answering a different question from the
+one asked, so the version that reaches CRAN is this one.
+
+## Breaking changes
+
+* **`method = "auto"` no longer diverts on sparsity or aspect ratio.** Two of
+  the five dispatch rules sent a matrix with more than half its entries
+  forbidden to `"lapmod"`, and a matrix with at least three columns per row to
+  `"sap"`. Measured across the regime grid in `paper/bench_regimes.R`, neither
+  earned its place: `"sap"` was the quickest solver in none of the 32 cells
+  where its rule fired, at a median of 5.75 times the cell's best and a worst
+  of 13.4, and `"lapmod"` was quickest in 2 of 48 cells at 60 and 25 percent of
+  the entries finite, and in 1 of 31 at 5 and 1 percent, the extreme sparsity
+  its adjacency structure exists for. Jonker-Volgenant is at or below the
+  best-known time in both regimes, so both properties now fall through to it.
+  The dispatcher is three rules: enumerate an at most 8 by 8 problem, use
+  `"hk01"` where the finite costs carry no scale, and otherwise `"jv"`. Both
+  `"lapmod"` and `"sap"` remain reachable by name, which is what a caller with
+  a problem outside the measured grid should use.
+* **The memory guard estimates the solve, not the matrix.** `memory_mode =
+  "auto"` compared a dense cost matrix's footprint against available RAM, at
+  four times the raw cell bytes. A dense solve peaks well above the matrix it
+  runs on: measured at 9.4, 7.2 and 8.6 times the raw bytes at 5,000, 10,000
+  and 20,000 units, against the 4 the guard assumed, so a solve could be
+  started on a machine it did not fit. `estimate_dense_solve_mb()` now supplies
+  the figure the guard reads, at a multiplier taken from those measurements;
+  `estimate_dense_matrix_mb()` keeps its own meaning and is no longer what
+  decides the mode. The guard switches to `"lazy"` earlier than it did, and its
+  warnings now name the solve rather than the matrix.
+
+* **The `"orlin"` solver is now `"sap_dense"`.** The C++ behind it runs
+  successive shortest paths: each augmentation is a Dijkstra search on reduced
+  costs followed by a Johnson potential shift. It has no scaling phases and no
+  auction warm-up, so it is not the Orlin-Ahuja (1992) algorithm its old name
+  named, and its `alpha` and `auction_rounds` arguments were never read. The
+  method now carries a name that describes what it does: shortest augmenting
+  paths whose priority queue is a linear scan over the columns rather than a
+  heap, which costs `O(n * m^2)` and suits a dense cost matrix. Calls passing
+  `method = "orlin"` now raise an error listing the valid methods. Results,
+  duals and timings are unchanged; only the name is.
+* **`assignment()` documents `O(sqrt(V) * E * log(V * C))` for
+  `"gabow_tarjan"`,** on a graph of `V` vertices and `E` edges, which for an
+  `n` by `n` cost matrix is `O(n^2.5 * log(n * C))`. The previous `O(n^3 log C)`
+  did not match the bound in the source it cites.
+
+* **`full_match()` solves full matching, not one-to-many matching.** It chose
+  the group centres as the globally smaller side and gave every group exactly
+  one centre, so every group was one left unit with several right ones. Full
+  matching in the sense of Hansen and Klopfer (2006) also admits many-to-one
+  groups, and mixes both shapes in one solution. On the 3 by 3 distance matrix
+  from left units at 0, 10, 10 against right units at 0, 0, 10, the old design
+  returned a total within-group distance of 10 and reported
+  `status = "optimal"`, while `optmatch::fullmatch()` returned 0 by pairing the
+  left unit at 0 with both right units at 0 and the two left units at 10 with
+  the right unit at 10. The gap grows without bound with the spread.
+
+  Under the default `min_controls = 1` the compiled network now carries a lower
+  bound of one on both sides and unit capacity on the pair arcs, so the arcs a
+  solve places are an edge cover of the admissible pairs. A cheapest cover is
+  inclusion-minimal, a minimal cover is a disjoint union of stars, and a
+  disjoint union of stars covering every unit is exactly a full matching, so
+  minimising distance over covers is minimising it over full matchings. The
+  flow's value is not fixed in advance, since the number of arcs depends on how
+  many groups form, so the source injects the unit count and a bypass arc
+  absorbs what the network does not need. Checked against
+  `optmatch::fullmatch()` on 80 random instances, no disagreement.
+
+  `min_controls` above one is unchanged and was already right: a group built
+  around a single right unit holds exactly one of them and cannot meet a lower
+  bound of two, so only the one-to-many shape is feasible there and the centres
+  are the smaller side. `max_controls` now bounds the many side of a group
+  whichever side that is, which is the same reading as before for a group of one
+  left unit and several right ones.
+
+## Improvements
+
+* **A dispatch rule for heavily tied costs was tested and not added (#50).**
+  The regime grid puts `method = "auto"` furthest from the best solver where
+  the finite costs take few distinct values. A rule sending such a matrix to
+  `"auction_scaled"` was fixed, with its acceptance criterion, before it was
+  scored on a grid generated apart from the regime grid: over the cells it
+  fires on, a median time ratio against `"jv"` below 1 and no cell above 1.5.
+  The first version, at most 32 distinct values, was quicker in all 42 square
+  cells and up to 52 times slower on problems with ten columns per row. The
+  second, bounded to at most 1.25 columns per row and scored on a second,
+  disjoint grid, took a median 0.13 of the time of `"jv"` over 64 cells, but
+  2.6 times it in the worst. Neither is in the dispatch table, and
+  `"auction_scaled"` remains available by name for tied costs.
+  `paper/bench_dispatch_validation.R` holds both grids and their verdicts.
+
+* **`full_match()` takes `memory_mode = "implicit"`.** The edge-generation
+  loop solved only the one-to-one assignment, because it read assignment
+  duals, and a full matching's column nodes carry capacities above one. It now
+  runs any design compiled onto one block of pair arcs. An omitted pair sits at
+  its lower bound of zero, so it is priced against the flow's own node
+  potentials, `cost + pi(row) - pi(column)`, and the flow is optimal over every
+  pair once none prices below zero. A master that falls short of its flow is
+  answered by a maximum-flow cut instead of Hall's condition: the pairs that
+  could raise the flow leave the residual set its excess still reaches, a
+  round adds the cheapest of them (per row inside the set, or per column
+  outside it, whichever side is smaller, the latter through a tree over the
+  rows), and when there are none the flow placed is the maximum over every
+  admissible pair. `caliper` becomes the source's distance cut and `caliper_sd`
+  reads every pair's distance once, in two running sums. The result carries
+  the certificate over the pairs held together with `omitted_proven_floor` for
+  the pairs omitted, and a `search` record. On 200 by 600 units with five
+  covariates and `max_controls = 5` the loop held 12,762 of 120,000 pairs and
+  returned the dense solve's groups (#47).
+
+* **`memory_mode = "lazy"` and `"implicit"` reach `replace = TRUE`,
+  `ratio > 1` and `cardinality_match()`.** All three built the dense matrix.
+  Replacement matching is each left unit's own cheapest partners, so it is now
+  one query per unit to the same row search the implicit loop seeds with, a
+  tree over the right units where the metric carries a ball bound. A ratio
+  above one replicates the left units' covariates instead of their rows of
+  distances, with the inverse covariance taken from the units before
+  replication. `cardinality_match(memory_mode = "implicit")` solves its
+  balance network over generated pairs: the network always carries its full
+  budget through its slack arcs, so each solve is a flow and the pairs it omits
+  are priced against its potentials with the Lagrangian multipliers folded in,
+  added, and solved again, warm, with their arcs appended so every branching
+  bound already placed keeps its index; the distance range the tier weights are
+  built on is read in one pass. A pricing session holding the source, its tree
+  and the candidate set persists across the search's solves. On 25 left units
+  whose region-A partners sit behind 300 nearer region-B units, fine balance
+  on region reaches the dense matched set and certifies (#48).
+
+* **A user-supplied distance function runs on the lazy and implicit paths.**
+  Both refused a function, on the grounds that calling it per pair from C++
+  would pay an R call per pair. It is now called on a block of left units
+  against every right unit, the same two-matrix contract the dense path calls
+  it under, with the block sized so the matrix it returns stays near a million
+  cells, and a few blocks kept. Every path that takes a specification takes
+  one carrying a function: Jonker-Volgenant and auction under `"lazy"`, the
+  implicit loop, `full_match()`, `cardinality_match()`, replacement and ratio
+  designs, `match_path()` and `verify_assignment()`. No ball bound exists for
+  an opaque function, so pricing reads every omitted pair; what the loop buys
+  there is the memory ceiling and the sparse master. A transposed problem asks
+  the function its original question, so an asymmetric distance keeps its
+  direction. The certificate assumes a pair's distance does not depend on the
+  other units in its call, so each matched pair is evaluated again alone and a
+  disagreement is an error naming the pair (#49).
+
+* **A lazy or implicit match that admits no complete matching returns the
+  largest one it admits.** Both modes reported every unit unmatched with a
+  warning, because the dense path's pruning and sentinel padding need the
+  matrix. The one-to-one design is now solved by the design loop over the same
+  specification, which reaches the maximum-cardinality minimum-cost matching
+  the dense path returns. Under `"implicit"` Hall's witness is still attached,
+  saying why no complete matching exists. A `match_path()` point too tight for
+  a complete matching carries the same largest matching, with status
+  `"partial"` and its total, beside the witness.
+
+* **`estimate_dense_matrix_mb()` and `estimate_dense_solve_mb()` are
+  exported.** Both were documented and reachable only through `:::`, while
+  the memory-mode documentation and the package's own guard are written
+  around them. A caller sizing a problem before it runs now reads the same
+  two numbers `memory_mode = "auto"` decides on.
+
+* **`verify_assignment()` decides its conditions in exact arithmetic and says
+  so.** Every condition the certificate checks is the sign of
+  `c_ij - u_i - v_j`, and a double is a rational number, so that sign has an
+  exact answer; the check now evaluates it exactly instead of reading the sign
+  of a rounded difference. The new `arithmetic` argument takes `"auto"`, the
+  default, which reports the exact conclusion when the exact conditions hold
+  and the tolerance conclusion otherwise, `"exact"`, which refuses to fall
+  back, and `"double"`, which is the previous behaviour. The certificate
+  carries `arithmetic`, `exact_certificate` and `all_rows_matched`, and its
+  print method names the arithmetic the conclusion is in. The exact conditions
+  imply the numerical ones at any non-negative `tol`, so `certified_optimal`
+  under `"auto"` is what it was before.
+* **The edge-generation loop bounds a subtree of columns instead of reading
+  every one.** Under `memory_mode = "lazy"` and `"implicit"` the pricing sweep
+  and the search for a deficient row's cheapest columns both used to scan the
+  column set. Where the cost source carries geometry, both are now answered
+  from a ball tree over the columns: a node holds a centre and radius in
+  whitened coordinates, which bounds the distance, and a box in the original
+  covariates, which is where a caliper is stated. A node whose bound cannot
+  beat the row's threshold is discarded without visiting the columns under it.
+
+  The tree is built when it pays. Mahalanobis distance is quadratic in the
+  number of covariates, dear enough to pay for the bound at every dimension
+  measured, so it always takes the tree. The metrics whose cost is linear in
+  the covariates take it up to six of them, measured at 2.6x at two covariates,
+  level at six and a loss at eight. Manhattan and Chebyshev carry no ball
+  bound, a covariance with no Cholesky factor has no whitened coordinates, and
+  a custom distance function is opaque; each of those falls back to the scan,
+  which is the same answer for more work rather than a different answer.
+
+  Pruning does not reduce total distance evaluations below one complete pass in
+  every regime: seeding and repeated pricing rounds evaluate some pairs more
+  than once, and at eight Mahalanobis covariates the loop still evaluates 1.4
+  to 2.0 complete-pair equivalents. What the loop saves is the graph it never
+  builds and the solver work that follows from it.
+
+* **`assignment()` documents the integer conversion `"gabow_tarjan"` performs.**
+  The scale factor, the rounding rule, the instance whose optimum is claimed,
+  the range a matrix is refused at, and the bound on how far the rounded
+  instance's optimum can sit from the original one are all stated.
+
+* **The edge-generation loop sizes its own seed.** Under
+  `memory_mode = "implicit"` the first round used to give every row five
+  columns whatever the problem was. Five is short enough that the loop bought
+  the rest of what it needed a round at a time, and every one of those rounds
+  costs a full pricing sweep over the pairs the master does not hold. The seed
+  is now read off the number of columns, and a run reports the width it used as
+  `$search$seed_width`.
+
+  On the eight-covariate scaling problem the paper uses, the loop settles in two
+  rounds instead of four to seven, and runs 1.9x to 2.4x faster at 5,000 to
+  50,000 units. That turns the comparison with `memory_mode = "lazy"` around:
+  the mode used to lose to it below 50,000 units (0.62x at 5,000, 0.87x at
+  20,000) and now leads at every size measured, from 1.1x at 5,000 to 3.1x at
+  50,000.
+
+  The answer and the proof behind it are untouched. Across the seed widths
+  measured -- 8 to 256 columns at four sizes, and 5 to 160 at four more -- every
+  run returned the same total distance to the last digit and came back
+  certified.
+
+* `match_path()` reports the same `$search$seed_width`, and `width` still takes
+  an explicit column count on both surfaces. Zero, the new default, asks for
+  the sized seed.
+
+* **The certificate says how far the answer can be from the optimum.**
+  `verify_assignment()`, and the certificate an implicit solve carries, gain
+  `max_suboptimality` -- the most any feasible matching of the complete problem
+  can beat the returned one by, in the cost unit -- and
+  `certified_reduced_cost_floor`, the lower bound proved for the reduced cost of
+  every admissible pair. Conditions that hold with no slack put the bound at
+  the rounding of the two objective sums. A proof assembled by a pricer that pruned puts one tolerance per row
+  there instead, because a skipped subtree is known only by the bound it was
+  skipped against, and `certified_reduced_cost_floor` sits below
+  `min_reduced_cost` to say which case a result is in.
+
+* **A ball-tree descent pays less at each node it reads.** The allowance for
+  the cost source's own rounding is charged as `gamma_{2n+2}` times the largest
+  row sum of `|A|` times `||r||^2`, with `r` the query's reach to the node's
+  box. The row sum is fixed when the tree is built, so a node costs one pass
+  over the covariates where the entrywise `r' |A| r` it bounds cost
+  `n_vars^2` products. The outward rounding steps are read off the
+  representation instead of calling `nextafter()`, and return the same bits.
+  The edges evaluated are unchanged at every size of the article's implicit
+  benchmark, and an implicit solve at n = 20,000 went from 10.6 s to 8.3 s on
+  the machine it was timed on (#52).
+
+## Bug fixes
+
+* **The auction solvers return an optimal assignment on real-valued costs.**
+  `"auction"`, `"auction_gs"` and `"auction_scaled"` stopped bidding at a final
+  epsilon of `min(1e-6, 1/n^2)` and reported the result as optimal. That
+  assignment is only within `n * epsilon` of the optimum, and on real-valued
+  costs no fixed epsilon closes the gap. Across the regime grid,
+  `"auction_scaled"` returned a matching above the optimum on 7 of 406 solves,
+  by at most 1.23e-05. Costs closer to the epsilon fare worse: on log-normal
+  matrices scaled to a median of 1e-3, all 27 solves across the three variants
+  at 500 by 500, 500 by 1500 and 1500 by 1500 missed. The bidding now hands its
+  assignment and prices to a repair step. It corrects the prices into exact
+  column potentials by label-correcting shortest paths and cancels every
+  cheaper reassignment it finds on the way. Labels are rounded toward
+  +infinity, so a cancelled cycle is negative in exact arithmetic and a
+  zero-cost cycle cannot be cancelled forever. The dense and lazy paths share
+  the step. Adding uniform, integer, heavy-tailed, tied and metric costs at
+  those three shapes, 34 of 162 auction solves failed the certificate before
+  and none after.
+
+  The epsilon schedule is read off the costs instead of fixed. Bidding starts
+  at the span of the costs and ends at a hundredth of the typical spacing of
+  each row's cheapest costs, the median over rows of the mean gap between its
+  four smallest distinct values, and never below four ulps of the largest cost
+  magnitude. The fixed final epsilon of `min(1e-6, 1/n^2)` sat far below that
+  spacing on some matrices and far above it on others. On costs scaled to a
+  median of 1e-3 it left most of the work to the repair. On a 1000 by 2000
+  problem whose largest costs reach 1e6 it was finer than the spacing of the
+  padding rows' reduced costs, near 1e10, so their bids no longer registered.
+  Uniform, heavy-tailed and offset costs of that kind each ran 15 minutes
+  without finishing and now take 0.5, 6.9 and 0.55 seconds. Against the fixed
+  schedule on nine cost regimes, square, rectangular and half-sparse, at 300
+  and 1000 rows with three instances each, uniform costs scaled to 1e-6 went
+  from 24.1 to 0.36 seconds at 1000 by 2000 and log-normal costs scaled to
+  1e-3 from 2.5 to 0.11 seconds at 1000 by 1000. Rectangular problems take 0.3
+  to 0.8 times as long, and the median over instances is at most 1.07 times
+  the fixed schedule in every cell. Every solve certified.
+
+* **`max_suboptimality` is an upper bound rather than an estimate of one.**
+  It is assembled from the primal and dual objectives, each a Neumaier
+  compensated sum, and compensated summation buys back the accumulation
+  error rather than removing it. The bound charged nothing for that and the
+  assembly used ordinary arithmetic. Each sum now carries an envelope of
+  `(2u + gamma_n^2)` times the sum of its terms' magnitudes, both enter the
+  bound, and every step of the assembly is rounded outward. An exactly zero
+  bound stays exactly zero. The exact-arithmetic path is unchanged: it
+  concludes from exactly decided sign tests and never compares objectives.
+
+* **The ball-tree allowance for the cost source's own evaluation was counted
+  off the wrong loop.** The term added in 1.7.0 has the right form, an
+  absolute slack on the squared distance bounded by the entrywise
+  `|d|' |A| |d|` rather than relative to `d' A d`, and the wrong constant: it
+  charged `gamma_{n+3}`, the count belonging to the tree's own sum of
+  squares, for the source's double sum. The source recomputes its
+  differences inside the inner loop, so a term of the double sum carries
+  `(1+delta)(1+theta_{n+1})(1+theta_n) = (1+theta_{2n+2})`, and the constant
+  is `gamma_{2n+2}`. This is not only a loose worst case: random search over
+  symmetric matrices with mixed signs reaches a realised error of
+  5.38 eps at n = 2 and 6.30 eps at n = 3 against a `gamma_{n+3}` of about
+  5 eps and 6 eps, so the earlier constant is exceeded by instances a search
+  finds. No pruning decision moves on the article's instances: the
+  edge-generation counts are byte-identical at every size measured.
+
+* **Every number in the ball tree's allowance is now an upper bound in double
+  arithmetic.** Three pieces were computed as estimates. The factorization
+  residual `E = L L' - A` was read off the rounded product, which reports zero
+  whenever `L L'` reproduces `A` in working precision while the stored factor's
+  exact residual is not zero; each entry now carries the rounding of its inner
+  product. `||L^-1||_F` was read off a computed inverse whose own error was
+  unbounded; it is now bounded through the residual `R = I - L X` as
+  `||X||_F / (1 - ||R||_F)`, and a factor whose inverse fails that test takes
+  no tree. And the sums combining the allowance with the centre distance and
+  radius were rounded to nearest with nothing charged for it; both parts of
+  the allowance now carry that rounding. The tests compare the complete violating-edge set
+  against the grid scan at extreme scales, place columns on the doubles either
+  side of a caliper edge, and place reduced costs one dual step either side of
+  `-tol` (#46).
+
+* **`match_couples()` on a precomputed distance object honours the design it
+  was given.** The branch validated `replace` and `ratio` and then forwarded
+  neither, along with `certify`, so a call naming a ratio or replacement was
+  answered with a one-to-one matching without replacement. It also accepted
+  `ignore_blocks` while never reading the block variable
+  `compute_distances()` stores, so an object built with `block_id` was
+  matched across strata after the package had printed that blocking would be
+  applied. All four reach the solve now, blocking by removing every
+  cross-block pair, and `memory_mode` is refused rather than ignored, since
+  the distances are already materialised. Contract tests compare the two
+  interfaces on the same question.
+
+* **`full_match()` bounds count right units whichever side is larger.** The
+  compiler made the smaller side the group centres, so above the default
+  `min_controls` bounded left units on a tall problem: six left units, two
+  right ones and `min_controls = 2` returned two groups holding one right
+  unit each, with `status = "optimal"` and a certificate. The centres are
+  the left units now and an orientation that cannot meet the bound is
+  refused as `"infeasible"`. The manual said both things in one paragraph
+  and now says one.
+
+* **The dense-solve guard's multiplier now covers every peak it is read
+  against.** `estimate_dense_solve_mb()` defaulted `solve_factor` to 10, and
+  on the memory benchmark a dense one-to-one solve peaked at 10.5 times the
+  raw cell bytes at 5,000 units, so at that size the estimate came in about
+  20 MB under the peak it exists to bound. The default is 12, above the
+  10.5, 7.2 and 8.8 measured at 5,000, 10,000 and 20,000 units. The guard
+  refuses a solve that will not fit, so it has to err high.
+
+* **The ball-tree pricing bound now covers the cost source's own evaluation.**
+  The bound has to sit below the number `raw_distance()` returns, since the
+  reduced costs a prune is read against are built from it. The tree measures
+  `||L' d||` as a sum of squares; under Mahalanobis the source measures
+  `d' A d` by row sums, whose terms cancel along the directions `A` is small
+  in, so its rounding is bounded relative to `|d|' |A| |d|` rather than to
+  `d' A d`. The allowance charged for the tree's own arithmetic and for the
+  algebraic gap `||L L' - A||_F ||L^-1||_F^2`, and nothing for that rounding;
+  the algebraic term is also exactly zero whenever `L L'` reconstructs the
+  stored `A`, which it does in about two draws in five of a poorly conditioned
+  sample. Measured against the shipped arithmetic the floor could sit
+  5.0e-7 above a member's cost, about 500 times the default `1e-9`
+  certification tolerance, so a node holding a genuine violator could price
+  above `-tol` and be skipped with `certified_optimal` still `TRUE`. It also
+  reached `max_suboptimality`, which is read off the bounds of the skipped
+  subtrees. The allowance now charges that rounding over the node's box, taken
+  on the squared distance and applied to both sides of the ball. A NaN cost floor is reported
+  as no bound rather than as an unreachable node, so a descent reads the node
+  instead of skipping it.
+
+* **The ball-tree pricing bound holds under offset coordinates and poor
+  conditioning.** The pricing loop compares each tree node against a bound on
+  the reduced cost of every pair beneath it, and that bound is the only evidence
+  that no omitted pair prices in, so an unsound one reaches `certified_optimal`
+  directly. Three things made it unsound. The Mahalanobis factor's residual was
+  allowed for as `||LL' - A||_F` over `||A||_F`, which does not bound the
+  directional error and understated the allowance by the conditioning of `A`; it
+  is now `||E||_F ||L^-1||_F^2`. The tree whitened absolute coordinates and
+  differenced them afterwards, where the cost differences the points first, so a
+  translation shared by the sample survived into the tree's arithmetic and
+  cancelled there; whitening is now relative to the midpoint of the controls'
+  bounding box. And the allowance was entirely relative, while no relative
+  allowance can cover a cancellation, so it now carries an absolute term as
+  well. On coordinates offset by 1e12 under a covariance with eigenvalues 1 and
+  1e-8, the tree found 21 pairs pricing below the tolerance where an exhaustive
+  scan found 24; it now finds all 24. The caliper comparison in
+  `distance_out_of()` also read an unrounded distance and now steps outward like
+  its sibling.
+
+* **A flow that cannot place every unit is the cheapest flow of the value it
+  places.** The solver searches from one excess node at a time and serves
+  them in node order, so when not every excess can be placed, which ones were
+  was decided by that order rather than by cost: two units competing for one
+  deficit over arcs costing 10 and 1 placed the unit costing 10 when its node
+  came first. A shortfall is now re-solved as the problem with a super source
+  and sink, asked for exactly the value placed and warm from the flow reached,
+  which is the maximum-cardinality-then-minimum-cost answer "partial" names. A
+  warm-started solve that falls short is first solved again cold: its slackness
+  repair can leave balance at nodes that conserve flow, and such a flow is not
+  a partial flow of the problem. This reaches `full_match()` whenever a caliper
+  or the bounds leave units out, and every other design reporting `"partial"`.
+
+* **`method = "csa"` no longer returns a suboptimal assignment on a wide cost
+  range.** Cost scaling runs on integers, and the conversion scaled the largest
+  absolute cost to 1e6. Two things went wrong with that. Costs clustered far
+  from the origin spent their resolution on the offset, so a unit-wide spread
+  sitting at 1e9 rounded to a single value. And a heavy-tailed matrix, whose
+  smallest entries are a billionth of its largest, rounded those entries
+  together at zero, after which the solver could not order the cheapest pairs
+  and returned whichever of the tied matchings it reached first, reporting
+  `status = "optimal"` while doing it. At n = 60 on lognormal costs it
+  disagreed with the optimum in 40 of 40 replicates, once returning 77329.983
+  against an optimum of 0.0013427418.
+
+  `"csa"` now reads the costs as supplied and runs Goldberg and Kennedy's
+  CSA-Q, which the earlier code did not implement: it was an epsilon-scaling
+  auction on the rounded costs. Each refine divides epsilon by 10, clears the
+  matching and discharges the rows from a stack by double-push, and the
+  fourth-best heuristic keeps each row's three cheapest arcs so that most
+  double-pushes skip the scan of the row. The phases share the epsilon-scaling
+  core of the auction solvers and end in the repair step described under them
+  above, which returns an optimal assignment on real-valued costs without
+  converting them to integers. There is no resolution to lose, so no cost
+  range is refused.
+
+  `verify_assignment()` returned `FALSE` on every one of the wrong answers, so
+  a caller who verified was never misled; a caller who read `status` was.
+
+* **`verify_assignment()` no longer certifies a matching that leaves rows
+  unmatched.** The numerical conclusion asked for primal feasibility, dual
+  feasibility, complementary slackness and a zero duality gap, and the primal
+  feasibility it asked for permitted an uncovered row. On an input where the
+  duals are all zero the two objectives then agree at zero, every remaining
+  condition holds vacuously, and `arithmetic = "auto"` and `"double"` returned
+  `certified_optimal = TRUE` for a matching that made no pairs at all. The
+  exact conclusion was unaffected, since it asked for the row count directly.
+
+  The primal in the assignment model constrains every row of the short side to
+  hold exactly one pair, so the row cover is part of primal feasibility rather
+  than a separate condition. `primal_feasible` now means both halves and the
+  certificate reports them separately: `structurally_valid_matching` for the
+  matching read as a matching, which permits unmatched rows, and
+  `all_rows_matched` for the cover. `primal_objective` is still reported for a
+  structurally valid partial matching, since an unmatched row costs nothing and
+  leaves the sum meaningful.
+
+  Callers reading `primal_feasible` on a deliberately partial matching should
+  read `structurally_valid_matching` instead.
+
+* **A matched pair's reported distance is the one the solver priced it with.**
+  Under `memory_mode = "lazy"` and `"implicit"` the distance column was
+  recomputed in R from a second copy of the metric's formula, which agrees with
+  the solver's own evaluation to rounding and not to the last bit. A
+  `max_distance` set at a distance the package had reported could therefore
+  exclude the pair it was read from: on a Mahalanobis problem whose widest
+  matched arc is the one the matching depends on, a caliper at that value
+  returned a complete matching on the dense path and none on the lazy and
+  implicit paths. The reported distance now comes from the same routine the
+  solve evaluated the pair with, and the formula is written once.
+
 # couplr 1.6.1
 
 ## New features

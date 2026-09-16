@@ -30,33 +30,32 @@ test_that("assignment auto picks a dense-square method for 100x100", {
   expect_true(result$method_used %in% c("jv", "auction_scaled", "hungarian"))
 })
 
-test_that("assignment auto selects sap for very rectangular matrix", {
+test_that("assignment auto sends a very rectangular matrix to jv", {
   skip_on_cran()
   set.seed(123)
-  # m >= 3*n triggers SAP
   cost <- matrix(runif(10 * 40), 10, 40)
   result <- assignment(cost, method = "auto")
-  expect_equal(result$method_used, "sap")
+  expect_equal(result$method_used, "jv")
 })
 
-test_that("assignment auto selects lapmod for large sparse matrix", {
+test_that("assignment auto sends a large sparse matrix to jv", {
   skip_on_cran()
   set.seed(123)
   cost <- matrix(runif(150 * 150), 150, 150)
   # Make >50% forbidden
   cost[sample(length(cost), length(cost) * 0.6)] <- Inf
   result <- assignment(cost, method = "auto")
-  expect_equal(result$method_used, "lapmod")
+  expect_equal(result$method_used, "jv")
 })
 
-test_that("assignment auto selects lapmod for sparse matrix at any size", {
+test_that("assignment auto sends a small sparse matrix to jv", {
   skip_on_cran()
   set.seed(123)
   cost <- matrix(runif(50 * 50), 50, 50)
   # Make >50% forbidden
   cost[sample(length(cost), length(cost) * 0.6)] <- Inf
   result <- assignment(cost, method = "auto")
-  expect_equal(result$method_used, "lapmod")
+  expect_equal(result$method_used, "jv")
 })
 
 test_that("assignment auto selects hk01 for binary costs (large matrix)", {
@@ -265,7 +264,7 @@ test_that("all methods produce valid results on simple matrix", {
   methods <- c("jv", "hungarian", "auction", "auction_gs", "auction_scaled",
                "sap", "csflow", "bruteforce", "ssap_bucket",
                "cycle_cancel", "gabow_tarjan", "lapmod", "csa",
-               "ramshaw_tarjan", "push_relabel", "orlin", "network_simplex")
+               "ramshaw_tarjan", "push_relabel", "sap_dense", "network_simplex")
 
   for (m in methods) {
     result <- assignment(cost, method = m)

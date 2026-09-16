@@ -19,6 +19,10 @@ test_that("a certificate proves a small dense solve optimal", {
   expect_true(cert$certified_optimal)
   expect_equal(cert$primal_objective, res$total_cost, tolerance = CERT_COST_TOL)
   expect_lt(abs(cert$duality_gap), CERT_COST_TOL)
+  # An exhaustive scan proves the minimum it observed, so the bound carries
+  # nothing but the gap.
+  expect_equal(cert$certified_reduced_cost_floor, cert$min_reduced_cost)
+  expect_lt(cert$max_suboptimality, CERT_COST_TOL)
 })
 
 test_that("the certificate agrees with brute-force enumeration", {
@@ -404,9 +408,13 @@ test_that("explain_dispatch reports the rule assignment actually acts on", {
          method = "bruteforce"),
     list(cost = cert_problem(20, 20, kind = "binary"), rule = "no_cost_scale",
          method = "hk01"),
-    list(cost = cert_problem(10, 40),                  rule = "very_rectangular",
-         method = "sap"),
     list(cost = cert_problem(20, 20),                  rule = "default",
+         method = "jv"),
+    # Shape and sparsity are not properties any rule reads, so both of these
+    # reach the default rather than a solver of their own.
+    list(cost = cert_problem(10, 40),                  rule = "default",
+         method = "jv"),
+    list(cost = cert_problem(30, 30, sparsity = 0.7),  rule = "default",
          method = "jv")
   )
   for (case in cases) {
@@ -435,15 +443,63 @@ test_that("explain_dispatch records that a named method skipped the rules", {
 test_that("every dispatch rule is reachable and exactly one fires", {
   set.seed(115)
   probes <- list(cert_problem(4, 4), cert_problem(20, 20, kind = "binary"),
-                 cert_problem(10, 40), cert_problem(20, 20))
+                 cert_problem(20, 20), cert_problem(10, 40),
+                 cert_problem(30, 30, sparsity = 0.7))
   fired <- character(0)
   for (cost in probes) {
     ex <- explain_dispatch(cost)
     expect_equal(sum(ex$considered$fired), 1L)
     fired <- c(fired, ex$rule)
   }
-  sparse <- cert_problem(30, 30, sparsity = 0.7)
-  fired <- c(fired, explain_dispatch(sparse)$rule)
-  expect_setequal(fired, c("tiny", "no_cost_scale", "very_rectangular",
-                           "default", "sparse"))
+  expect_setequal(fired, c("tiny", "no_cost_scale", "default"))
+
+  # Every rule in the table is reachable: the three that fired above are the
+  # three the table holds.
+  expect_setequal(
+    vapply(couplr:::.dispatch_rules, function(r) r$id, character(1)),
+    c("tiny", "no_cost_scale", "default")
+  )
+})
+
+test_that("no suboptimality bound is reported for an infeasible candidate", {
+  # "the most any feasible solution can beat this one by" has no answer when
+  # the candidate is not feasible. On a zero-cost problem with an uncovered
+  # row and zero duals the two objectives agree at zero, and the bound came
+  # back as 0 beside primal_feasible = FALSE, which reads as a guarantee.
+  cm <- matrix(0, 3, 3)
+  partial <- c(1L, 2L, 0L)
+  v <- verify_assignment(partial, cost = cm,
+                         duals = list(u = rep(0, 3), v = rep(0, 3)))
+  expect_false(v$primal_feasible)
+  expect_true(v$structurally_valid_matching)
+  expect_false(v$all_rows_matched)
+  expect_true(is.na(v$max_suboptimality))
+
+  # The complete matching on the same problem still reports a bound.
+  full <- verify_assignment(c(1L, 2L, 3L), cost = cm,
+                            duals = list(u = rep(0, 3), v = rep(0, 3)))
+  expect_true(full$primal_feasible)
+  expect_equal(full$max_suboptimality, 0)
+})
+
+test_that("the suboptimality bound carries the objectives own rounding", {
+  # max_suboptimality is assembled from two compensated sums. Compensated
+  # summation buys back the accumulation error rather than removing it, so a
+  # bound that ignored the sums' own envelope was an estimate presented as a
+  # bound. On costs near 1e6 the envelope is the 2u * sum|term| scale.
+  set.seed(1)
+  m <- matrix(runif(400, 1, 1e6), 20, 20)
+  v <- verify_assignment(assignment(m, method = "jv"), cost = m)
+  expect_true(v$certified_optimal)
+  expect_gt(v$max_suboptimality, 0)
+  # Loose enough not to pin the constant, tight enough to catch an envelope
+  # that has gone from ulps to something visible in the objective.
+  expect_lt(v$max_suboptimality, 1e-6 * abs(v$primal_objective))
+
+  # Where every term is exactly zero the bound is exactly zero: rounding
+  # outward on a zero term would report slack the arithmetic proved absent.
+  z <- verify_assignment(c(1L, 2L, 3L), cost = matrix(0, 3, 3),
+                         duals = list(u = rep(0, 3), v = rep(0, 3)))
+  expect_identical(z$max_suboptimality, 0)
+  expect_true(z$certified_optimal)
 })

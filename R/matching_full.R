@@ -3,20 +3,76 @@
 # ==============================================================================
 # The optimal route compiles the design into the package's flow model and
 # solves it there. The network is the one src/flow/flow_compile.h describes:
-# the auxiliary source feeds every group centre through an arc bounded by
-# [min_controls, max_controls], each centre reaches the units its distances
-# admit, and every unit passes one unit of flow to the sink. Group centres are
-# the smaller side, so an instance with more left units than right ones is
-# compiled from the transpose and read back through it.
+# at min_controls == 1 both sides carry a lower bound of one and the pair arcs
+# unit capacity, so the arcs a solve places are an edge cover of the admissible
+# pairs; a cheapest cover is minimal and a minimal cover is a disjoint union of
+# stars, which is exactly a full matching. Above one, a group centred on a
+# single right unit cannot meet the bound, so every group is one-to-many: the
+# auxiliary source feeds each centre through an arc bounded by [min_controls,
+# max_controls], every unit passes one unit of flow to the sink, and the centres
+# are the left units, so the bounds count right units whichever side is larger.
 #
 # Solving there is what makes the node potentials and the optimality
 # certificate available: both are properties of the flow, and the group
 # memberships alone cannot reconstruct either.
 
+# Full matching with both group shapes admissible. The solve returns an edge
+# cover, and a cheapest cover is minimal, but a zero-cost arc can survive in a
+# cover that is not: dropping any arc whose two ends are both met by another
+# arc leaves every unit covered and costs nothing, and repeating it until none
+# is left makes every component a star. The stars are the groups.
+.full_match_groups_symmetric <- function(compiled, flow) {
+  block <- compiled$block
+  placed <- flow[seq_len(block$n_arcs) + block$first_arc - 1] > 0
+  li <- block$row[placed]
+  rj <- block$col[placed]
+
+  n_left <- as.integer(compiled$shape$n_centres)
+  n_right <- as.integer(compiled$shape$n_units)
+
+  repeat {
+    dl <- tabulate(li, nbins = n_left)
+    dr <- tabulate(rj, nbins = n_right)
+    slack <- which(dl[li] > 1L & dr[rj] > 1L)
+    if (!length(slack)) break
+    # One at a time: dropping two arcs that share an end could uncover it.
+    drop <- slack[1L]
+    li <- li[-drop]
+    rj <- rj[-drop]
+  }
+
+  # Components of a union of stars: every arc joins a leaf to its centre, so
+  # labels propagate in one pass per side until they stop moving.
+  gl <- integer(n_left)
+  gr <- integer(n_right)
+  g <- 0L
+  for (k in seq_along(li)) {
+    a <- li[k]; b <- rj[k]
+    if (gl[a] == 0L && gr[b] == 0L) {
+      g <- g + 1L
+      gl[a] <- g; gr[b] <- g
+    } else if (gl[a] == 0L) {
+      gl[a] <- gr[b]
+    } else if (gr[b] == 0L) {
+      gr[b] <- gl[a]
+    } else if (gl[a] != gr[b]) {
+      # Two stars joined by one arc is a path, which the pruning above removes,
+      # so reaching here means the cover was not minimal.
+      stop("full matching produced a component that is not a star", call. = FALSE)
+    }
+  }
+
+  list(group_of_left = gl, group_of_right = gr, n_groups = g)
+}
+
 # Read a solved flow back as group memberships in the caller's left/right
-# terms. A centre holding fewer than min_controls units did not meet the lower
-# bound on its own arc, so it holds no group and its units stay unmatched.
+# terms. Above a lower bound of one, a centre holding fewer than min_controls
+# units did not meet the bound on its own arc, so it holds no group and its
+# units stay unmatched.
 .full_match_groups <- function(compiled, flow, min_controls) {
+  if (isTRUE(compiled$shape$symmetric)) {
+    return(.full_match_groups_symmetric(compiled, flow))
+  }
   n_centres <- as.integer(compiled$shape$n_centres)
   n_units <- as.integer(compiled$shape$n_units)
 
@@ -33,13 +89,8 @@
   in_group <- centre_of_unit > 0L
   group_of_unit[in_group] <- centre_group[centre_of_unit[in_group]]
 
-  if (isTRUE(compiled$shape$transposed)) {
-    list(group_of_left = group_of_unit, group_of_right = centre_group,
-         n_groups = sum(held))
-  } else {
-    list(group_of_left = centre_group, group_of_right = group_of_unit,
-         n_groups = sum(held))
-  }
+  list(group_of_left = centre_group, group_of_right = group_of_unit,
+       n_groups = sum(held))
 }
 
 # Node potentials in the caller's left/right terms. They are one representative
@@ -49,11 +100,7 @@
   layout <- compiled$layout
   rows <- potential[layout$row_base + seq_len(layout$n_rows) - 1L]
   cols <- potential[layout$col_base + seq_len(layout$n_cols) - 1L]
-  if (isTRUE(compiled$shape$transposed)) {
-    list(left = cols, right = rows)
-  } else {
-    list(left = rows, right = cols)
-  }
+  list(left = rows, right = cols)
 }
 
 # What the solve terminated on, with one reading applied to it. A shortfall
@@ -99,14 +146,17 @@
 #' @param method Matching algorithm: \code{"optimal"} (default) uses min-cost
 #'   max-flow to find the globally optimal group assignment minimizing total
 #'   distance; \code{"greedy"} uses a fast two-pass heuristic.
-#' @param memory_mode One of "auto" (default) or "dense". "auto" warns if the
-#'   dense cost matrix would consume a large fraction of free system RAM.
-#'   `full_match()` uses a different (min-cost-flow) solver backend than
-#'   `match_couples()`/`assignment()`, so `memory_mode = "lazy"` is not
-#'   available here yet and errors if requested. `memory_mode = "implicit"`
-#'   errors for a further reason: a full matching's column nodes carry
-#'   capacities above one, so a column dual is not the assignment dual the
-#'   pricing loop reads. "dense" skips the RAM check entirely.
+#' @param memory_mode One of "auto" (default), "dense" or "implicit". "auto"
+#'   warns if the dense cost matrix would consume a large fraction of free
+#'   system RAM. "dense" skips the RAM check entirely. "implicit" solves
+#'   \code{method = "optimal"} without building
+#'   the pair set: the flow is solved over a growing subset of pairs, the pairs
+#'   it omits are priced against the flow's node potentials, and the subset
+#'   grows until none prices below zero, so the groups are optimal over every
+#'   pair; a \code{search} element records what that cost. Under "implicit"
+#'   \code{caliper_sd} reads every pair's distance once to take its standard
+#'   deviation, holding two running sums rather than the distances. "lazy" is
+#'   not available here: a flow solved over every pair holds every pair.
 #'
 #' @return An S3 object of class \code{c("full_matching_result", "couplr_result")}
 #'   containing:
@@ -133,20 +183,41 @@
 #'   \item{certificate}{A \code{flow_certificate} from
 #'     \code{\link{verify_flow}}, checking the solved flow and its potentials
 #'     against the optimality conditions. \code{status} says what the solver
-#'     terminated on; this says what was proven. Present for
-#'     \code{method = "optimal"} only.}
+#'     terminated on; this says what was checked. Present for
+#'     \code{method = "optimal"} only. Under \code{memory_mode = "implicit"}
+#'     the check covers the pairs the flow was solved over, and
+#'     \code{omitted_proven_floor} bounds the reduced cost of every pair it
+#'     omitted; \code{certified_optimal} holds both together.}
+#'   \item{search}{Under \code{memory_mode = "implicit"}: the seed width, the
+#'     pairs generated (\code{candidate_edges}) against the pairs there are
+#'     (\code{possible_edges}), the distances computed
+#'     (\code{edges_evaluated}) and one row per round.}
 #' }
 #'
 #' @details
-#' Full matching creates matched groups of variable size. Two algorithms are
-#' available:
+#' `full_match()` builds matched groups of variable size. Under the default
+#' `min_controls = 1` it solves full matching in the sense of Hansen and
+#' Klopfer (2006): a group holds either one left unit and several right ones or
+#' one right unit and several left ones, and both shapes may appear in the same
+#' solution.
+#' `max_controls` bounds the many side there, whichever side that is.
+#'
+#' A lower bound above one admits only the one-to-many shape, because a group
+#' built around a single right unit holds exactly one of them and cannot meet a
+#' lower bound of two. Every group is then one left unit with between
+#' `min_controls` and `max_controls` right ones. Both bounds count right units
+#' whichever side holds more, so an instance with too few right units to give
+#' every left unit that many is refused as `"infeasible"` rather than answered
+#' with groups counted the other way round.
+#'
+#' Two algorithms are available:
 #'
 #' \strong{Optimal} (\code{method = "optimal"}, default): Solves a min-cost
 #' max-flow problem that minimizes total distance across all group assignments
-#' simultaneously. Each left unit becomes a group center absorbing 1 to
-#' \code{max_controls} right units, with the globally optimal assignment found
-#' via Dijkstra's algorithm with Johnson potentials. When \code{n_left > n_right},
-#' roles are transposed automatically.
+#' simultaneously, with the optimum found via Dijkstra's algorithm with Johnson
+#' potentials. At \code{min_controls = 1} the network is an edge cover over the
+#' admissible pairs, which is what lets a group be centred on either side; above
+#' one it is one centre per group and the centres are the left units.
 #'
 #' \strong{Greedy} (\code{method = "greedy"}): A fast two-pass heuristic:
 #' \enumerate{
@@ -156,9 +227,15 @@
 #' }
 #' This is faster but does not guarantee globally optimal results.
 #'
-#' Weights are computed so that within each group, the total weight of right
-#' units equals the total weight of left units (which is 1). For a group with
-#' 1 left and k right units, each right unit receives weight 1/k.
+#' Every left unit carries weight 1, and the right units of a group share a
+#' total weight equal to the number of left units in that group, so the two
+#' sides of a group weigh the same. A group holding one left unit and k right
+#' units therefore gives each right unit \code{1/k}; a group holding k left
+#' units and one right unit gives that right unit \code{k}. \code{"greedy"}
+#' builds one left unit per group and produces only the first shape.
+#' \code{"optimal"} at \code{min_controls = 1} centres a group on whichever
+#' side is larger, so both arise; above one the centres are the left units and
+#' the first shape is the only one.
 #'
 #' @examples
 #' set.seed(42)
@@ -234,61 +311,132 @@ full_match <- function(left, right, vars,
   r_ids <- as.character(right[[right_id]])
 
   # --- Distance matrix ---
-  # full_match() uses a different (min-cost-flow group-matching) C++ backend
-  # that has not been made lazy-aware; caller_supports_lazy = FALSE keeps
-  # memory_mode = "auto" from ever promoting to lazy here, and makes an
-  # explicit memory_mode = "lazy" request fail clearly instead of returning
-  # a lazy_cost_spec this function cannot consume.
+  # "lazy" is refused here: a flow solved over every pair holds every pair.
+  # "implicit" states the problem as a specification the design loop solves
+  # without building it, which only the optimal flow can consume.
   cost_matrix <- build_cost_matrix(left, right, vars, distance, weights, scale,
                                    sigma = sigma, memory_mode = memory_mode,
-                                   caller_supports_lazy = FALSE)
+                                   caller_supports_lazy = FALSE,
+                                   caller_supports_implicit =
+                                     identical(method, "optimal"))
+  implicit <- is_lazy_cost_spec(cost_matrix)
+
+  # The reduction to an edge cover needs costs that do not reward extra
+  # arcs: a cheapest cover is inclusion-minimal only when no arc is worth
+  # keeping for its own sake. Under a negative cost the cheapest cover takes
+  # every negative arc and the minimality prune then removes arcs the
+  # objective wanted, so the answer is not the cheapest full matching. Every
+  # built-in metric is non-negative; a custom distance function need not be,
+  # and a specification is only ever built for a built-in metric.
+  if (!implicit) {
+    finite_costs <- cost_matrix[is.finite(cost_matrix)]
+    if (length(finite_costs) && min(finite_costs) < 0) {
+      stop("full_match() needs non-negative distances: the cheapest edge ",
+           "cover is a full matching only when no arc is worth keeping for ",
+           "its own sake. The smallest distance here is ",
+           format(min(finite_costs)), ". Shift the custom distance so its ",
+           "smallest value is zero.", call. = FALSE)
+    }
+  }
+
+  n_left <- if (implicit) cost_matrix$n_left else nrow(cost_matrix)
+  n_right <- if (implicit) cost_matrix$n_right else ncol(cost_matrix)
 
   # --- Caliper ---
   caliper_val <- NULL
   if (!is.null(caliper_sd)) {
-    finite_dists <- cost_matrix[is.finite(cost_matrix)]
-    if (length(finite_dists) > 1) {
-      caliper_val <- caliper_sd * stats::sd(finite_dists)
+    if (implicit) {
+      pooled_sd <- cpp_lazy_distance_sd(cost_matrix$left_mat, cost_matrix$right_mat,
+                                        cost_matrix$distance,
+                                        lazy_cost_spec_inv_cov(cost_matrix))
+      if (!is.na(pooled_sd)) caliper_val <- caliper_sd * pooled_sd
+    } else {
+      finite_dists <- cost_matrix[is.finite(cost_matrix)]
+      if (length(finite_dists) > 1) {
+        caliper_val <- caliper_sd * stats::sd(finite_dists)
+      }
     }
   } else if (!is.null(caliper)) {
     caliper_val <- caliper
   }
 
-  # Apply caliper: set distances beyond caliper to Inf
+  # A distance beyond the caliper is no pair: Inf in a matrix, the source's
+  # distance cut in a specification, which rules it out by the same test.
   if (!is.null(caliper_val)) {
-    cost_matrix[cost_matrix > caliper_val] <- Inf
+    if (implicit) {
+      cost_matrix$max_distance <- caliper_val
+    } else {
+      cost_matrix[cost_matrix > caliper_val] <- Inf
+    }
   }
-
-  n_left <- nrow(cost_matrix)
-  n_right <- ncol(cost_matrix)
 
   potentials <- NULL
   certificate <- NULL
+  search <- NULL
 
   if (method == "optimal") {
-    # --- Optimal full matching, compiled and solved as a flow ---
-    compiled <- lap_flow_compile_full_match(
-      cost_matrix, as.numeric(min_controls),
-      if (is.infinite(max_controls)) Inf else as.numeric(max_controls)
-    )
+    if (implicit) {
+      # --- Optimal full matching, grown pair by pair over the specification ---
+      knobs <- .implicit_defaults()
+      compiled <- lap_design_implicit(
+        cost_matrix$left_mat, cost_matrix$right_mat, cost_matrix$distance,
+        lazy_cost_spec_inv_cov(cost_matrix), cost_matrix$max_distance,
+        lazy_cost_spec_calipers(cost_matrix), cost_matrix$vars, "full_match",
+        as.numeric(min_controls),
+        if (is.infinite(max_controls)) Inf else as.numeric(max_controls),
+        knobs$keep_per_row, knobs$width, knobs$tol, knobs$max_rounds, TRUE
+      )
 
-    if (isTRUE(compiled$bounds_feasible)) {
-      solved <- .flow_solve(.flow_problem(
-        n_nodes = compiled$problem$n_nodes,
-        supply = compiled$problem$supply,
-        arcs = tibble::tibble(tail = compiled$problem$tail,
-                              head = compiled$problem$head,
-                              lower = compiled$problem$lower,
-                              upper = compiled$problem$upper,
-                              cost = compiled$problem$cost)
-      ))
-      read <- .full_match_groups(compiled, solved$flow, min_controls)
-      potentials <- .full_match_potentials(compiled, solved$potential)
-      certificate <- verify_flow(solved)
+      if (isTRUE(compiled$bounds_feasible)) {
+        solved <- list(status = compiled$status)
+        read <- .full_match_groups(compiled, compiled$flow, min_controls)
+        potentials <- .full_match_potentials(compiled, compiled$potential)
+        if (is.function(cost_matrix$distance)) {
+          placed <- as.numeric(compiled$flow) > 0
+          lazy_pair_distances(cost_matrix, compiled$block$row[placed],
+                              compiled$block$col[placed])
+        }
+        if (!is.null(compiled$certificate)) {
+          certificate <- .new_flow_certificate(compiled$certificate, knobs$tol)
+        }
+        search <- list(
+          seed_width      = as.integer(compiled$search$seed_width),
+          candidate_edges = as.numeric(compiled$search$candidate_edges),
+          possible_edges  = as.numeric(compiled$search$possible_edges),
+          edges_evaluated = as.numeric(compiled$search$edges_evaluated),
+          n_rounds        = as.integer(compiled$search$n_rounds),
+          rounds          = tibble::as_tibble(compiled$search$rounds)
+        )
+      } else {
+        solved <- NULL
+        read <- list(group_of_left = integer(n_left),
+                     group_of_right = integer(n_right), n_groups = 0L)
+      }
     } else {
-      solved <- NULL
-      read <- list(group_of_left = integer(n_left),
-                   group_of_right = integer(n_right), n_groups = 0L)
+      # --- Optimal full matching, compiled and solved as a flow ---
+      compiled <- lap_flow_compile_full_match(
+        cost_matrix, as.numeric(min_controls),
+        if (is.infinite(max_controls)) Inf else as.numeric(max_controls)
+      )
+
+      if (isTRUE(compiled$bounds_feasible)) {
+        solved <- .flow_solve(.flow_problem(
+          n_nodes = compiled$problem$n_nodes,
+          supply = compiled$problem$supply,
+          arcs = tibble::tibble(tail = compiled$problem$tail,
+                                head = compiled$problem$head,
+                                lower = compiled$problem$lower,
+                                upper = compiled$problem$upper,
+                                cost = compiled$problem$cost)
+        ))
+        read <- .full_match_groups(compiled, solved$flow, min_controls)
+        potentials <- .full_match_potentials(compiled, solved$potential)
+        certificate <- verify_flow(solved)
+      } else {
+        solved <- NULL
+        read <- list(group_of_left = integer(n_left),
+                     group_of_right = integer(n_right), n_groups = 0L)
+      }
     }
 
     # group_of_left / group_of_right: 1-based group IDs, 0 = unmatched
@@ -315,9 +463,9 @@ full_match <- function(left, right, vars,
       matched_left_idx <- c(matched_left_idx, left_in_g)
       matched_right_idx <- c(matched_right_idx, right_in_g)
 
-      # Weights: the smaller side gets weight 1, the larger side gets
-      # weight (n_small / n_large) so total weights balance.
-      # Standard convention: left weight = 1, right weight = n_left / n_right
+      # Every left unit weighs 1, and the group's right units share a total
+      # weight equal to the number of left units, so the two sides of a group
+      # weigh the same whichever side the group is centred on.
       left_weight <- 1.0
       right_weight <- n_left_in_group / n_right_in_group
       groups_rows[[length(groups_rows) + 1L]] <- tibble::tibble(
@@ -479,6 +627,7 @@ full_match <- function(left, right, vars,
   # truncate.
   if (!is.null(potentials)) result$potentials <- potentials
   if (!is.null(certificate)) result$certificate <- certificate
+  if (!is.null(search)) result$search <- search
 
   structure(result, class = c("full_matching_result", "couplr_result"))
 }

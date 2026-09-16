@@ -60,14 +60,17 @@ of the pooled distance distribution rather than absolute units.}
 max-flow to find the globally optimal group assignment minimizing total
 distance; \code{"greedy"} uses a fast two-pass heuristic.}
 
-\item{memory_mode}{One of "auto" (default) or "dense". "auto" warns if the
-dense cost matrix would consume a large fraction of free system RAM.
-\code{full_match()} uses a different (min-cost-flow) solver backend than
-\code{match_couples()}/\code{assignment()}, so \code{memory_mode = "lazy"} is not
-available here yet and errors if requested. \code{memory_mode = "implicit"}
-errors for a further reason: a full matching's column nodes carry
-capacities above one, so a column dual is not the assignment dual the
-pricing loop reads. "dense" skips the RAM check entirely.}
+\item{memory_mode}{One of "auto" (default), "dense" or "implicit". "auto"
+warns if the dense cost matrix would consume a large fraction of free
+system RAM. "dense" skips the RAM check entirely. "implicit" solves
+\code{method = "optimal"} without building
+the pair set: the flow is solved over a growing subset of pairs, the pairs
+it omits are priced against the flow's node potentials, and the subset
+grows until none prices below zero, so the groups are optimal over every
+pair; a \code{search} element records what that cost. Under "implicit"
+\code{caliper_sd} reads every pair's distance once to take its standard
+deviation, holding two running sums rather than the distances. "lazy" is
+not available here: a flow solved over every pair holds every pair.}
 }
 \value{
 An S3 object of class \code{c("full_matching_result", "couplr_result")}
@@ -95,8 +98,15 @@ representative of the dual, in the gauge the solver fixes. Present for
 \item{certificate}{A \code{flow_certificate} from
 \code{\link{verify_flow}}, checking the solved flow and its potentials
 against the optimality conditions. \code{status} says what the solver
-terminated on; this says what was proven. Present for
-\code{method = "optimal"} only.}
+terminated on; this says what was checked. Present for
+\code{method = "optimal"} only. Under \code{memory_mode = "implicit"}
+the check covers the pairs the flow was solved over, and
+\code{omitted_proven_floor} bounds the reduced cost of every pair it
+omitted; \code{certified_optimal} holds both together.}
+\item{search}{Under \code{memory_mode = "implicit"}: the seed width, the
+pairs generated (\code{candidate_edges}) against the pairs there are
+(\code{possible_edges}), the distances computed
+(\code{edges_evaluated}) and one row per round.}
 }
 }
 \description{
@@ -106,15 +116,29 @@ producing matched groups where each group contains at least one left and one
 right unit.
 }
 \details{
-Full matching creates matched groups of variable size. Two algorithms are
-available:
+\code{full_match()} builds matched groups of variable size. Under the default
+\code{min_controls = 1} it solves full matching in the sense of Hansen and
+Klopfer (2006): a group holds either one left unit and several right ones or
+one right unit and several left ones, and both shapes may appear in the same
+solution.
+\code{max_controls} bounds the many side there, whichever side that is.
+
+A lower bound above one admits only the one-to-many shape, because a group
+built around a single right unit holds exactly one of them and cannot meet a
+lower bound of two. Every group is then one left unit with between
+\code{min_controls} and \code{max_controls} right ones. Both bounds count right units
+whichever side holds more, so an instance with too few right units to give
+every left unit that many is refused as \code{"infeasible"} rather than answered
+with groups counted the other way round.
+
+Two algorithms are available:
 
 \strong{Optimal} (\code{method = "optimal"}, default): Solves a min-cost
 max-flow problem that minimizes total distance across all group assignments
-simultaneously. Each left unit becomes a group center absorbing 1 to
-\code{max_controls} right units, with the globally optimal assignment found
-via Dijkstra's algorithm with Johnson potentials. When \code{n_left > n_right},
-roles are transposed automatically.
+simultaneously, with the optimum found via Dijkstra's algorithm with Johnson
+potentials. At \code{min_controls = 1} the network is an edge cover over the
+admissible pairs, which is what lets a group be centred on either side; above
+one it is one centre per group and the centres are the left units.
 
 \strong{Greedy} (\code{method = "greedy"}): A fast two-pass heuristic:
 \enumerate{
@@ -124,9 +148,15 @@ left unit, respecting \code{max_controls}
 }
 This is faster but does not guarantee globally optimal results.
 
-Weights are computed so that within each group, the total weight of right
-units equals the total weight of left units (which is 1). For a group with
-1 left and k right units, each right unit receives weight 1/k.
+Every left unit carries weight 1, and the right units of a group share a
+total weight equal to the number of left units in that group, so the two
+sides of a group weigh the same. A group holding one left unit and k right
+units therefore gives each right unit \code{1/k}; a group holding k left
+units and one right unit gives that right unit \code{k}. \code{"greedy"}
+builds one left unit per group and produces only the first shape.
+\code{"optimal"} at \code{min_controls = 1} centres a group on whichever
+side is larger, so both arise; above one the centres are the left units and
+the first shape is the only one.
 }
 \examples{
 set.seed(42)

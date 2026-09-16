@@ -7,8 +7,54 @@
 #include <limits>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 
 namespace lap {
+
+namespace detail {
+
+// gamma_k in the standard floating-point sense: the factor a quantity
+// accumulated over k rounded operations can be wrong by, relative to the sum
+// of the magnitudes. Saturates rather than going negative when k*eps reaches
+// one. Lives here because the ball tree charges it for the cost source's
+// quadratic form and the certificate charges it for its compensated sums,
+// and the two headers meet in the same translation unit.
+inline double gamma_of(int64_t k) {
+    const double e = 0.5 * std::numeric_limits<double>::epsilon();
+    const double d = static_cast<double>(k) * e;
+    if (!(d < 1.0)) return std::numeric_limits<double>::infinity();
+    return d / (1.0 - d);
+}
+
+// std::nextafter(x, +inf) and std::nextafter(x, -inf), read off the
+// representation instead of through the library call, which the compiler
+// cannot inline. Same value for every double, NaN and the infinities included:
+// a finite nonzero x moves one step of its own bits away from or towards zero,
+// and a zero steps to the smallest denormal of the sign the direction gives.
+// Every bound a pricing descent rounds outward passes through one of these at
+// each node it reads.
+inline double next_up(double x) {
+    if (!(x < std::numeric_limits<double>::infinity())) return x;
+    if (x == 0.0) return std::numeric_limits<double>::denorm_min();
+    std::uint64_t bits;
+    std::memcpy(&bits, &x, sizeof bits);
+    bits = x > 0.0 ? bits + 1u : bits - 1u;
+    std::memcpy(&x, &bits, sizeof bits);
+    return x;
+}
+
+inline double next_down(double x) {
+    if (!(x > -std::numeric_limits<double>::infinity())) return x;
+    if (x == 0.0) return -std::numeric_limits<double>::denorm_min();
+    std::uint64_t bits;
+    std::memcpy(&bits, &x, sizeof bits);
+    bits = x > 0.0 ? bits - 1u : bits + 1u;
+    std::memcpy(&x, &bits, sizeof bits);
+    return x;
+}
+
+}  // namespace detail
+
 
 // Constants
 constexpr double BIG = 1e100;   // Used for forbidden edges

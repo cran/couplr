@@ -7,6 +7,8 @@
 #include <utility>
 #include "lap_types.h"
 #include "lap_lazy_types.h"
+#include "lap_callback_source.h"
+#include <variant>
 
 // Error macro using Rcpp::stop for proper C++ stack unwinding
 // (Rf_error uses longjmp which skips destructors, causing memory leaks)
@@ -116,6 +118,45 @@ lap::LazyCostMatrix rcpp_to_lazy_cost_matrix(
     Rcpp::List calipers,
     const Rcpp::CharacterVector& var_names,
     bool maximize);
+
+// The cost source a lazy specification describes: a LazyCostMatrix for a
+// built-in metric named by a string, a CallbackCostSource for a user's R
+// function. `inv_cov` of 0 x 0 is the same as NULL. Every binding that solves a
+// specification builds its source here and visits it, so a solver templated on
+// the source concept serves both.
+using LazySource = std::variant<lap::LazyCostMatrix, lap::CallbackCostSource>;
+
+LazySource rcpp_lazy_source(const Rcpp::NumericMatrix& left_mat,
+                            const Rcpp::NumericMatrix& right_mat,
+                            SEXP distance,
+                            Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
+                            double max_distance,
+                            Rcpp::List calipers,
+                            const Rcpp::CharacterVector& var_names,
+                            bool maximize);
+
+// The distance of specific matched pairs, evaluated by the same code the lazy
+// solve evaluated them with. The R side needs these to report a pair's distance
+// and must not recompute them from the formula: a second implementation of the
+// same metric lands an ulp away, and a caliper set at a reported distance then
+// excludes the pair it was read from. `rows`/`cols` are 1-based.
+Rcpp::NumericVector lazy_pair_distances_impl(
+    const Rcpp::NumericMatrix& left_mat,
+    const Rcpp::NumericMatrix& right_mat,
+    SEXP metric,
+    Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
+    const Rcpp::IntegerVector& rows,
+    const Rcpp::IntegerVector& cols);
+
+// The sample standard deviation of the distance over every pair, read in one
+// pass and held in two running sums, which is what a caliper stated in standard
+// deviations of the distance needs when the pairs are never stored. NA when
+// there are fewer than two pairs.
+double lazy_distance_sd_impl(
+    const Rcpp::NumericMatrix& left_mat,
+    const Rcpp::NumericMatrix& right_mat,
+    SEXP metric,
+    Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov);
 
 // Convert a pure lap::LapResult to the standard Rcpp result list.
 // Assignment is shifted 0-based -> 1-based (0 = unmatched) and the total is

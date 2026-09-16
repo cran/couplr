@@ -385,7 +385,7 @@ cat("Total cost:", round(get_total_cost(result), 2), "\n")
 # CSA visualization: epsilon scaling progression
 phases <- data.frame(
   phase = 1:5,
-  epsilon = c(100, 50, 25, 12, 6),
+  epsilon = c(100, 10, 1, 0.1, 0.01),
   x = 1:5
 )
 
@@ -411,10 +411,10 @@ ggplot(phases) +
   annotate("segment", x = 1, xend = 5, y = 0.9, yend = 0.9,
            arrow = arrow(length = unit(0.2, "cm"), type = "closed"),
            linewidth = 1, color = col_text) +
-  annotate("text", x = 3, y = 0.98, label = "epsilon halves each phase -> precision improves",
+  annotate("text", x = 3, y = 0.98, label = "epsilon divided by 10 each phase -> precision improves",
            size = 3.8, color = col_text) +
   labs(title = "CSA: Systematic Epsilon-Scaling",
-       subtitle = "Each phase halves epsilon and refines the assignment until optimal") +
+       subtitle = "Each phase divides epsilon by 10 and refines the assignment") +
   theme_diagram() +
   coord_fixed(ratio = 1.5, xlim = c(0.3, 5.7), ylim = c(0, 1.15))
 
@@ -469,13 +469,6 @@ n <- 50
 # Use integer costs with large range - Gabow-Tarjan's strength
 cost <- matrix(sample(1:100000, n * n, replace = TRUE), n, n)
 result <- lap_solve(cost, method = "gabow_tarjan")
-cat("Total cost:", get_total_cost(result), "\n")
-
-## ----orlin-example------------------------------------------------------------
-set.seed(111)
-n <- 50
-cost <- matrix(sample(1:100000, n * n, replace = TRUE), n, n)
-result <- lap_solve(cost, method = "orlin")
 cat("Total cost:", get_total_cost(result), "\n")
 
 ## ----network-simplex-diagram, fig.width=7, fig.height=4.5, echo=FALSE, fig.alt="Network simplex spanning tree structure for assignment problem"----
@@ -577,6 +570,14 @@ edges <- sample(1:(n^2), floor(0.2 * n^2))  # Only 20% allowed
 cost[edges] <- runif(length(edges), 0, 100)
 result <- lap_solve(cost, method = "sap")
 cat("Total cost:", round(get_total_cost(result), 2), "\n")
+
+## ----sap-dense-example--------------------------------------------------------
+set.seed(789)
+n <- 60
+cost <- matrix(runif(n * n, 0, 100), n, n)
+result <- lap_solve(cost, method = "sap_dense")
+cat("Total cost:", round(get_total_cost(result), 2), "
+")
 
 ## ----ramshaw-tarjan-example---------------------------------------------------
 set.seed(333)

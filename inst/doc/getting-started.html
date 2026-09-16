@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-08-23" />
+<meta name="date" content="2026-09-16" />
 
 <title>Quick Start</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Quick Start</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-08-23</h4>
+<h4 class="date">2026-09-16</h4>
 
 
 
@@ -715,8 +715,8 @@ Hospital A controls, etc.</p>
 <h2>Full Matching: Keep Every Unit</h2>
 <p>One-to-one matching discards unmatched controls. If you want every
 unit in a group, use <code>full_match()</code>. It creates
-variable-ratio groups (e.g., 1 treatment + 3 controls) that minimize
-total distance:</p>
+variable-ratio groups (e.g., 1 treatment + 3 controls, or 2 treatments +
+1 control) that minimize total distance:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>result_full <span class="ot">&lt;-</span> <span class="fu">full_match</span>(</span>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="at">left =</span> treatment,</span>
 <span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">right =</span> control,</span>
@@ -729,7 +729,7 @@ total distance:</p>
 <span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt; ====================</span></span>
 <span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt;   Status: optimal</span></span>
-<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt;   Groups formed: 50</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt;   Groups formed: 35</span></span>
 <span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt;   Left units:  50 matched, 0 unmatched (of 50)</span></span>
 <span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt;   Right units: 80 matched, 0 unmatched (of 80)</span></span>
 <span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt; </span></span>
@@ -741,11 +741,11 @@ total distance:</p>
 <span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a><span class="co">#&gt;   group_id id    side  weight</span></span>
 <span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a><span class="co">#&gt;      &lt;int&gt; &lt;chr&gt; &lt;chr&gt;  &lt;dbl&gt;</span></span>
 <span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a><span class="co">#&gt; 1        1 1     left       1</span></span>
-<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="co">#&gt; 2        1 42    right      1</span></span>
-<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a><span class="co">#&gt; 3        2 2     left       1</span></span>
-<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="co">#&gt; 4        2 11    right      1</span></span>
-<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="co">#&gt; 5        3 3     left       1</span></span>
-<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a><span class="co">#&gt; 6        3 59    right      1</span></span></code></pre></div>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="co">#&gt; 2        1 16    left       1</span></span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a><span class="co">#&gt; 3        1 44    right      2</span></span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="co">#&gt; 4        2 2     left       1</span></span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="co">#&gt; 5        2 3     left       1</span></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a><span class="co">#&gt; 6        2 58    right      2</span></span></code></pre></div>
 <p>Full matching is useful when your control pool is much larger than
 treatment and you don’t want to waste data. See
 <code>vignette(&quot;matching-workflows&quot;)</code> for details on constraints

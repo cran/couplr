@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-08-23" />
+<meta name="date" content="2026-09-16" />
 
 <title>Comparison with Alternatives</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Comparison with Alternatives</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-08-23</h4>
+<h4 class="date">2026-09-16</h4>
 
 
 
@@ -636,9 +636,10 @@ optimization</p></li>
 using network flow algorithms. It emphasizes full matching and variable
 ratio matching.</p>
 <p><strong>Key difference</strong>: optmatch pioneered optimal full
-matching via network flow; couplr now also supports optimal full
-matching (via <code>full_match()</code>) alongside one-to-one matching
-with 20+ algorithm choices.</p>
+matching via network flow. couplr’s <code>full_match()</code> solves the
+same problem, admitting one-to-many and many-to-one groups in the same
+solution, and adds one-to-one matching with 20+ algorithm choices and a
+checkable certificate.</p>
 </div>
 <div id="optmatch-approach" class="section level3">
 <h3>optmatch Approach</h3>
@@ -688,9 +689,9 @@ achieve similar total distances. The key differences are in:</p>
 couplr uses separate data frames</p></li>
 <li><p><strong>Algorithm selection</strong>: optmatch uses RELAX-IV;
 couplr offers 20+ algorithms</p></li>
-<li><p><strong>Full matching</strong>: Both packages support
-variable-ratio matching (<code>full_match()</code> in couplr,
-<code>fullmatch()</code> in optmatch)</p></li>
+<li><p><strong>Full matching</strong>: <code>full_match()</code> in
+couplr and <code>fullmatch()</code> in optmatch, both admitting
+one-to-many and many-to-one groups in one solution.</p></li>
 </ol>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">requireNamespace</span>(<span class="st">&quot;optmatch&quot;</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) {</span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="co"># Compare total distances</span></span>
