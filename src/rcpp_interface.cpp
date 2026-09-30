@@ -40,11 +40,6 @@ Rcpp::List solve_network_simplex_rcpp(const Rcpp::NumericMatrix& cost_matrix);
 Rcpp::List prepare_cost_matrix_impl(NumericMatrix cost, bool maximize);
 Rcpp::List probe_cost_matrix_impl(SEXP cost);
 Rcpp::List solve_bruteforce_impl(NumericMatrix cost, bool maximize);
-Rcpp::List solve_jv_impl(NumericMatrix cost, bool maximize);
-Rcpp::List solve_jv_lazy_impl(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat,
-                              SEXP metric, Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
-                              double max_distance, Rcpp::List calipers,
-                              Rcpp::CharacterVector var_names, bool maximize);
 Rcpp::List solve_auction_lazy_impl(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat,
                                    SEXP metric, Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
                                    double max_distance, Rcpp::List calipers,
@@ -84,7 +79,9 @@ Rcpp::List flow_certify_impl(int n_nodes, Rcpp::NumericVector supply,
                              Rcpp::IntegerVector tail, Rcpp::IntegerVector head,
                              Rcpp::NumericVector lower, Rcpp::NumericVector upper,
                              Rcpp::NumericVector cost, Rcpp::NumericVector flow,
-                             Rcpp::NumericVector potential, double tol);
+                             Rcpp::NumericVector potential, double tol,
+                             std::string arithmetic,
+                             Rcpp::Nullable<Rcpp::NumericMatrix> exact_potential);
 Rcpp::List flow_design_implicit_impl(Rcpp::NumericMatrix left_mat,
                                      Rcpp::NumericMatrix right_mat,
                                      SEXP distance,
@@ -105,9 +102,28 @@ SEXP pricing_session_new_impl(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix 
                               double max_distance, Rcpp::List calipers,
                               Rcpp::CharacterVector vars);
 Rcpp::List pricing_session_seed_impl(SEXP session, double width);
-Rcpp::List pricing_session_price_impl(SEXP session, Rcpp::NumericVector u,
-                                      Rcpp::NumericVector v, double keep_per_row,
-                                      double tol);
+Rcpp::List pricing_session_price_exact_impl(SEXP session, Rcpp::NumericMatrix u,
+                                            Rcpp::NumericMatrix v, double offset,
+                                            double keep_per_row);
+Rcpp::List flow_lagrangian_step_impl(int n_nodes, Rcpp::NumericVector supply,
+                                     Rcpp::IntegerVector tail, Rcpp::IntegerVector head,
+                                     Rcpp::NumericVector lower, Rcpp::NumericVector upper,
+                                     Rcpp::NumericVector cost, Rcpp::NumericVector flow,
+                                     Rcpp::NumericVector potential,
+                                     Rcpp::IntegerVector pair_arc,
+                                     Rcpp::IntegerVector pair_left,
+                                     Rcpp::IntegerVector pair_right,
+                                     Rcpp::IntegerVector left_node,
+                                     Rcpp::IntegerVector right_node,
+                                     Rcpp::NumericMatrix u, Rcpp::NumericMatrix w,
+                                     Rcpp::NumericVector b, Rcpp::NumericVector lambda);
+Rcpp::NumericVector exact_dot_impl(Rcpp::NumericVector x, Rcpp::NumericVector y);
+int exact_compare_impl(Rcpp::NumericVector e, Rcpp::NumericVector f);
+double exact_round_impl(Rcpp::NumericVector e, std::string direction);
+double exact_ceil_quotient_impl(Rcpp::NumericVector e, double add, double divisor);
+Rcpp::List exact_moment_rows_impl(Rcpp::NumericMatrix u, Rcpp::NumericMatrix w,
+                                  Rcpp::NumericVector b, Rcpp::IntegerVector left,
+                                  Rcpp::IntegerVector right, Rcpp::NumericVector lambda);
 Rcpp::NumericVector pricing_session_cost_impl(SEXP session, Rcpp::IntegerVector i,
                                               Rcpp::IntegerVector j);
 Rcpp::List pricing_session_range_impl(SEXP session);
@@ -207,7 +223,7 @@ Rcpp::List lap_solve_bruteforce(NumericMatrix cost, bool maximize) {
 
 // [[Rcpp::export]]
 Rcpp::List lap_solve_jv(NumericMatrix cost, bool maximize) {
-  return solve_jv_impl(cost, maximize);
+  return solve_jv_duals_impl(cost, maximize);
 }
 
 // [[Rcpp::export]]
@@ -215,8 +231,8 @@ Rcpp::List cpp_lap_solve_jv_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatr
                                  SEXP metric, Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
                                  double max_distance, Rcpp::List calipers,
                                  Rcpp::CharacterVector var_names, bool maximize) {
-  return solve_jv_lazy_impl(left_mat, right_mat, metric, inv_cov, max_distance,
-                            calipers, var_names, maximize);
+  return solve_jv_duals_lazy_impl(left_mat, right_mat, metric, inv_cov, max_distance,
+                                  calipers, var_names, maximize);
 }
 
 // [[Rcpp::export]]
@@ -250,8 +266,9 @@ Rcpp::List cpp_lap_solve_auction_lazy(Rcpp::NumericMatrix left_mat, Rcpp::Numeri
 Rcpp::List lap_certify_dense(Rcpp::NumericMatrix cost, Rcpp::IntegerVector match,
                              Rcpp::NumericVector u, Rcpp::NumericVector v,
                              bool maximize, double tol,
-                             std::string arithmetic) {
-  return certify_dense_impl(cost, match, u, v, maximize, tol, arithmetic);
+                             std::string arithmetic,
+                             Rcpp::Nullable<Rcpp::List> exact = R_NilValue) {
+  return certify_dense_impl(cost, match, u, v, maximize, tol, arithmetic, exact);
 }
 
 // [[Rcpp::export]]
@@ -262,9 +279,11 @@ Rcpp::List lap_certify_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix ri
                             Rcpp::CharacterVector vars,
                             Rcpp::IntegerVector match, Rcpp::NumericVector u,
                             Rcpp::NumericVector v, bool maximize, double tol,
-                            std::string arithmetic) {
+                            std::string arithmetic,
+                            Rcpp::Nullable<Rcpp::List> exact = R_NilValue) {
   return certify_lazy_impl(left_mat, right_mat, distance, inv_cov, max_distance,
-                           calipers, vars, match, u, v, maximize, tol, arithmetic);
+                           calipers, vars, match, u, v, maximize, tol, arithmetic,
+                           exact);
 }
 
 // [[Rcpp::export]]
@@ -419,22 +438,6 @@ Rcpp::List lap_solve_push_relabel(Rcpp::NumericMatrix cost, bool maximize) {
 }
 
 // [[Rcpp::export]]
-Rcpp::List lap_solve_jv_duals(Rcpp::NumericMatrix cost, bool maximize) {
-  return solve_jv_duals_impl(cost, maximize);
-}
-
-// [[Rcpp::export]]
-Rcpp::List cpp_lap_solve_jv_duals_lazy(Rcpp::NumericMatrix left_mat,
-                                       Rcpp::NumericMatrix right_mat,
-                                       SEXP metric,
-                                       Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
-                                       double max_distance, Rcpp::List calipers,
-                                       Rcpp::CharacterVector var_names, bool maximize) {
-  return solve_jv_duals_lazy_impl(left_mat, right_mat, metric, inv_cov, max_distance,
-                                  calipers, var_names, maximize);
-}
-
-// [[Rcpp::export]]
 Rcpp::List lap_solve_network_simplex(Rcpp::NumericMatrix cost) {
   return solve_network_simplex_rcpp(cost);
 }
@@ -463,9 +466,11 @@ Rcpp::List lap_flow_certify(int n_nodes, Rcpp::NumericVector supply,
                             Rcpp::IntegerVector tail, Rcpp::IntegerVector head,
                             Rcpp::NumericVector lower, Rcpp::NumericVector upper,
                             Rcpp::NumericVector cost, Rcpp::NumericVector flow,
-                            Rcpp::NumericVector potential, double tol) {
+                            Rcpp::NumericVector potential, double tol,
+                            std::string arithmetic = "auto",
+                            Rcpp::Nullable<Rcpp::NumericMatrix> exact_potential = R_NilValue) {
   return flow_certify_impl(n_nodes, supply, tail, head, lower, upper, cost, flow,
-                           potential, tol);
+                           potential, tol, arithmetic, exact_potential);
 }
 
 // [[Rcpp::export]]
@@ -490,10 +495,55 @@ Rcpp::List lap_pricing_seed(SEXP session, double width) {
 }
 
 // [[Rcpp::export]]
-Rcpp::List lap_pricing_price(SEXP session, Rcpp::NumericVector u,
-                             Rcpp::NumericVector v, double keep_per_row,
-                             double tol) {
-  return pricing_session_price_impl(session, u, v, keep_per_row, tol);
+Rcpp::List lap_pricing_price_exact(SEXP session, Rcpp::NumericMatrix u,
+                                   Rcpp::NumericMatrix v, double offset,
+                                   double keep_per_row) {
+  return pricing_session_price_exact_impl(session, u, v, offset, keep_per_row);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_flow_lagrangian_step(int n_nodes, Rcpp::NumericVector supply,
+                                    Rcpp::IntegerVector tail, Rcpp::IntegerVector head,
+                                    Rcpp::NumericVector lower, Rcpp::NumericVector upper,
+                                    Rcpp::NumericVector cost, Rcpp::NumericVector flow,
+                                    Rcpp::NumericVector potential,
+                                    Rcpp::IntegerVector pair_arc,
+                                    Rcpp::IntegerVector pair_left,
+                                    Rcpp::IntegerVector pair_right,
+                                    Rcpp::IntegerVector left_node,
+                                    Rcpp::IntegerVector right_node,
+                                    Rcpp::NumericMatrix u, Rcpp::NumericMatrix w,
+                                    Rcpp::NumericVector b, Rcpp::NumericVector lambda) {
+  return flow_lagrangian_step_impl(n_nodes, supply, tail, head, lower, upper, cost,
+                                   flow, potential, pair_arc, pair_left, pair_right,
+                                   left_node, right_node, u, w, b, lambda);
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector lap_exact_dot(Rcpp::NumericVector x, Rcpp::NumericVector y) {
+  return exact_dot_impl(x, y);
+}
+
+// [[Rcpp::export]]
+int lap_exact_compare(Rcpp::NumericVector e, Rcpp::NumericVector f) {
+  return exact_compare_impl(e, f);
+}
+
+// [[Rcpp::export]]
+double lap_exact_round(Rcpp::NumericVector e, std::string direction) {
+  return exact_round_impl(e, direction);
+}
+
+// [[Rcpp::export]]
+double lap_exact_ceil_quotient(Rcpp::NumericVector e, double add, double divisor) {
+  return exact_ceil_quotient_impl(e, add, divisor);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_exact_moment_rows(Rcpp::NumericMatrix u, Rcpp::NumericMatrix w,
+                                 Rcpp::NumericVector b, Rcpp::IntegerVector left,
+                                 Rcpp::IntegerVector right, Rcpp::NumericVector lambda) {
+  return exact_moment_rows_impl(u, w, b, left, right, lambda);
 }
 
 // [[Rcpp::export]]

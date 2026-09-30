@@ -20,12 +20,14 @@
 
 #include "../core/lap_error.h"
 #include "../core/lap_lazy_types.h"
+#include "../core/lap_rcpp_convert.h"
 #include "../core/lap_utils_rcpp.h"
 #include "flow_candidates.h"
 #include "flow_certify.h"
 #include "flow_compile.h"
 #include "flow_implicit.h"
 #include "flow_implicit_rcpp.h"
+#include "flow_lagrangian.h"
 #include "flow_oracle.h"
 #include "flow_problem.h"
 #include "flow_push_relabel.h"
@@ -204,8 +206,42 @@ std::vector<double> warm_potential_from_r(const Rcpp::NumericVector& warm_potent
     return out;
 }
 
+// A flow that is not integral, or that carries a count no int64_t holds, is not
+// a flow the LP has a primal for, and false says so rather than rounding it into
+// one.
+bool integral_flow_from_r(const Rcpp::NumericVector& flow, std::vector<int64_t>& out) {
+    out.clear();
+    out.reserve(static_cast<std::size_t>(flow.size()));
+    for (R_xlen_t a = 0; a < flow.size(); ++a) {
+        const double v = flow[a];
+        if (ISNAN(v) || std::abs(v) > FLOW_R_EXACT_MAX || v != std::floor(v)) {
+            return false;
+        }
+        out.push_back(static_cast<int64_t>(v));
+    }
+    return true;
+}
+
+// 1-based indices from R, 0-based and range-checked.
+std::vector<int32_t> indices_from_r(const Rcpp::IntegerVector& x, int64_t limit,
+                                    const char* what) {
+    std::vector<int32_t> out(static_cast<std::size_t>(x.size()));
+    for (R_xlen_t k = 0; k < x.size(); ++k) {
+        if (x[k] == NA_INTEGER || x[k] < 1 || x[k] > limit) {
+            Rcpp::stop("lagrangian step: %s holds an index outside 1..%d", what,
+                       static_cast<int>(limit));
+        }
+        out[static_cast<std::size_t>(k)] = x[k] - 1;
+    }
+    return out;
+}
+
+Rcpp::NumericVector expansion_to_r(const lap::exact::Expansion& e) {
+    return Rcpp::NumericVector(e.begin(), e.end());
+}
+
 Rcpp::List certificate_to_r(const lap::FlowCertificate& cert) {
-    return Rcpp::List::create(
+    Rcpp::List out = Rcpp::List::create(
         Rcpp::Named("primal_feasible") = cert.primal_feasible,
         Rcpp::Named("n_capacity_violations") =
             static_cast<double>(cert.n_capacity_violations),
@@ -223,6 +259,17 @@ Rcpp::List certificate_to_r(const lap::FlowCertificate& cert) {
         Rcpp::Named("duality_gap") = cert.duality_gap,
         Rcpp::Named("certified_optimal") = cert.certified_optimal,
         Rcpp::Named("tolerance") = cert.tolerance);
+    out.push_back(cert.exact_available, "exact_available");
+    out.push_back(cert.exact_certificate, "exact_certificate");
+    out.push_back(static_cast<double>(cert.n_exact_violations), "n_exact_violations");
+    out.push_back(std::string(exact_source_name(cert.exact_potentials_source)),
+                  "exact_potentials_source");
+    out.push_back(cert.exact_potential.empty()
+                      ? Rcpp::RObject(R_NilValue)
+                      : Rcpp::RObject(expansions_to_r(cert.exact_potential)),
+                  "exact_potential");
+    out.push_back(cert.conclusion_is_exact, "conclusion_is_exact");
+    return out;
 }
 
 }  // namespace
@@ -285,32 +332,119 @@ Rcpp::List flow_certify_impl(int n_nodes,
                              Rcpp::NumericVector cost,
                              Rcpp::NumericVector flow,
                              Rcpp::NumericVector potential,
-                             double tol) {
+                             double tol,
+                             std::string arithmetic,
+                             Rcpp::Nullable<Rcpp::NumericMatrix> exact_potential) {
     const lap::FlowProblem prob =
         problem_from_r(n_nodes, supply, tail, head, lower, upper, cost);
 
-    // A flow that is not integral, or that carries a count no int64_t holds, is
-    // not a flow this LP has a primal for. It fails the certificate rather than
-    // being rounded into one that passes.
     std::vector<int64_t> f;
-    f.reserve(static_cast<std::size_t>(flow.size()));
-    bool integral = true;
-    for (R_xlen_t a = 0; a < flow.size(); ++a) {
-        const double v = flow[a];
-        if (ISNAN(v) || std::abs(v) > FLOW_R_EXACT_MAX || v != std::floor(v)) {
-            integral = false;
-            break;
-        }
-        f.push_back(static_cast<int64_t>(v));
-    }
-    if (!integral) {
+    if (!integral_flow_from_r(flow, f)) {
         lap::FlowCertificate rep;
         rep.tolerance = tol;
         return certificate_to_r(rep);
     }
 
     std::vector<double> pi(potential.begin(), potential.end());
-    return certificate_to_r(lap::certify_flow(prob, f, pi, tol));
+    std::vector<lap::exact::Expansion> supplied;
+    if (exact_potential.isNotNull()) {
+        supplied = expansions_from_r(Rcpp::NumericMatrix(exact_potential.get()), false);
+    }
+    return certificate_to_r(lap::certify_flow(
+        prob, f, pi, tol, arithmetic_from_string(arithmetic),
+        exact_potential.isNotNull() ? &supplied : nullptr, /*recover=*/true));
+}
+
+// One solve of the balance network read exactly under moment multipliers: see
+// flow_lagrangian.h. The problem crosses with its base costs, and the pair arcs
+// with the units behind them; `u` and `w` hold one column per moment row.
+Rcpp::List flow_lagrangian_step_impl(int n_nodes,
+                                     Rcpp::NumericVector supply,
+                                     Rcpp::IntegerVector tail,
+                                     Rcpp::IntegerVector head,
+                                     Rcpp::NumericVector lower,
+                                     Rcpp::NumericVector upper,
+                                     Rcpp::NumericVector cost,
+                                     Rcpp::NumericVector flow,
+                                     Rcpp::NumericVector potential,
+                                     Rcpp::IntegerVector pair_arc,
+                                     Rcpp::IntegerVector pair_left,
+                                     Rcpp::IntegerVector pair_right,
+                                     Rcpp::IntegerVector left_node,
+                                     Rcpp::IntegerVector right_node,
+                                     Rcpp::NumericMatrix u,
+                                     Rcpp::NumericMatrix w,
+                                     Rcpp::NumericVector b,
+                                     Rcpp::NumericVector lambda) {
+    const lap::FlowProblem prob =
+        problem_from_r(n_nodes, supply, tail, head, lower, upper, cost);
+    std::vector<int64_t> f;
+    if (!integral_flow_from_r(flow, f) ||
+        static_cast<std::size_t>(flow.size()) != prob.arcs.size()) {
+        Rcpp::stop("lagrangian step: the flow is not an integral flow of the network");
+    }
+    if (potential.size() != n_nodes) {
+        Rcpp::stop("lagrangian step: %d potentials for %d nodes",
+                   static_cast<int>(potential.size()), n_nodes);
+    }
+    const R_xlen_t n_pairs = pair_arc.size();
+    if (pair_left.size() != n_pairs || pair_right.size() != n_pairs) {
+        Rcpp::stop("lagrangian step: the pair columns have different lengths");
+    }
+
+    lap::MomentRows rows;
+    rows.n_rows = b.size();
+    rows.n_left = left_node.size();
+    rows.n_right = right_node.size();
+    if (lambda.size() != b.size() || u.ncol() != b.size() || w.ncol() != b.size() ||
+        u.nrow() != rows.n_left || w.nrow() != rows.n_right) {
+        Rcpp::stop("lagrangian step: the moment rows and multipliers do not describe "
+                   "each other");
+    }
+    rows.u.assign(u.begin(), u.end());
+    rows.w.assign(w.begin(), w.end());
+    rows.b.assign(b.begin(), b.end());
+    for (double x : rows.u) if (!std::isfinite(x)) Rcpp::stop("lagrangian step: u is not finite");
+    for (double x : rows.w) if (!std::isfinite(x)) Rcpp::stop("lagrangian step: w is not finite");
+    for (double x : rows.b) if (!std::isfinite(x)) Rcpp::stop("lagrangian step: b is not finite");
+
+    lap::PairArcs pairs;
+    const std::vector<int32_t> arcs =
+        indices_from_r(pair_arc, static_cast<int64_t>(prob.arcs.size()), "pair_arc");
+    pairs.arc.assign(arcs.begin(), arcs.end());
+    pairs.left = indices_from_r(pair_left, rows.n_left, "pair_left");
+    pairs.right = indices_from_r(pair_right, rows.n_right, "pair_right");
+    pairs.left_node = indices_from_r(left_node, n_nodes, "left_node");
+    pairs.right_node = indices_from_r(right_node, n_nodes, "right_node");
+
+    std::vector<double> lam(lambda.begin(), lambda.end());
+    for (double x : lam) {
+        if (!std::isfinite(x) || x < 0.0) {
+            Rcpp::stop("lagrangian step: the multipliers must be finite and non-negative");
+        }
+    }
+    const std::vector<double> pi(potential.begin(), potential.end());
+
+    const lap::LagrangianStep step = lap::lagrangian_step(prob, f, pi, pairs, rows, lam);
+    Rcpp::NumericVector flow_out(static_cast<R_xlen_t>(step.flow.size()));
+    for (std::size_t a = 0; a < step.flow.size(); ++a) {
+        flow_out[static_cast<R_xlen_t>(a)] = static_cast<double>(step.flow[a]);
+    }
+    // The potentials rounded to doubles: what a warm start and the reported
+    // pair potentials read.
+    Rcpp::NumericVector potential_out(static_cast<R_xlen_t>(step.pi.size()));
+    for (std::size_t v = 0; v < step.pi.size(); ++v) {
+        potential_out[static_cast<R_xlen_t>(v)] = lap::exact::approximate(step.pi[v]).value;
+    }
+    return Rcpp::List::create(
+        Rcpp::Named("flow") = flow_out,
+        Rcpp::Named("potential") = potential_out,
+        Rcpp::Named("n_cancelled") = static_cast<double>(step.n_cancelled),
+        Rcpp::Named("recovered") = step.recovered,
+        Rcpp::Named("bound") = lap::exact::round_down(step.bound),
+        Rcpp::Named("bound_exact") = expansion_to_r(step.bound),
+        Rcpp::Named("pair_u") = expansions_to_r(step.pair_u),
+        Rcpp::Named("pair_v") = expansions_to_r(step.pair_v));
 }
 
 // The designs match_couples() offers, compiled and routed. The caller names the

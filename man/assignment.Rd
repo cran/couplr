@@ -40,17 +40,22 @@ entries are treated as forbidden assignments.}
 \itemize{
 \item \code{"auction"} — 'Bertsekas' auction with adaptive epsilon
 \item \code{"auction_gs"} — 'Gauss-Seidel' variant, good for spatial structure
-\item \code{"auction_scaled"} — 'Epsilon-scaling', fastest for large dense problems
+\item \code{"auction_scaled"} — 'Epsilon-scaling' auction, bidding at a
+decreasing sequence of epsilon values. Not chosen by \code{"auto"}; a rule
+sending heavily tied costs to it was tested and did not meet its
+criterion, and it remains available by name for tied costs
 }
 
 \strong{Specialized solvers:}
 \itemize{
-\item \code{"sap"} — Shortest augmenting path over the shared flow model,
-handles sparsity well. \code{"ssp"} is accepted as a second spelling of this
-method and resolves to \code{"sap"}.
+\item \code{"sap"} — Shortest augmenting path over the shared flow model's
+network. \code{"ssp"} is accepted as a second spelling of this method and
+resolves to \code{"sap"}.
 \item \code{"sap_dense"} — Shortest augmenting path with a linear scan in place
 of a heap, O(n * m^2), suited to a dense cost matrix
-\item \code{"lapmod"} — Sparse JV variant, faster when >50\\% entries are NA/Inf
+\item \code{"lapmod"} — 'Jonker-Volgenant' over the finite entries alone,
+stored row by row (CSR). Written for sparse input; see below for why
+\code{"auto"} does not divert sparse matrices to it
 \item \code{"hk01"} — 'Hopcroft-Karp' for binary (0/1) or constant costs.
 Constant costs make every perfect matching optimal. On a \verb{\{0,1\}} matrix
 the search runs over the zero-cost edges alone, where a perfect matching
@@ -132,8 +137,9 @@ certificate over the complete problem.}
 as \code{certificate}. \code{NULL}, the default, takes the path's own answer: \code{TRUE}
 under \code{memory_mode = "implicit"}, where the certificate is what
 distinguishes the answer from an approximate one and the loop has already
-done most of the scan, and \code{FALSE} elsewhere, where the duals are not among
-the things the solve returns and the check costs the solve
+done most of the scan, and \code{FALSE} elsewhere. The check reads the duals
+the solve returned where it returned some (see \code{u} and \code{v} below), so it
+costs one pass over the admissible pairs; elsewhere it costs the solve
 \code{\link[=verify_assignment]{verify_assignment()}} runs to get them. A solve that did not reach a
 complete optimal matching has nothing to certify and gets no certificate.}
 
@@ -175,9 +181,17 @@ fired under \code{"auto"}, the condition that triggered it, and whether
 the method was named explicitly. See \code{\link[=explain_dispatch]{explain_dispatch()}}.
 \item \code{certificate} — an \code{assignment_certificate}, present when one was
 checked. See \code{certify}.
+\item \code{u}, \code{v} — row and column duals in the orientation of \code{cost},
+present when the solver produced optimal duals for \code{cost}: \code{"jv"}
+(and so \code{"auto"} on every problem it sends there), \code{"hungarian"},
+the lazy \code{"jv"} path, and \code{memory_mode = "implicit"}, where they are
+the duals the last restricted master produced. \code{\link[=verify_assignment]{verify_assignment()}}
+reads them instead of solving again. Absent under
+\code{cardinality = "maximum"} and \code{"fixed"}, whose solver duals belong to
+the padded problem rather than to \code{cost}, and for \code{"gabow_tarjan"},
+whose duals are those of its scaled integer instance.
 }
-Under \code{memory_mode = "implicit"} the result also carries \code{u} and \code{v}, the
-duals the last restricted master produced, and \code{search}: the columns the
+Under \code{memory_mode = "implicit"} the result also carries \code{search}: the columns the
 first round gave each row (\code{seed_width}), the pairs the candidate set ended
 up holding (\code{candidate_edges}) out of \code{possible_edges}, the pairs a cost was
 computed for (\code{edges_evaluated}), the round count, and \code{rounds}, one row per

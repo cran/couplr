@@ -125,8 +125,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // lap_certify_dense
-Rcpp::List lap_certify_dense(Rcpp::NumericMatrix cost, Rcpp::IntegerVector match, Rcpp::NumericVector u, Rcpp::NumericVector v, bool maximize, double tol, std::string arithmetic);
-RcppExport SEXP _couplr_lap_certify_dense(SEXP costSEXP, SEXP matchSEXP, SEXP uSEXP, SEXP vSEXP, SEXP maximizeSEXP, SEXP tolSEXP, SEXP arithmeticSEXP) {
+Rcpp::List lap_certify_dense(Rcpp::NumericMatrix cost, Rcpp::IntegerVector match, Rcpp::NumericVector u, Rcpp::NumericVector v, bool maximize, double tol, std::string arithmetic, Rcpp::Nullable<Rcpp::List> exact);
+RcppExport SEXP _couplr_lap_certify_dense(SEXP costSEXP, SEXP matchSEXP, SEXP uSEXP, SEXP vSEXP, SEXP maximizeSEXP, SEXP tolSEXP, SEXP arithmeticSEXP, SEXP exactSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -137,13 +137,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type maximize(maximizeSEXP);
     Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
     Rcpp::traits::input_parameter< std::string >::type arithmetic(arithmeticSEXP);
-    rcpp_result_gen = Rcpp::wrap(lap_certify_dense(cost, match, u, v, maximize, tol, arithmetic));
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::List> >::type exact(exactSEXP);
+    rcpp_result_gen = Rcpp::wrap(lap_certify_dense(cost, match, u, v, maximize, tol, arithmetic, exact));
     return rcpp_result_gen;
 END_RCPP
 }
 // lap_certify_lazy
-Rcpp::List lap_certify_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat, SEXP distance, Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov, double max_distance, Rcpp::List calipers, Rcpp::CharacterVector vars, Rcpp::IntegerVector match, Rcpp::NumericVector u, Rcpp::NumericVector v, bool maximize, double tol, std::string arithmetic);
-RcppExport SEXP _couplr_lap_certify_lazy(SEXP left_matSEXP, SEXP right_matSEXP, SEXP distanceSEXP, SEXP inv_covSEXP, SEXP max_distanceSEXP, SEXP calipersSEXP, SEXP varsSEXP, SEXP matchSEXP, SEXP uSEXP, SEXP vSEXP, SEXP maximizeSEXP, SEXP tolSEXP, SEXP arithmeticSEXP) {
+Rcpp::List lap_certify_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat, SEXP distance, Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov, double max_distance, Rcpp::List calipers, Rcpp::CharacterVector vars, Rcpp::IntegerVector match, Rcpp::NumericVector u, Rcpp::NumericVector v, bool maximize, double tol, std::string arithmetic, Rcpp::Nullable<Rcpp::List> exact);
+RcppExport SEXP _couplr_lap_certify_lazy(SEXP left_matSEXP, SEXP right_matSEXP, SEXP distanceSEXP, SEXP inv_covSEXP, SEXP max_distanceSEXP, SEXP calipersSEXP, SEXP varsSEXP, SEXP matchSEXP, SEXP uSEXP, SEXP vSEXP, SEXP maximizeSEXP, SEXP tolSEXP, SEXP arithmeticSEXP, SEXP exactSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -160,7 +161,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< bool >::type maximize(maximizeSEXP);
     Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
     Rcpp::traits::input_parameter< std::string >::type arithmetic(arithmeticSEXP);
-    rcpp_result_gen = Rcpp::wrap(lap_certify_lazy(left_mat, right_mat, distance, inv_cov, max_distance, calipers, vars, match, u, v, maximize, tol, arithmetic));
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::List> >::type exact(exactSEXP);
+    rcpp_result_gen = Rcpp::wrap(lap_certify_lazy(left_mat, right_mat, distance, inv_cov, max_distance, calipers, vars, match, u, v, maximize, tol, arithmetic, exact));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -473,36 +475,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// lap_solve_jv_duals
-Rcpp::List lap_solve_jv_duals(Rcpp::NumericMatrix cost, bool maximize);
-RcppExport SEXP _couplr_lap_solve_jv_duals(SEXP costSEXP, SEXP maximizeSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type cost(costSEXP);
-    Rcpp::traits::input_parameter< bool >::type maximize(maximizeSEXP);
-    rcpp_result_gen = Rcpp::wrap(lap_solve_jv_duals(cost, maximize));
-    return rcpp_result_gen;
-END_RCPP
-}
-// cpp_lap_solve_jv_duals_lazy
-Rcpp::List cpp_lap_solve_jv_duals_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat, SEXP metric, Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov, double max_distance, Rcpp::List calipers, Rcpp::CharacterVector var_names, bool maximize);
-RcppExport SEXP _couplr_cpp_lap_solve_jv_duals_lazy(SEXP left_matSEXP, SEXP right_matSEXP, SEXP metricSEXP, SEXP inv_covSEXP, SEXP max_distanceSEXP, SEXP calipersSEXP, SEXP var_namesSEXP, SEXP maximizeSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type left_mat(left_matSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type right_mat(right_matSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type metric(metricSEXP);
-    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericMatrix> >::type inv_cov(inv_covSEXP);
-    Rcpp::traits::input_parameter< double >::type max_distance(max_distanceSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type calipers(calipersSEXP);
-    Rcpp::traits::input_parameter< Rcpp::CharacterVector >::type var_names(var_namesSEXP);
-    Rcpp::traits::input_parameter< bool >::type maximize(maximizeSEXP);
-    rcpp_result_gen = Rcpp::wrap(cpp_lap_solve_jv_duals_lazy(left_mat, right_mat, metric, inv_cov, max_distance, calipers, var_names, maximize));
-    return rcpp_result_gen;
-END_RCPP
-}
 // lap_solve_network_simplex
 Rcpp::List lap_solve_network_simplex(Rcpp::NumericMatrix cost);
 RcppExport SEXP _couplr_lap_solve_network_simplex(SEXP costSEXP) {
@@ -539,8 +511,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // lap_flow_certify
-Rcpp::List lap_flow_certify(int n_nodes, Rcpp::NumericVector supply, Rcpp::IntegerVector tail, Rcpp::IntegerVector head, Rcpp::NumericVector lower, Rcpp::NumericVector upper, Rcpp::NumericVector cost, Rcpp::NumericVector flow, Rcpp::NumericVector potential, double tol);
-RcppExport SEXP _couplr_lap_flow_certify(SEXP n_nodesSEXP, SEXP supplySEXP, SEXP tailSEXP, SEXP headSEXP, SEXP lowerSEXP, SEXP upperSEXP, SEXP costSEXP, SEXP flowSEXP, SEXP potentialSEXP, SEXP tolSEXP) {
+Rcpp::List lap_flow_certify(int n_nodes, Rcpp::NumericVector supply, Rcpp::IntegerVector tail, Rcpp::IntegerVector head, Rcpp::NumericVector lower, Rcpp::NumericVector upper, Rcpp::NumericVector cost, Rcpp::NumericVector flow, Rcpp::NumericVector potential, double tol, std::string arithmetic, Rcpp::Nullable<Rcpp::NumericMatrix> exact_potential);
+RcppExport SEXP _couplr_lap_flow_certify(SEXP n_nodesSEXP, SEXP supplySEXP, SEXP tailSEXP, SEXP headSEXP, SEXP lowerSEXP, SEXP upperSEXP, SEXP costSEXP, SEXP flowSEXP, SEXP potentialSEXP, SEXP tolSEXP, SEXP arithmeticSEXP, SEXP exact_potentialSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -554,7 +526,9 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type flow(flowSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type potential(potentialSEXP);
     Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
-    rcpp_result_gen = Rcpp::wrap(lap_flow_certify(n_nodes, supply, tail, head, lower, upper, cost, flow, potential, tol));
+    Rcpp::traits::input_parameter< std::string >::type arithmetic(arithmeticSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericMatrix> >::type exact_potential(exact_potentialSEXP);
+    rcpp_result_gen = Rcpp::wrap(lap_flow_certify(n_nodes, supply, tail, head, lower, upper, cost, flow, potential, tol, arithmetic, exact_potential));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -600,18 +574,111 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// lap_pricing_price
-Rcpp::List lap_pricing_price(SEXP session, Rcpp::NumericVector u, Rcpp::NumericVector v, double keep_per_row, double tol);
-RcppExport SEXP _couplr_lap_pricing_price(SEXP sessionSEXP, SEXP uSEXP, SEXP vSEXP, SEXP keep_per_rowSEXP, SEXP tolSEXP) {
+// lap_pricing_price_exact
+Rcpp::List lap_pricing_price_exact(SEXP session, Rcpp::NumericMatrix u, Rcpp::NumericMatrix v, double offset, double keep_per_row);
+RcppExport SEXP _couplr_lap_pricing_price_exact(SEXP sessionSEXP, SEXP uSEXP, SEXP vSEXP, SEXP offsetSEXP, SEXP keep_per_rowSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type session(sessionSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type u(uSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type v(vSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type u(uSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type v(vSEXP);
+    Rcpp::traits::input_parameter< double >::type offset(offsetSEXP);
     Rcpp::traits::input_parameter< double >::type keep_per_row(keep_per_rowSEXP);
-    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
-    rcpp_result_gen = Rcpp::wrap(lap_pricing_price(session, u, v, keep_per_row, tol));
+    rcpp_result_gen = Rcpp::wrap(lap_pricing_price_exact(session, u, v, offset, keep_per_row));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lap_flow_lagrangian_step
+Rcpp::List lap_flow_lagrangian_step(int n_nodes, Rcpp::NumericVector supply, Rcpp::IntegerVector tail, Rcpp::IntegerVector head, Rcpp::NumericVector lower, Rcpp::NumericVector upper, Rcpp::NumericVector cost, Rcpp::NumericVector flow, Rcpp::NumericVector potential, Rcpp::IntegerVector pair_arc, Rcpp::IntegerVector pair_left, Rcpp::IntegerVector pair_right, Rcpp::IntegerVector left_node, Rcpp::IntegerVector right_node, Rcpp::NumericMatrix u, Rcpp::NumericMatrix w, Rcpp::NumericVector b, Rcpp::NumericVector lambda);
+RcppExport SEXP _couplr_lap_flow_lagrangian_step(SEXP n_nodesSEXP, SEXP supplySEXP, SEXP tailSEXP, SEXP headSEXP, SEXP lowerSEXP, SEXP upperSEXP, SEXP costSEXP, SEXP flowSEXP, SEXP potentialSEXP, SEXP pair_arcSEXP, SEXP pair_leftSEXP, SEXP pair_rightSEXP, SEXP left_nodeSEXP, SEXP right_nodeSEXP, SEXP uSEXP, SEXP wSEXP, SEXP bSEXP, SEXP lambdaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type n_nodes(n_nodesSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type supply(supplySEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type tail(tailSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type head(headSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lower(lowerSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type upper(upperSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type cost(costSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type flow(flowSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type potential(potentialSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type pair_arc(pair_arcSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type pair_left(pair_leftSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type pair_right(pair_rightSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type left_node(left_nodeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type right_node(right_nodeSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type u(uSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type w(wSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type b(bSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lambda(lambdaSEXP);
+    rcpp_result_gen = Rcpp::wrap(lap_flow_lagrangian_step(n_nodes, supply, tail, head, lower, upper, cost, flow, potential, pair_arc, pair_left, pair_right, left_node, right_node, u, w, b, lambda));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lap_exact_dot
+Rcpp::NumericVector lap_exact_dot(Rcpp::NumericVector x, Rcpp::NumericVector y);
+RcppExport SEXP _couplr_lap_exact_dot(SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(lap_exact_dot(x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lap_exact_compare
+int lap_exact_compare(Rcpp::NumericVector e, Rcpp::NumericVector f);
+RcppExport SEXP _couplr_lap_exact_compare(SEXP eSEXP, SEXP fSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type e(eSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type f(fSEXP);
+    rcpp_result_gen = Rcpp::wrap(lap_exact_compare(e, f));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lap_exact_round
+double lap_exact_round(Rcpp::NumericVector e, std::string direction);
+RcppExport SEXP _couplr_lap_exact_round(SEXP eSEXP, SEXP directionSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type e(eSEXP);
+    Rcpp::traits::input_parameter< std::string >::type direction(directionSEXP);
+    rcpp_result_gen = Rcpp::wrap(lap_exact_round(e, direction));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lap_exact_ceil_quotient
+double lap_exact_ceil_quotient(Rcpp::NumericVector e, double add, double divisor);
+RcppExport SEXP _couplr_lap_exact_ceil_quotient(SEXP eSEXP, SEXP addSEXP, SEXP divisorSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type e(eSEXP);
+    Rcpp::traits::input_parameter< double >::type add(addSEXP);
+    Rcpp::traits::input_parameter< double >::type divisor(divisorSEXP);
+    rcpp_result_gen = Rcpp::wrap(lap_exact_ceil_quotient(e, add, divisor));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lap_exact_moment_rows
+Rcpp::List lap_exact_moment_rows(Rcpp::NumericMatrix u, Rcpp::NumericMatrix w, Rcpp::NumericVector b, Rcpp::IntegerVector left, Rcpp::IntegerVector right, Rcpp::NumericVector lambda);
+RcppExport SEXP _couplr_lap_exact_moment_rows(SEXP uSEXP, SEXP wSEXP, SEXP bSEXP, SEXP leftSEXP, SEXP rightSEXP, SEXP lambdaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type u(uSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type w(wSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type b(bSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type left(leftSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type right(rightSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type lambda(lambdaSEXP);
+    rcpp_result_gen = Rcpp::wrap(lap_exact_moment_rows(u, w, b, left, right, lambda));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1085,8 +1152,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_couplr_cpp_lazy_pair_distances", (DL_FUNC) &_couplr_cpp_lazy_pair_distances, 6},
     {"_couplr_cpp_lazy_distance_sd", (DL_FUNC) &_couplr_cpp_lazy_distance_sd, 4},
     {"_couplr_cpp_lap_solve_auction_lazy", (DL_FUNC) &_couplr_cpp_lap_solve_auction_lazy, 9},
-    {"_couplr_lap_certify_dense", (DL_FUNC) &_couplr_lap_certify_dense, 7},
-    {"_couplr_lap_certify_lazy", (DL_FUNC) &_couplr_lap_certify_lazy, 13},
+    {"_couplr_lap_certify_dense", (DL_FUNC) &_couplr_lap_certify_dense, 8},
+    {"_couplr_lap_certify_lazy", (DL_FUNC) &_couplr_lap_certify_lazy, 14},
     {"_couplr_lap_scan_reduced_costs", (DL_FUNC) &_couplr_lap_scan_reduced_costs, 4},
     {"_couplr_lap_hall_witness_dense", (DL_FUNC) &_couplr_lap_hall_witness_dense, 1},
     {"_couplr_lap_hall_witness_lazy", (DL_FUNC) &_couplr_lap_hall_witness_lazy, 7},
@@ -1111,15 +1178,19 @@ static const R_CallMethodDef CallEntries[] = {
     {"_couplr_sinkhorn_round", (DL_FUNC) &_couplr_sinkhorn_round, 1},
     {"_couplr_lap_solve_ramshaw_tarjan", (DL_FUNC) &_couplr_lap_solve_ramshaw_tarjan, 2},
     {"_couplr_lap_solve_push_relabel", (DL_FUNC) &_couplr_lap_solve_push_relabel, 2},
-    {"_couplr_lap_solve_jv_duals", (DL_FUNC) &_couplr_lap_solve_jv_duals, 2},
-    {"_couplr_cpp_lap_solve_jv_duals_lazy", (DL_FUNC) &_couplr_cpp_lap_solve_jv_duals_lazy, 8},
     {"_couplr_lap_solve_network_simplex", (DL_FUNC) &_couplr_lap_solve_network_simplex, 1},
     {"_couplr_lap_flow_solve", (DL_FUNC) &_couplr_lap_flow_solve, 14},
-    {"_couplr_lap_flow_certify", (DL_FUNC) &_couplr_lap_flow_certify, 10},
+    {"_couplr_lap_flow_certify", (DL_FUNC) &_couplr_lap_flow_certify, 12},
     {"_couplr_lap_flow_compile_full_match", (DL_FUNC) &_couplr_lap_flow_compile_full_match, 3},
     {"_couplr_lap_pricing_session", (DL_FUNC) &_couplr_lap_pricing_session, 7},
     {"_couplr_lap_pricing_seed", (DL_FUNC) &_couplr_lap_pricing_seed, 2},
-    {"_couplr_lap_pricing_price", (DL_FUNC) &_couplr_lap_pricing_price, 5},
+    {"_couplr_lap_pricing_price_exact", (DL_FUNC) &_couplr_lap_pricing_price_exact, 5},
+    {"_couplr_lap_flow_lagrangian_step", (DL_FUNC) &_couplr_lap_flow_lagrangian_step, 18},
+    {"_couplr_lap_exact_dot", (DL_FUNC) &_couplr_lap_exact_dot, 2},
+    {"_couplr_lap_exact_compare", (DL_FUNC) &_couplr_lap_exact_compare, 2},
+    {"_couplr_lap_exact_round", (DL_FUNC) &_couplr_lap_exact_round, 2},
+    {"_couplr_lap_exact_ceil_quotient", (DL_FUNC) &_couplr_lap_exact_ceil_quotient, 3},
+    {"_couplr_lap_exact_moment_rows", (DL_FUNC) &_couplr_lap_exact_moment_rows, 6},
     {"_couplr_lap_pricing_cost", (DL_FUNC) &_couplr_lap_pricing_cost, 3},
     {"_couplr_lap_pricing_range", (DL_FUNC) &_couplr_lap_pricing_range, 1},
     {"_couplr_lap_pricing_evaluated", (DL_FUNC) &_couplr_lap_pricing_evaluated, 1},

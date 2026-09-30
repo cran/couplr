@@ -5,7 +5,7 @@
 \alias{print.cardinality_report}
 \title{Report of a cardinality match}
 \usage{
-.cardinality_report(run, specs = NULL, tol = 1e-09)
+.cardinality_report(run, specs = NULL)
 
 \method{print}{cardinality_report}(x, ...)
 }
@@ -13,8 +13,6 @@
 \item{run}{A \code{cardinality_run} from \code{\link[=.cardinality_branch_bound]{.cardinality_branch_bound()}}.}
 
 \item{specs}{The moment rows the run was given, from \code{.moment_specs()}.}
-
-\item{tol}{Numeric tolerance for reading a constraint as satisfied.}
 
 \item{x}{A \code{cardinality_report}.}
 
@@ -43,6 +41,9 @@ level.
 objective, how many times its range fits inside the range a double
 orders exactly, and the constant taken off every distance.
 \item \code{total_distance}, \code{pairs} - the matched set itself.
+\item \code{potentials} - the pair potentials of the solve the matched set
+came from, as \code{.cardinality_pair_duals()} reads them, or \code{NULL}
+when that solve was not certified.
 }
 
 Invisibly returns \code{x}.

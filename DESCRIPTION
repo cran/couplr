@@ -1,6 +1,6 @@
 Package: couplr
 Title: Optimal Pairing and Matching via Linear Assignment
-Version: 1.7.1
+Version: 1.8.0
 Authors@R: 
     person("Gilles", "Colling", email = "gilles.colling051@gmail.com",
            role = c("aut", "cre", "cph"),
@@ -31,7 +31,7 @@ Suggests: testthat (>= 3.0.0), htmlwidgets, e1071, R.utils,
         microbenchmark, withr, knitr, rmarkdown, bench, parallel,
         future (>= 1.20.0), future.apply (>= 1.8.0), parallelly (>=
         1.30.0), ggplot2, ggraph, tidygraph, magick, av, png, combinat,
-        cobalt, MatchIt, marginaleffects, optmatch
+        cobalt, MatchIt, marginaleffects, optmatch, clue, lpSolve
 LinkingTo: Rcpp
 SystemRequirements: C++17
 LazyData: true
@@ -43,9 +43,9 @@ Config/testthat/edition: 3
 Config/roxygen2/version: 8.1.0
 Config/Needs/coverage: xml2
 NeedsCompilation: yes
-Packaged: 2026-09-16 19:42:25 UTC; Gilles Colling
+Packaged: 2026-09-30 14:11:03 UTC; Gilles Colling
 Author: Gilles Colling [aut, cre, cph] (ORCID:
     <https://orcid.org/0000-0003-3070-6066>)
 Maintainer: Gilles Colling <gilles.colling051@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-09-16 23:30:26 UTC
+Date/Publication: 2026-09-30 21:10:03 UTC

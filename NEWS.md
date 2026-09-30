@@ -1,3 +1,128 @@
+# couplr 1.8.0
+
+## Exact certificates on computed distances (#61)
+
+* **`verify_assignment()` certifies exactly on the costs matching is usually
+  run on.** An optimal dual is a sum of cost entries, and on Euclidean or
+  Mahalanobis distances a double often cannot hold one, so the solver's
+  potentials missed exact tightness by a unit in the last place and the
+  certificate fell back to the tolerance. When the duals given pass the
+  numerical reading but not the exact one, the potentials the matching itself
+  determines are now recovered, as shortest-path distances over the cost
+  entries held in exact multi-component arithmetic (Shewchuk 1997), and the
+  conditions are decided on those. On 30 instances of Euclidean costs, square
+  and rectangular in both orientations and under both objectives, every
+  certificate is exact. A matching that is not optimal has no such potentials
+  and is still refused, and duals that fail even the numerical reading still
+  certify nothing.
+
+* An exact certificate returns the potentials that decided it as `exact_u`
+  and `exact_v`, one row per potential whose sum is its exact value, and
+  `duals` accepts that form, so a certificate can be re-checked from the cost
+  matrix alone, in rational arithmetic if wanted. `exact_duals_source` says whether the solver's duals,
+  expansions supplied by the caller, or recovered potentials decided the exact
+  certificate. `n_exact_violations` and `n_exact_untight` keep describing the
+  duals given.
+
+* An exact certificate reports `max_suboptimality` as zero: it proves the
+  matching attains the optimum. The double-arithmetic bound with its rounding
+  envelopes is what `arithmetic = "double"` reports.
+
+* **`verify_flow()` has the same two readings** and takes `arithmetic`. The
+  exact one decides the sign of every residual arc's reduced cost, recovering
+  potentials from the flow's residual graph when the ones given miss by
+  rounding, and returns them as `exact_potential`. `full_match()` certifies
+  exactly through it.
+
+## Implicit mode prices at zero (#62)
+
+* **An implicit-mode certificate no longer carries `n * tol`.** Each round of
+  a certifying loop recovers exact potentials for the master over the pairs it
+  holds and prices the omitted pairs at zero against them, the double pass
+  deciding the pairs clear of zero and the exact sign the few within rounding
+  of it, in the same sweep. The loop ends when no omitted pair is exactly
+  negative, and the certificate is then exact over every admissible pair. This
+  holds for `assignment()`, `match_couples()` and `full_match()` under
+  `memory_mode = "implicit"`. A loop that does not certify prices at `-tol` as
+  before. Each round's record says which pricing it used (`exact_pricing`).
+
+## Exact bounds in `cardinality_match()`
+
+* **`cardinality_match()` certifies with no tolerance.** Its branch and bound
+  took each node's bound from the relaxed optimum of a solve the
+  double-arithmetic flow certificate had accepted, pruned a node within `1e-9`
+  times the incumbent's objective, and priced the pairs a generating search
+  omits at `-1e-9` times the largest potential. Each solve is now read
+  exactly. The multiplier-repriced arc costs are held as expansions, the
+  flow's exact potentials are recovered from its residual graph under them,
+  any negative cycle those costs show is cancelled first, and the node's bound
+  is the dual objective at those potentials, which weak duality makes a lower
+  bound whatever the solve did. Omitted pairs are priced at zero against the
+  same potentials. The bounds, the incumbent's objective, the pruning tests,
+  the moment rows of a matched set and the cardinality read off the bound are
+  all decided exactly, so `certified = TRUE` is a proof over the costs and
+  rows as stored, on the flow engine and under moment constraints, dense and
+  implicit. The internal `tol` arguments of the search are gone.
+
+* The solver behind a node prices the repriced costs rounded to doubles and
+  stops at reduced costs within its own tolerance, so its flow can miss the
+  exact optimum of the node by that margin. Such a flow is repaired by
+  cancelling negative cycles in exact arithmetic before it is read, so the
+  matched set a node reports is optimal for the node's exact costs.
+
+## Potentials on every design (#63)
+
+* `assignment()` results carry `u` and `v` whenever the solver computes
+  optimal duals: `"jv"`, `"hungarian"`, the lazy path and the implicit loop.
+  `verify_assignment()` reads them, so a certificate on such a result costs
+  one pass over the pairs and no second solve.
+
+* `match_couples()` returns `potentials`, one value per unit, named by id, on
+  every design with a linear program: the assignment duals on the 1:1 design,
+  the largest replica dual per unit on k:1, each unit's k-th cheapest cost with
+  replacement, and the blocks' duals merged under blocking. A method that
+  returns none has them computed by `assignment_duals()`.
+
+* `cardinality_match()` returns the potentials of the network solve its
+  matched sample came from, in distance terms with the multipliers folded in.
+
+## Bug fixes
+
+* Exact potential recovery could refuse an optimal flow. Its shortest-path
+  search decides a relaxation in doubles when the two sides are clear of their
+  rounding band, and at a band of zero, two exact zero labels joined by a
+  zero-cost arc, it took a difference of zero for an improvement. Every such
+  relaxation lengthened the walk it recorded without shortening a path, so on
+  a network with zero-cost arcs the walk overran the node count and the search
+  reported a negative cycle that was not there. `verify_flow(arithmetic =
+  "exact")` refused 6 of the 37 balance networks in the package's test
+  instances, each of them optimal, and certifies all 37 now. The same search
+  recovers the potentials behind `verify_assignment()` and the implicit loop;
+  those paths were not measured separately.
+
+# couplr 1.7.2
+
+* `verify_assignment()` reads the duals off a solve result by exact name.
+  `x$u` partial-matched the `unmatched` element of an `assignment()` result,
+  so picking up duals from the result depended on no element also
+  partial-matching `v`. No 1.7.1 result carried such an element, so no
+  verdict changed.
+
+* **Solver documentation describes what each method implements (#58).** The
+  `?assignment` notes, the `"The Algorithm Collection"` vignette and the
+  sparsity note in `summary()` of a distance object no longer describe
+  `"lapmod"`, `"sap"` and `"auction_scaled"` by speed claims the regime grid
+  did not bear out. The vignette's timing plots are drawn from the package's
+  measured solver benchmark, shipped as `inst/extdata/solver-benchmark.csv`,
+  in place of illustrative numbers.
+
+* The memory documentation states the measured dense-solve peak range, 7 to
+  11 times the raw cell bytes, instead of per-size multipliers a re-run moves
+  (#59). The README's opening and solver section match the code (#60).
+
+* Tests that need `future` and `future.apply` skip when they are not
+  installed (#53).
+
 # couplr 1.7.1
 
 1.7.0 was tagged but never released. A critical review of the release
@@ -9,10 +134,10 @@ one asked, so the version that reaches CRAN is this one.
 * **`method = "auto"` no longer diverts on sparsity or aspect ratio.** Two of
   the five dispatch rules sent a matrix with more than half its entries
   forbidden to `"lapmod"`, and a matrix with at least three columns per row to
-  `"sap"`. Measured across the regime grid in `paper/bench_regimes.R`, neither
-  earned its place: `"sap"` was the quickest solver in none of the 32 cells
-  where its rule fired, at a median of 5.75 times the cell's best and a worst
-  of 13.4, and `"lapmod"` was quickest in 2 of 48 cells at 60 and 25 percent of
+  `"sap"`. Measured across the regime grid in `paper/bench/bench_regimes.R`,
+  neither earned its place: `"sap"` was the quickest solver in none of the 32
+  cells where its rule fired, at a median of 5.75 times the cell's best and a
+  worst of 13.4, and `"lapmod"` was quickest in 2 of 48 cells at 60 and 25 percent of
   the entries finite, and in 1 of 31 at 5 and 1 percent, the extreme sparsity
   its adjacency structure exists for. Jonker-Volgenant is at or below the
   best-known time in both regimes, so both properties now fall through to it.
@@ -23,8 +148,8 @@ one asked, so the version that reaches CRAN is this one.
 * **The memory guard estimates the solve, not the matrix.** `memory_mode =
   "auto"` compared a dense cost matrix's footprint against available RAM, at
   four times the raw cell bytes. A dense solve peaks well above the matrix it
-  runs on: measured at 9.4, 7.2 and 8.6 times the raw bytes at 5,000, 10,000
-  and 20,000 units, against the 4 the guard assumed, so a solve could be
+  runs on: measured at between 7 and 11 times the raw bytes from 5,000 to
+  20,000 units, against the 4 the guard assumed, so a solve could be
   started on a machine it did not fit. `estimate_dense_solve_mb()` now supplies
   the figure the guard reads, at a multiplier taken from those measurements;
   `estimate_dense_matrix_mb()` keeps its own meaning and is no longer what
@@ -89,7 +214,7 @@ one asked, so the version that reaches CRAN is this one.
   disjoint grid, took a median 0.13 of the time of `"jv"` over 64 cells, but
   2.6 times it in the worst. Neither is in the dispatch table, and
   `"auction_scaled"` remains available by name for tied costs.
-  `paper/bench_dispatch_validation.R` holds both grids and their verdicts.
+  `paper/bench/bench_dispatch_validation.R` holds both grids and their verdicts.
 
 * **`full_match()` takes `memory_mode = "implicit"`.** The edge-generation
   loop solved only the one-to-one assignment, because it read assignment
@@ -349,10 +474,11 @@ one asked, so the version that reaches CRAN is this one.
 * **The dense-solve guard's multiplier now covers every peak it is read
   against.** `estimate_dense_solve_mb()` defaulted `solve_factor` to 10, and
   on the memory benchmark a dense one-to-one solve peaked at 10.5 times the
-  raw cell bytes at 5,000 units, so at that size the estimate came in about
-  20 MB under the peak it exists to bound. The default is 12, above the
-  10.5, 7.2 and 8.8 measured at 5,000, 10,000 and 20,000 units. The guard
-  refuses a solve that will not fit, so it has to err high.
+  raw cell bytes at 5,000 units in one run, so at that size the estimate came
+  in about 20 MB under the peak it exists to bound. The default is 12, above
+  every peak measured from 5,000 to 20,000 units, which have fallen between 7
+  and 11 times the raw bytes. The guard refuses a solve that will not fit, so
+  it has to err high.
 
 * **The ball-tree pricing bound now covers the cost source's own evaluation.**
   The bound has to sit below the number `raw_distance()` returns, since the

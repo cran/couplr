@@ -96,7 +96,21 @@
 #'     \item `cardinality` - the report: `n_matched`, `best_possible`, `gap`,
 #'       `gap_fraction`, `certified`, `stopped_on`, `n_nodes`, and the state of
 #'       every stated constraint. See [print.cardinality_report()].
-#'     \item `certificate` - present when the search certified optimality.
+#'     \item `certificate` - present when the search certified optimality, with
+#'       `arithmetic = "exact"`: the bounds, the comparisons between them and
+#'       the matched sample's objective and constraint values it rests on are
+#'       all decided exactly.
+#'     \item `potentials` - the dual potentials of the network solve the
+#'       matched sample came from, a list with elements `left` and `right`
+#'       holding one value per unit, named by id, in distance terms: the
+#'       reduced cost of a pair is its distance less the two, with the tier
+#'       weights and any moment multipliers already folded in. Under
+#'       `engine = "flow"` that solve is the whole problem, and the potentials
+#'       certify the matched sample as its optimum. Under branch and bound it
+#'       is the node the incumbent was read from, with the arcs that node fixed
+#'       and the moment rows priced at its multipliers, and they certify the
+#'       incumbent as that node's optimum; the bound on the whole problem is
+#'       `cardinality$best_possible`. Present when that solve was certified.
 #'     \item `status` - `"optimal"`, `"iteration_limit"`, or `"heuristic"`.
 #'     \item `info$engine` - the engine that answered.
 #'   }
@@ -133,6 +147,13 @@
 #' the answer from the bound when it is not. Every stopping path returns a
 #' matched set that satisfies every stated constraint, together with a bound
 #' valid for the whole problem.
+#'
+#' The certificate carries no tolerance. Each node's bound is the dual
+#' objective of its Lagrangian relaxation evaluated in exact arithmetic, which
+#' weak duality makes a lower bound whatever the solver returned, and the
+#' pruning tests, the constraint values of a matched set and the cardinality
+#' read off the bound are decided exactly, over the distances and constraint
+#' coefficients as stored.
 #'
 #' How long the search runs depends on whether the moment bounds bind. When the
 #' distance-minimizing match already satisfies them, which happens with a loose
@@ -387,7 +408,16 @@ cardinality_match <- function(left, right, vars,
       certified_optimal = TRUE,
       n_matched = report$n_matched,
       best_possible = report$best_possible,
-      gap = report$gap
+      gap = report$gap,
+      arithmetic = "exact"
+    )
+  }
+  if (!is.null(report$potentials)) {
+    result$potentials <- list(
+      left = stats::setNames(as.numeric(report$potentials$u),
+                             as.character(left_ids)),
+      right = stats::setNames(as.numeric(report$potentials$v),
+                              as.character(right_ids))
     )
   }
 
