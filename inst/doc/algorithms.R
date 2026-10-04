@@ -16,9 +16,6 @@ if (!has_viz) {
   message("This vignette requires ggraph, tidygraph, and ggplot2 packages for visualizations.")
 }
 
-# lap_animate() returns an htmlwidget; the animation chunks are gated on it
-has_widgets <- requireNamespace("htmlwidgets", quietly = TRUE)
-
 library(couplr)
 library(tibble)
 
@@ -120,33 +117,9 @@ ggplot(race_data, aes(x = algorithm, y = time_ms, fill = algorithm)) +
     plot.subtitle = element_text(size = 11),
     axis.text.y = element_text(size = 12, face = "bold"),
     axis.text.x = element_text(size = 10),
-    panel.grid.major.y = element_blank(),
-    panel.grid.minor = element_blank(),
+    panel.grid = element_blank(),
     plot.margin = margin(10, 60, 10, 10)
   )
-
-## ----animate-available, eval = TRUE-------------------------------------------
-animated_methods()
-
-## ----animate-hungarian, eval = has_widgets------------------------------------
-set.seed(1)
-cost_hg <- matrix(sample(1:100, 900, replace = TRUE), 30, 30)
-lap_animate(cost_hg, method = "hungarian")
-
-## ----animate-auction, eval = has_widgets--------------------------------------
-set.seed(2)
-cost_a <- matrix(sample(1:100, 900, replace = TRUE), 30, 30)
-lap_animate(cost_a, method = "auction")
-
-## ----animate-gt, eval = has_widgets-------------------------------------------
-set.seed(3)
-cost_gt <- matrix(sample(1:50, 900, replace = TRUE), 30, 30)
-lap_animate(cost_gt, method = "gabow_tarjan")
-
-## ----animate-jv, eval = has_widgets-------------------------------------------
-set.seed(4)
-cost_jv <- matrix(sample(1:100, 900, replace = TRUE), 30, 30)
-lap_animate(cost_jv, method = "jv")
 
 ## ----bipartite-graph, fig.width=7, fig.height=4.5, echo=FALSE, fig.alt="Bipartite graph showing workers on left, jobs on right, with weighted edges and optimal assignment highlighted"----
 # Build graph with tidygraph
