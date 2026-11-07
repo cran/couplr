@@ -3,7 +3,7 @@
 \docType{data}
 \name{hospital_staff}
 \alias{hospital_staff}
-\title{Hospital staff scheduling example dataset}
+\title{Hospital Staff Example Data}
 \format{
 A list containing eight related datasets:
 \describe{
@@ -95,7 +95,7 @@ nurse groups.
 
 The dataset is designed to demonstrate progressively complex scenarios:
 
-\strong{Basic LAP} (\code{vignette("getting-started")}):
+\strong{Basic LAP} (\code{vignette("couplr")}):
 \itemize{
 \item \code{basic_costs}: Simple 10x10 assignment
 \item \code{preferences}: Maximization problem
@@ -146,6 +146,6 @@ match_couples(
 \code{\link{lap_solve}} for basic assignment solving,
 \code{\link{lap_solve_batch}} for batch solving,
 \code{\link{match_couples}} for matching workflows,
-\code{vignette("getting-started")} for introductory tutorial
+\code{vignette("couplr")} for introductory tutorial
 }
 \keyword{datasets}

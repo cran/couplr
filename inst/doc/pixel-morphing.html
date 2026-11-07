@@ -12,7 +12,7 @@
 
 <meta name="author" content="Gilles Colling" />
 
-<meta name="date" content="2026-10-04" />
+<meta name="date" content="2026-11-07" />
 
 <title>Advanced Topics</title>
 
@@ -341,7 +341,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Advanced Topics</h1>
 <h4 class="author">Gilles Colling</h4>
-<h4 class="date">2026-10-04</h4>
+<h4 class="date">2026-11-07</h4>
 
 
 
@@ -366,6 +366,9 @@ max-height: 40px;
 }
 }
 </style>
+<div id="installation" class="section level2">
+<h2>Installation</h2>
+</div>
 <div id="overview" class="section level2">
 <h2>Overview</h2>
 <p>This vignette serves three purposes:</p>
@@ -380,7 +383,7 @@ applies to ecology, physics, and chemistry</p></li>
 <p><strong>This vignette is different</strong>: Unlike the other couplr
 documentation, it emphasizes <em>understanding</em> over <em>doing</em>.
 If you’re looking to solve a matching problem today, start with
-<code>vignette(&quot;getting-started&quot;)</code> or
+<code>vignette(&quot;couplr&quot;)</code> or
 <code>vignette(&quot;matching-workflows&quot;)</code>. Come here when you want to
 understand <em>why</em> these algorithms work and <em>when</em>
 approximations are appropriate.</p>
@@ -391,7 +394,7 @@ developers, curious minds</p>
 <p><strong>Prerequisites</strong>:</p>
 <ul>
 <li><p>Familiarity with <code>lap_solve()</code>
-(<code>vignette(&quot;getting-started&quot;)</code>)</p></li>
+(<code>vignette(&quot;couplr&quot;)</code>)</p></li>
 <li><p>Basic complexity analysis (Big-O notation)</p></li>
 <li><p>Interest in algorithm design or scientific computing</p></li>
 </ul>
@@ -1185,8 +1188,9 @@ FOR c = 1 TO n_clusters DO
 END FOR
 
 RETURN full_tracks</code></pre>
-<p>This yields efficient and robust trajectories even for very dense
-particle fields.</p>
+<p>Each local <code>lap_solve()</code> call then works on the particles
+of one matched cluster pair, which keeps the assignment problems small
+even for very dense particle fields.</p>
 </div>
 <div id="chemistry-molecular-conformation-alignment" class="section level3">
 <h3>Chemistry: Molecular Conformation Alignment</h3>
@@ -1495,8 +1499,7 @@ on problem size and accuracy requirements.</p>
 <div id="see-also" class="section level2">
 <h2>See Also</h2>
 <ul>
-<li><p><code>vignette(&quot;getting-started&quot;)</code> - Basic LAP
-solving</p></li>
+<li><p><code>vignette(&quot;couplr&quot;)</code> - Basic LAP solving</p></li>
 <li><p><code>vignette(&quot;algorithms&quot;)</code> - Mathematical
 foundations</p></li>
 <li><p><code>vignette(&quot;matching-workflows&quot;)</code> - Production matching

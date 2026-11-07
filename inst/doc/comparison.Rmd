@@ -22,6 +22,15 @@ library(dplyr)
 library(ggplot2)
 ```
 
+## Installation
+
+```{r, eval = FALSE}
+install.packages("couplr")            # CRAN
+
+install.packages("pak")               # development version
+pak::pak("gcol33/couplr")
+```
+
 ## Overview
 
 This vignette compares couplr's approach to matching with established R packages:
@@ -397,7 +406,7 @@ cat("  Max |std diff|:", round(balance_dm$overall$max_abs_std_diff, 4), "\n")
 |---------|-------------|--------|
 | **Objective** | Satisfy balance constraints | Minimize total distance (`match_couples()`), or maximize matched cardinality under balance constraints (`cardinality_match()`) |
 | **Balance** | Hard constraint | Achieved via optimization, or stated as a hard constraint |
-| **Solver** | Mixed-integer programming (GLPK, Gurobi) | Linear assignment (JV, Hungarian, etc.), min-cost flow, Lagrangian branch and bound |
+| **Solver** | Mixed-integer programming (GLPK, Gurobi) | Linear assignment (JV, Hungarian, etc.), min-cost flow, branch and bound over unit selections |
 | **Feasibility** | May be infeasible | Always finds a solution |
 | **Fine-grain control** | Moment constraints, cardinality | Caliper, blocking, fine and refined balance, moment constraints |
 | **Speed** | Slower (MIP) | Faster (LAP) |
@@ -832,7 +841,7 @@ For comparison, optimal matching would require full distance matrix computation 
 
 ## See Also
 
-- `vignette("getting-started")` - Basic couplr usage
+- `vignette("couplr")` - Basic couplr usage
 
 - `vignette("matching-workflows")` - Production matching pipelines
 

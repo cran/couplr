@@ -9,6 +9,12 @@ knitr::opts_chunk$set(
 library(couplr)
 library(dplyr)
 
+## ----eval = FALSE-------------------------------------------------------------
+# install.packages("couplr")            # CRAN
+# 
+# install.packages("pak")               # development version
+# pak::pak("gcol33/couplr")
+
 ## ----error=TRUE---------------------------------------------------------------
 try({
 # This fails: all assignments have Inf cost

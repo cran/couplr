@@ -19,6 +19,12 @@ ext_demo <- function(...) {
   file.path("images", filename)
 }
 
+## ----eval = FALSE-------------------------------------------------------------
+# install.packages("couplr")            # CRAN
+# 
+# install.packages("pak")               # development version
+# pak::pak("gcol33/couplr")
+
 ## ----all-inputs, results='asis', echo=FALSE-----------------------------------
 real_A   <- ext_demo("work",  "ImageA_80.png")
 real_B   <- ext_demo("work",  "ImageB_80.png")

@@ -20,7 +20,7 @@
 
 namespace lap {
 
-LapResult solve_push_relabel(const CostMatrix& cost, bool maximize) {
+LapResult solve_push_relabel(CostMatrix cost, bool maximize) {
     const int n = static_cast<int>(cost.nrow);
     const int m = static_cast<int>(cost.ncol);
 
@@ -86,21 +86,7 @@ LapResult solve_push_relabel(const CostMatrix& cost, bool maximize) {
             static_cast<int>(rc.second);
     }
 
-    double total = 0.0;
-    for (int i = 0; i < n; ++i) {
-        const int j = assignment[static_cast<std::size_t>(i)];
-        if (j < 0) {
-            LAP_THROW_INFEASIBLE("Could not find full matching");
-        }
-        if (!cost.allowed(i, j)) {
-            LAP_THROW_INFEASIBLE("Chosen forbidden edge");
-        }
-        const double c = cost.at(i, j);
-        if (!std::isfinite(c)) {
-            LAP_THROW_INFEASIBLE("Chosen edge has non-finite cost");
-        }
-        total += c;
-    }
+    const double total = priced_total(cost, false, assignment);
 
     return LapResult(std::move(assignment), total, "optimal");
 }

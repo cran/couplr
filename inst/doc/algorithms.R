@@ -82,6 +82,12 @@ theme_diagram <- function() {
     )
 }
 
+## ----eval = FALSE-------------------------------------------------------------
+# install.packages("couplr")            # CRAN
+# 
+# install.packages("pak")               # development version
+# pak::pak("gcol33/couplr")
+
 ## ----the-race, echo=FALSE, fig.width=9, fig.height=5, fig.alt="Six algorithms solving the same 500 by 500 assignment problem, from Munkres, the slowest, to Jonker-Volgenant, the fastest"----
 race_data <- data.frame(
   algorithm = factor(unname(race_methods), levels = unname(race_methods)),

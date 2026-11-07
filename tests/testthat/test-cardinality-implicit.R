@@ -24,7 +24,10 @@ expect_cardinality_agrees <- function(left, right, vars, ...) {
                                              memory_mode = "implicit", ...))
   expect_identical(cardinality_key(loop), cardinality_key(dense))
   expect_equal(loop$info$total_distance, dense$info$total_distance, tolerance = 1e-9)
-  expect_identical(loop$cardinality$certified, dense$cardinality$certified)
+  expect_identical(loop$cardinality$certified, dense$cardinality$certified,
+                   info = paste(capture.output(str(list(
+                     dense = dense$cardinality, implicit = loop$cardinality))),
+                     collapse = "\n"))
   expect_identical(loop$cardinality$n_matched, dense$cardinality$n_matched)
   invisible(list(dense = dense, loop = loop))
 }
@@ -64,11 +67,18 @@ test_that("moment constraints searched by branch and bound reach the dense set",
   left <- cardinality_units(30, 104, shift = 1)
   right <- cardinality_units(250, 105)
   vars <- c("x", "y")
+  # Under a budget the two searches may part ways, since their cuts come from
+  # different but equally valid potentials; once each settles, the optimum is
+  # unique and both return it.
   root <- expect_cardinality_agrees(left, right, vars, max_std_diff = 0.1,
-                                    node_limit = 25L)
-  expect_identical(root$loop$cardinality$stopped_on, root$dense$cardinality$stopped_on)
-  expect_cardinality_agrees(left, right, vars, fine = "region",
-                            moments = c(x = 0.05), node_limit = 25L)
+                                    node_limit = 5000L, time_limit = Inf)
+  expect_identical(root$loop$cardinality$stopped_on, "optimality")
+  expect_identical(root$dense$cardinality$stopped_on, "optimality")
+  both <- expect_cardinality_agrees(left, right, vars, fine = "region",
+                                    moments = c(x = 0.05), node_limit = 5000L,
+                                    time_limit = Inf)
+  expect_identical(both$loop$cardinality$stopped_on, "optimality")
+  expect_identical(both$dense$cardinality$stopped_on, "optimality")
 })
 
 test_that("the heuristic engine declines the implicit mode", {

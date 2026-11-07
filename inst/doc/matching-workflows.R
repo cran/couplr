@@ -9,6 +9,12 @@ library(couplr)
 library(dplyr)
 library(ggplot2)
 
+## ----eval = FALSE-------------------------------------------------------------
+# install.packages("couplr")            # CRAN
+# 
+# install.packages("pak")               # development version
+# pak::pak("gcol33/couplr")
+
 ## ----basic-example------------------------------------------------------------
 # Simulate observational data
 set.seed(123)
@@ -911,7 +917,7 @@ card_result <- cardinality_match(
   auto_scale = TRUE
 )
 
-card_result$cardinality
+card_result
 
 ## ----cardinality-moments------------------------------------------------------
 card_bb <- cardinality_match(
@@ -920,11 +926,12 @@ card_bb <- cardinality_match(
   vars = c("age", "income"),
   max_std_diff = 0.1,
   node_limit = 10L,
+  time_limit = Inf,
   scale = "standardize"
 )
 
-card_bb$cardinality
-card_bb$cardinality$constraints
+glance(card_bb)
+summary(card_bb)
 
 ## ----cardinality-heuristic----------------------------------------------------
 card_heur <- cardinality_match(

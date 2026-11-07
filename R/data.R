@@ -1,4 +1,4 @@
-#' Example cost matrices for assignment problems
+#' Example Cost Matrices
 #'
 #' Small example datasets for demonstrating couplr functionality across
 #' different assignment problem types: square, rectangular, sparse, and binary.
@@ -83,7 +83,7 @@ example_costs <- list(
   ), nrow = 3, byrow = TRUE)
 )
 
-#' Example assignment problem data frame
+#' Example Assignment Data Frame
 #'
 #' A tidy data frame representation of assignment problems, suitable for
 #' use with grouped workflows and batch solving. Contains two independent
@@ -160,7 +160,7 @@ example_df <- tibble::tibble(
   )
 )
 
-#' Hospital staff scheduling example dataset
+#' Hospital Staff Example Data
 #'
 #' A comprehensive example dataset for demonstrating couplr functionality
 #' across vignettes. Contains synthetic hospital staff scheduling data with
@@ -248,7 +248,7 @@ example_df <- tibble::tibble(
 #' @details
 #' The dataset is designed to demonstrate progressively complex scenarios:
 #'
-#' \strong{Basic LAP} (\code{vignette("getting-started")}):
+#' \strong{Basic LAP} (\code{vignette("couplr")}):
 #' \itemize{
 #'   \item \code{basic_costs}: Simple 10x10 assignment
 #'   \item \code{preferences}: Maximization problem
@@ -298,6 +298,6 @@ example_df <- tibble::tibble(
 #' \code{\link{lap_solve}} for basic assignment solving,
 #' \code{\link{lap_solve_batch}} for batch solving,
 #' \code{\link{match_couples}} for matching workflows,
-#' \code{vignette("getting-started")} for introductory tutorial
+#' \code{vignette("couplr")} for introductory tutorial
 #'
 "hospital_staff"

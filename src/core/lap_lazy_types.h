@@ -166,10 +166,10 @@ public:
     }
 
     const double* left_row(int64_t i) const {
-        return &left_[static_cast<size_t>(i * n_vars_)];
+        return left_.data() + static_cast<size_t>(i * n_vars_);
     }
     const double* right_row(int64_t j) const {
-        return &right_[static_cast<size_t>(j * n_vars_)];
+        return right_.data() + static_cast<size_t>(j * n_vars_);
     }
 
 private:
@@ -178,8 +178,8 @@ private:
     }
 
     double raw_distance(int64_t i, int64_t j) const {
-        const double* li = &left_[static_cast<size_t>(i * n_vars_)];
-        const double* rj = &right_[static_cast<size_t>(j * n_vars_)];
+        const double* li = left_.data() + static_cast<size_t>(i * n_vars_);
+        const double* rj = right_.data() + static_cast<size_t>(j * n_vars_);
 
         switch (metric_) {
             case DistanceMetric::Euclidean: {
@@ -208,7 +208,11 @@ private:
             case DistanceMetric::Chebyshev: {
                 double s = 0.0;
                 for (int64_t k = 0; k < n_vars_; ++k) {
-                    s = std::max(s, std::abs(li[k] - rj[k]));
+                    // std::max drops a NaN operand, so a missing coordinate
+                    // is returned rather than passed over.
+                    const double d = std::abs(li[k] - rj[k]);
+                    if (std::isnan(d)) return d;
+                    s = std::max(s, d);
                 }
                 return s;
             }
@@ -219,7 +223,7 @@ private:
                     double diff_a = li[a] - rj[a];
                     if (diff_a == 0.0) continue;
                     double row_sum = 0.0;
-                    const double* inv_row = &inv_cov_[static_cast<size_t>(a * n_vars_)];
+                    const double* inv_row = inv_cov_.data() + static_cast<size_t>(a * n_vars_);
                     for (int64_t b = 0; b < n_vars_; ++b) {
                         row_sum += inv_row[b] * (li[b] - rj[b]);
                     }

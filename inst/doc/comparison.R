@@ -9,6 +9,12 @@ library(couplr)
 library(dplyr)
 library(ggplot2)
 
+## ----eval = FALSE-------------------------------------------------------------
+# install.packages("couplr")            # CRAN
+# 
+# install.packages("pak")               # development version
+# pak::pak("gcol33/couplr")
+
 ## -----------------------------------------------------------------------------
 set.seed(42)
 
