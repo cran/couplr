@@ -1,3 +1,180 @@
+# couplr 2.0.0
+
+## Classes and methods
+
+* **print() is the short form for the remaining assignment results.**
+  `print()` of a `lap_solve_kbest_result`, a `bottleneck_result` and a
+  `lap_line_metric_result` gives the number of solutions or assigned rows and
+  the objective in two or three lines; `summary()` lists the solutions or the
+  assignments, and `as.data.frame()` or `tibble::as_tibble()` of a k-best
+  result gives every assignment.
+
+* **`assignment_duals_result` has its own `potentials()` and `certificate()`
+  methods**, so `methods(class = "assignment_duals_result")` lists them beside
+  `print()`, `summary()` and `as.data.frame()`.
+
+* **`compute_distances()` returns the class `"distance_object"` alone.** The
+  second class `"couplr_distance"` carried no methods and is gone.
+
+* **Help pages are named after the class or function they document.** The
+  pages of the matching results and of `sensitivity_analysis()` appear in the
+  help index as `couplr_result` and `sensitivity_analysis`.
+
+## Messages
+
+* **Warnings are one or two factual lines.** The warnings about constant
+  variables, zero or identical distances, skewed distances, low match rates,
+  distant pairs and missing parallel packages state what was found, without
+  lists of suggestions; the error for a problem without admissible pairs
+  likewise.
+
+## Bug fixes
+
+* **A named solver that a memory mode cannot run is an error in
+  `match_couples()`.** `method = "hungarian"` or a solver added with
+  `register_lap_solver()` under `memory_mode = "implicit"` or `"lazy"` was
+  answered by the package's own flow solver without a certificate and without
+  a message, because the error `assignment()` raises for such a call was read
+  as a problem without a complete matching. The call now stops with that
+  error. `"jv"` and `"auction"` run in lazy mode as before.
+
+* **A registered solver's result reads `"optimal"` only when that was
+  proved.** A solver added with `register_lap_solver()` that returned a
+  matching the certificate found not optimal still had `status = "optimal"`,
+  so `print()` of the matching said `optimal` above `Certified optimal: no`.
+  The status is now `"optimal"` when the certificate proved the answer, or,
+  with `certify = FALSE`, when the solver returned that status itself, and
+  `"heuristic"` otherwise. `match_couples()` passes the status of its solve
+  on, so a matching reports no more than its solver did.
+
+* **The summary of an exact certificate reports its equalities as exact.**
+  `summary()` of an `assignment_certificate` decided in exact arithmetic
+  printed `max slack` and `duality_gap` of the double precision potentials
+  the check was given, which can be of the order of 1e-15, beside
+  `exact, no tolerance`. The two conditions and the gap now read `(exact)`,
+  and when the certificate rests on recovered potentials the values of the
+  doubles are printed on their own line, `potentials given`.
+
+* **`potentials()` returns the potentials of every certified solve.** With
+  `certify = TRUE`, a solver that returns no potentials (`"auction"`,
+  `"csa"`, `"bruteforce"` and others) was certified against optimal
+  potentials that were then dropped, and `potentials()` gave `NULL`. The
+  result now carries them.
+
+* **A distance function is held to the shape of the problem in dense mode.**
+  A function passed as `distance` that returned a matrix of another size, or
+  the transposed one, was accepted in dense mode and gave a matching of the
+  wrong units; lazy and implicit mode already stopped. Dense mode now stops
+  with the same message, and with its own when the function returns
+  something other than a numeric matrix.
+
+* **`full_match()` ends exactly optimal.** The flow solver compares doubles
+  and could stop on a flow that a residual cycle of exactly negative cost
+  still improved, by less than its tolerance; no exact potentials existed for
+  that flow, and its certificate fell back to the tolerance. This depended on
+  the platform: the job-training example gave an exact certificate on x86_64
+  and a tolerance certificate on Apple silicon. The dense solve now cancels
+  each such cycle in exact arithmetic before the groups are read and the flow
+  is certified, as cardinality matching and the implicit loop already did, so
+  the flow certificate of a full matching is exact on every platform.
+
+* **The built-in distances are the same bits on every platform.** The means,
+  standard deviations and covariance behind `scale` and
+  `distance = "mahalanobis"` came from `colMeans()`, `sd()`, `cov()`, `chol()`
+  and `chol2inv()`, which accumulate in long double where the platform has
+  one and call its LAPACK, and the compiled distance of a pair was fused into
+  multiply-add instructions on Apple silicon. Distances therefore differed
+  from about the 15th significant digit between x86_64 and arm64, enough for
+  the solver to return another of several equally good matchings and for an
+  estimate computed on the matched sample to change. The scaling statistics
+  (`"standardize"`, `"range"`, `"robust"`), the pooled covariance, its
+  Cholesky factor and inverse, and the distance of a pair are now computed by
+  one set of C++ routines in double arithmetic with a fixed order of
+  summation and without fused multiply-add, shared by the dense matrix, the
+  lazy cost source and the implicit loop. Distances agree with those of
+  earlier versions to rounding, not to the last bit. A covariance matrix is
+  reported as singular from the exact condition number of its Cholesky
+  factor, where LAPACK's estimate was used; a user-supplied `sigma` that is
+  not symmetric is read as its symmetric part.
+
+* **Moment constraints, reported totals and the scaling choice use the same
+  arithmetic.** The pooled spread a `max_std_diff` or `moments` bound of
+  `cardinality_match()` is divided by, the values of the constraint rows, the
+  balance diagnostics built on the same moments, `total_distance` and
+  `mean_distance` of every design, the duals read from an exact certificate,
+  and the mean, standard deviation and skewness behind `auto_scale` and the
+  variable checks were taken with `sum()`, `mean()`, `sd()` and `rowSums()`,
+  whose last digits depend on the platform. They are now sums in index order
+  in doubles, so a printed total is the same digits on every platform and a
+  statistic sitting at a threshold falls on the same side everywhere.
+
+* **The selection search of `cardinality_match()` returns the same units on
+  every platform.** With identical inputs the first linear programme of the
+  search ended on the same value and bound on x86_64 and on Apple silicon but
+  on another optimal point, because its pivots were fused into multiply-add
+  instructions on arm64; a search stopped by `node_limit` then returned
+  another matching. The search is compiled without fused multiply-add.
+
+* **`full_match(caliper_sd = )` takes the same caliper in every memory
+  mode.** The standard deviation of the distances was `sd()` of the matrix in
+  the dense path and a running sum in long double in the implicit path. Both
+  now read the pairs in the same order through one running sum in doubles.
+
+* **An error of the solver reaches the caller of `match_couples()`.** The
+  dense path took any error of the solve as the sign that the restrictions
+  admit no complete matching, solved a padded problem instead and, when that
+  failed too, returned a greedy matching with a warning about the cost range.
+  A registered solver that stopped, or returned a malformed result, was
+  hidden that way. Whether a complete matching exists is now decided by
+  Hall's condition on the admissible pairs before the solve.
+
+* **The certificate of a partial matching covers the units that can be
+  matched.** With `certify = TRUE` and restrictions that leave some left
+  units without any admissible partner, the certificate is the one of the
+  assignment problem over the remaining units and proves the matching optimal
+  among their matchings. When even those units cannot all be matched,
+  `match_couples()` returns the largest matching and the cheapest among
+  those, and attached the certificate of the padded problem it solved to find
+  it, whose cost was not the total distance of the matching returned.
+  `certificate()` is now `NULL` for such a result. The rule holds in every
+  memory mode and in `match_path()`: under `memory_mode = "lazy"` and
+  `"implicit"` the units without an admissible partner are found by reading
+  the distances without storing them, and the problem over the remaining
+  units is solved by the same solver or edge-generation loop, which
+  certifies it; a point of `match_path()` too tight for a complete matching
+  is answered the same way, so its `certified` column agrees with
+  `match_couples()` at that value. Before, both returned the largest
+  matching without a certificate whenever some unit had no partner. The
+  certificate of such a matching carries `scope`, the ids of the units it
+  covers, and `print()` and `summary()` of the certificate and of the result
+  name them.
+
+* **`match_couples()` on a distance object returns the certificate it was
+  asked for.** With `certify = TRUE` the solve was certified, but the
+  certificate, the implicit loop's search record and Hall's witness stayed
+  on the solver's result and never reached the matching, so
+  `certificate()` returned `NULL`. They are carried as on a data-frame call.
+
+* **A registered solver that assigns one column to several rows is refused.**
+  `assignment()` stops with an error that names the solver, as it does for
+  the other malformed results.
+
+# couplr 1.9.1
+
+## Bug fixes
+
+* **Certified dense and lazy solves end exactly optimal.** The assignment
+  solvers compare doubles, and on costs whose differences sit below their
+  rounding they could stop on a matching that an alternating cycle of exactly
+  negative cost still improved; no exact potentials existed for it, and its
+  certificate fell back to the tolerance. `assignment(certify = TRUE)`,
+  `assignment_duals(certify = TRUE)` and `match_couples(certify = TRUE)` now
+  apply each such improvement in exact arithmetic before certifying, as the
+  implicit loop has since 1.8.1, so a certified optimal matching is exactly
+  optimal on the stored costs and its certificate is exact on every platform.
+  A matching suboptimal by more than rounding, as a registered heuristic may
+  return, is left as it came and its certificate reports it.
+
 # couplr 1.9.0
 
 ## Classes, methods and accessors

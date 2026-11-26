@@ -124,6 +124,15 @@
 #'   costs one pass over the admissible pairs; elsewhere it costs the solve
 #'   [verify_assignment()] runs to get them. A solve that did not reach a
 #'   complete optimal matching has nothing to certify and gets no certificate.
+#'   The solvers compare doubles, and on costs whose differences sit below
+#'   their rounding one can stop on a matching that an alternating cycle of
+#'   exactly negative cost still improves. A matching optimal within the
+#'   tolerance but not exactly is therefore improved in exact arithmetic until
+#'   it is exactly optimal, and `match`, `total_cost`, `u` and `v` then
+#'   describe the improved matching, so a certified optimal matching always
+#'   carries an exact certificate. A matching suboptimal by more than rounding,
+#'   as a registered heuristic may return, is left as it came and its
+#'   certificate says so.
 #' @param cardinality How many pairs to produce.
 #'   \itemize{
 #'     \item `"complete"` (default) — every row is matched; an input admitting
@@ -389,7 +398,9 @@ assignment <- function(cost, maximize = FALSE,
     out$u <- duals$u
     out$v <- duals$v
   }
-  .attach_certificate(out, cost, maximize, do_certify)
+  out <- .attach_certificate(out, cost, maximize, do_certify)
+  if (solver$builtin) out else
+    .registered_status(out, claimed = !is.null(res_raw$status))
 }
 
 # The duals a solver returned, in the caller's orientation, or NULL for a solver
@@ -421,7 +432,32 @@ assignment <- function(cost, maximize = FALSE,
   if (!identical(out$status, "optimal")) {
     return(out)
   }
-  out$certificate <- verify_assignment(out, cost, maximize = maximize)
+  .certify_result(out, cost, maximize)
+}
+
+# The certificate of a solve result, attached. A matching optimal to within the
+# tolerance but not exactly is one the solver's doubles stopped on with an
+# exactly negative improvement left below their rounding; it is made exactly
+# optimal and the certificate read on the repaired matching. A matching that
+# fails even the tolerance reading is suboptimal by more than rounding, and the
+# certificate reports it as it came.
+.certify_result <- function(out, cost, maximize) {
+  # A solver that returns no potentials is certified against optimal ones
+  # computed here, and the result carries them as it would the solver's own.
+  if (is.null(out[["u"]]) || is.null(out[["v"]])) {
+    duals <- .certify_solve_duals(cost, maximize)
+    out$u <- duals$u
+    out$v <- duals$v
+  }
+  cert <- verify_assignment(out, cost, maximize = maximize)
+  if (isTRUE(cert$certified_optimal) && !isTRUE(cert$exact_certificate)) {
+    repaired <- .exact_assignment(out, cost, maximize)
+    if (!identical(repaired$match, out$match)) {
+      out <- repaired
+      cert <- verify_assignment(out, cost, maximize = maximize)
+    }
+  }
+  out$certificate <- cert
   out
 }
 
@@ -442,6 +478,8 @@ assignment <- function(cost, maximize = FALSE,
     stop("maximize must be TRUE or FALSE", call. = FALSE)
   }
 
+  .check_spec_method(method, "lazy")
+
   # `method` may still be the full default-enumeration vector from
   # assignment()'s signature if the caller didn't pass one explicitly.
   if (length(method) > 1 || identical(method, "ssp")) method <- "auto"
@@ -450,11 +488,6 @@ assignment <- function(cost, maximize = FALSE,
   # heuristic (range()/na_rate in assignment()); default to "jv", matching
   # that heuristic's own "otherwise: jv" fallback for the common case.
   if (identical(method, "auto")) method <- "jv"
-
-  if (!.lap_solver(method)$lazy) {
-    stop("method = \"", method, "\" does not support memory_mode = \"lazy\" yet; ",
-         "use \"jv\", \"auction\", or memory_mode = \"dense\".", call. = FALSE)
-  }
 
   n0 <- cost$n_left
   m0 <- cost$n_right
@@ -894,19 +927,17 @@ lap_solve_line_metric <- function(x, y, cost = "L1", maximize = FALSE) {
 
 #' @export
 print.lap_line_metric_result <- function(x, ...) {
-  cat("1-D Line Assignment Result\n")
-  cat("===========================\n\n")
-  
-  n <- length(x$match)
-  cat("Assignments (1-based):\n")
-  for (i in seq_len(min(n, 10))) {
-    cat(sprintf("  Source %d -> Target %d\n", i, x$match[i]))
-  }
-  if (n > 10) {
-    cat(sprintf("  ... (%d more assignments)\n", n - 10))
-  }
-  
-  cat("\nTotal cost:", x$total_cost, "\n")
+  .assignment_overview(x, "1-D Line Assignment Result",
+                       "total cost", x$total_cost)
+}
+
+# The short form shared by the print methods of the assignment results whose
+# summary() lists every assignment.
+.assignment_overview <- function(x, title, objective_label, objective) {
+  cat(title, "\n", sep = "")
+  cat(sum(x$match > 0L), " of ", length(x$match), " rows assigned, ",
+      objective_label, " ", format(objective), "\n", sep = "")
+  if (!is.null(x[["status"]])) cat("Status:", x[["status"]], "\n")
   invisible(x)
 }
 
@@ -1046,22 +1077,8 @@ bottleneck_assignment <- function(cost, maximize = FALSE) {
 
 #' @export
 print.bottleneck_result <- function(x, ...) {
-  cat("Bottleneck Assignment Result\n")
-  cat("============================\n\n")
-
-  n <- length(x$match)
-  cat("Assignments (1-based indices):\n")
-  for (i in seq_len(min(n, 10))) {
-    cat(sprintf("  Row %d -> Column %d\n", i, x$match[i]))
-  }
-  if (n > 10) {
-    cat(sprintf("  ... (%d more assignments)\n", n - 10))
-  }
-
-  cat("\nBottleneck value:", x$bottleneck, "\n")
-  cat("Status:", x$status, "\n")
-
-  invisible(x)
+  .assignment_overview(x, "Bottleneck Assignment Result",
+                       "bottleneck value", x$bottleneck)
 }
 
 #' @rdname bottleneck_assignment
@@ -1410,7 +1427,7 @@ assignment_duals <- function(cost, maximize = FALSE, certify = FALSE) {
   if (certify) {
     # verify_assignment() reads the duals off `out` rather than solving again,
     # which is what makes the check an added pass and not an added solve.
-    out$certificate <- verify_assignment(out, cost, maximize = maximize)
+    out <- .certify_result(out, cost, maximize)
   }
   out
 }

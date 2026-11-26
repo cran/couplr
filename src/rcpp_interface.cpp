@@ -279,6 +279,49 @@ double cpp_lazy_distance_sd(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix ri
 }
 
 // [[Rcpp::export]]
+double cpp_finite_sd(Rcpp::NumericMatrix x) {
+  return finite_sd_impl(x);
+}
+
+// [[Rcpp::export]]
+double cpp_plain_sum(Rcpp::NumericVector x) {
+  return plain_sum_impl(x);
+}
+
+// [[Rcpp::export]]
+double cpp_plain_mean(Rcpp::NumericVector x) {
+  return plain_mean_impl(x);
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericVector cpp_plain_row_sums(Rcpp::NumericMatrix x) {
+  return plain_row_sums_impl(x);
+}
+
+// [[Rcpp::export]]
+Rcpp::List cpp_weighted_moments(Rcpp::NumericVector x, Rcpp::NumericVector w) {
+  return weighted_moments_impl(x, w);
+}
+
+// [[Rcpp::export]]
+Rcpp::NumericMatrix cpp_group_covariance(Rcpp::NumericMatrix left_mat,
+                                         Rcpp::NumericMatrix right_mat) {
+  return group_covariance_impl(left_mat, right_mat);
+}
+
+// [[Rcpp::export]]
+SEXP cpp_precision_matrix(Rcpp::NumericMatrix cov_mat) {
+  return precision_matrix_impl(cov_mat);
+}
+
+// [[Rcpp::export]]
+Rcpp::List cpp_scaling_statistics(Rcpp::NumericMatrix left_mat,
+                                  Rcpp::NumericMatrix right_mat,
+                                  std::string method) {
+  return scaling_statistics_impl(left_mat, right_mat, method);
+}
+
+// [[Rcpp::export]]
 Rcpp::List cpp_lap_solve_auction_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat,
                                       SEXP metric, Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
                                       double max_distance, Rcpp::List calipers,
@@ -312,6 +355,23 @@ Rcpp::List lap_certify_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix ri
 }
 
 // [[Rcpp::export]]
+Rcpp::List lap_exact_assignment_dense(Rcpp::NumericMatrix cost, Rcpp::IntegerVector match,
+                                      Rcpp::NumericVector v_hint, bool maximize) {
+  return exact_assignment_dense_impl(cost, match, v_hint, maximize);
+}
+
+// [[Rcpp::export]]
+Rcpp::List lap_exact_assignment_lazy(Rcpp::NumericMatrix left_mat,
+                                     Rcpp::NumericMatrix right_mat, SEXP distance,
+                                     Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
+                                     double max_distance, Rcpp::List calipers,
+                                     Rcpp::IntegerVector match,
+                                     Rcpp::NumericVector v_hint, bool maximize) {
+  return exact_assignment_lazy_impl(left_mat, right_mat, distance, inv_cov, max_distance,
+                                    calipers, match, v_hint, maximize);
+}
+
+// [[Rcpp::export]]
 Rcpp::List lap_scan_reduced_costs(Rcpp::NumericMatrix cost, Rcpp::NumericVector u,
                                   Rcpp::NumericVector v, double tol) {
   return scan_reduced_costs_impl(cost, u, v, tol);
@@ -329,6 +389,17 @@ Rcpp::List lap_hall_witness_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatr
                                  double max_distance, Rcpp::List calipers) {
   return hall_witness_lazy_impl(left_mat, right_mat, distance, inv_cov,
                                 max_distance, calipers);
+}
+
+// The lazy counterpart of lap_cost_margins(): which rows and columns of a
+// specification carry an admissible pair, read without storing any pair.
+// [[Rcpp::export]]
+Rcpp::List lap_cost_margins_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat,
+                                 SEXP distance,
+                                 Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov,
+                                 double max_distance, Rcpp::List calipers) {
+  return admissible_margins_lazy_impl(left_mat, right_mat, distance, inv_cov,
+                                      max_distance, calipers);
 }
 
 // [[Rcpp::export]]

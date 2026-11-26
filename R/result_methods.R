@@ -63,6 +63,7 @@
 #' summary(m)
 #'
 #' @name couplr_result
+#' @order 1
 NULL
 
 #' Certificate, Potentials and Unmatched Units of a Result
@@ -79,7 +80,14 @@ NULL
 #'   balance, and distance stages and the constraint report.
 #' * `potentials()` returns the dual potentials as a list with elements
 #'   `left` and `right` (named by unit id) for a matching, or `u` and `v` for
-#'   an assignment of a cost matrix; `NULL` when the solver returned none.
+#'   an assignment of a cost matrix; `NULL` when the solver returned none and
+#'   no certificate was computed. A certified solve by a solver without
+#'   potentials carries the ones its certificate was checked against.
+#'   The values are double precision numbers. An exact certificate that reads
+#'   `recovered potentials` was decided on potentials that doubles cannot
+#'   hold; the certificate returns them as `exact_u` and `exact_v` (see
+#'   [verify_assignment()]), and the doubles of `potentials()` then meet the
+#'   conditions to rounding.
 #' * `unmatched_units()` returns the ids of the unmatched units as a list with
 #'   elements `left` and `right`, or the unmatched row indices of an
 #'   assignment.
@@ -192,6 +200,12 @@ potentials.lap_solve_result <- function(x, ...) {
   if (is.null(metadata$u) || is.null(metadata$v)) NULL else
     list(u = metadata$u, v = metadata$v)
 }
+
+#' @export
+potentials.assignment_duals_result <- function(x, ...) NextMethod()
+
+#' @export
+certificate.assignment_duals_result <- function(x, ...) NextMethod()
 
 #' @export
 unmatched_units.lap_solve_result <- function(x, ...) .assignment_metadata(x)$unmatched
@@ -325,7 +339,7 @@ as.data.frame.couplr_result <- function(x, row.names = NULL, optional = FALSE,
 .fmt_count <- function(x) format(x, big.mark = ",", scientific = FALSE, trim = TRUE)
 
 # The overview lines shared by print() and summary().
-.overview_lines <- function(g) {
+.overview_lines <- function(g, scope = NULL) {
   lines <- character()
   add <- function(label, value) {
     lines[[length(lines) + 1L]] <<- sprintf("  %-19s %s", paste0(label, ":"), value)
@@ -344,7 +358,8 @@ as.data.frame.couplr_result <- function(x, row.names = NULL, optional = FALSE,
     add("Size bound", sprintf("%s (gap %s)", .fmt_count(g$best_possible), g$gap))
   }
   if (!is.na(g$certified)) {
-    add("Certified optimal", if (g$certified) "yes" else "no")
+    add("Certified optimal", if (!g$certified) "no" else if (is.null(scope))
+      "yes" else paste0("yes, over ", .scope_text(scope)))
   }
   if (has("n_rounds")) {
     add("Pairs generated", sprintf("%s of %s in %d rounds",
@@ -364,7 +379,7 @@ as.data.frame.couplr_result <- function(x, row.names = NULL, optional = FALSE,
 print.couplr_result <- function(x, ...) {
   g <- glance(x)
   cat(.header_line(g), "\n", sep = "")
-  cat(.overview_lines(g), sep = "\n")
+  cat(.overview_lines(g, x$certificate$scope), sep = "\n")
   invisible(x)
 }
 
@@ -397,7 +412,7 @@ summary.couplr_result <- function(object, ...) {
 print.summary.couplr_result <- function(x, ...) {
   g <- x$glance
   cat(.header_line(g), "\n", sep = "")
-  cat(.overview_lines(g), sep = "\n")
+  cat(.overview_lines(g, x$certificate$scope), sep = "\n")
   if (!is.null(x$distances)) {
     cat("\nPair distances (quantiles):\n")
     q <- x$distances

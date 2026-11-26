@@ -45,6 +45,38 @@ cpp_lazy_distance_sd <- function(left_mat, right_mat, metric, inv_cov) {
     .Call(`_couplr_cpp_lazy_distance_sd`, left_mat, right_mat, metric, inv_cov)
 }
 
+cpp_finite_sd <- function(x) {
+    .Call(`_couplr_cpp_finite_sd`, x)
+}
+
+cpp_plain_sum <- function(x) {
+    .Call(`_couplr_cpp_plain_sum`, x)
+}
+
+cpp_plain_mean <- function(x) {
+    .Call(`_couplr_cpp_plain_mean`, x)
+}
+
+cpp_plain_row_sums <- function(x) {
+    .Call(`_couplr_cpp_plain_row_sums`, x)
+}
+
+cpp_weighted_moments <- function(x, w) {
+    .Call(`_couplr_cpp_weighted_moments`, x, w)
+}
+
+cpp_group_covariance <- function(left_mat, right_mat) {
+    .Call(`_couplr_cpp_group_covariance`, left_mat, right_mat)
+}
+
+cpp_precision_matrix <- function(cov_mat) {
+    .Call(`_couplr_cpp_precision_matrix`, cov_mat)
+}
+
+cpp_scaling_statistics <- function(left_mat, right_mat, method) {
+    .Call(`_couplr_cpp_scaling_statistics`, left_mat, right_mat, method)
+}
+
 cpp_lap_solve_auction_lazy <- function(left_mat, right_mat, metric, inv_cov, max_distance, calipers, maximize, eps = NULL) {
     .Call(`_couplr_cpp_lap_solve_auction_lazy`, left_mat, right_mat, metric, inv_cov, max_distance, calipers, maximize, eps)
 }
@@ -57,6 +89,14 @@ lap_certify_lazy <- function(left_mat, right_mat, distance, inv_cov, max_distanc
     .Call(`_couplr_lap_certify_lazy`, left_mat, right_mat, distance, inv_cov, max_distance, calipers, match, u, v, maximize, tol, arithmetic, exact)
 }
 
+lap_exact_assignment_dense <- function(cost, match, v_hint, maximize) {
+    .Call(`_couplr_lap_exact_assignment_dense`, cost, match, v_hint, maximize)
+}
+
+lap_exact_assignment_lazy <- function(left_mat, right_mat, distance, inv_cov, max_distance, calipers, match, v_hint, maximize) {
+    .Call(`_couplr_lap_exact_assignment_lazy`, left_mat, right_mat, distance, inv_cov, max_distance, calipers, match, v_hint, maximize)
+}
+
 lap_scan_reduced_costs <- function(cost, u, v, tol) {
     .Call(`_couplr_lap_scan_reduced_costs`, cost, u, v, tol)
 }
@@ -67,6 +107,10 @@ lap_hall_witness_dense <- function(cost) {
 
 lap_hall_witness_lazy <- function(left_mat, right_mat, distance, inv_cov, max_distance, calipers) {
     .Call(`_couplr_lap_hall_witness_lazy`, left_mat, right_mat, distance, inv_cov, max_distance, calipers)
+}
+
+lap_cost_margins_lazy <- function(left_mat, right_mat, distance, inv_cov, max_distance, calipers) {
+    .Call(`_couplr_lap_cost_margins_lazy`, left_mat, right_mat, distance, inv_cov, max_distance, calipers)
 }
 
 lap_kbest_murty <- function(cost, k, maximize, single_method = "jv") {

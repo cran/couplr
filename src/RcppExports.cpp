@@ -156,6 +156,98 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_finite_sd
+double cpp_finite_sd(Rcpp::NumericMatrix x);
+RcppExport SEXP _couplr_cpp_finite_sd(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_finite_sd(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_plain_sum
+double cpp_plain_sum(Rcpp::NumericVector x);
+RcppExport SEXP _couplr_cpp_plain_sum(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_plain_sum(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_plain_mean
+double cpp_plain_mean(Rcpp::NumericVector x);
+RcppExport SEXP _couplr_cpp_plain_mean(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_plain_mean(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_plain_row_sums
+Rcpp::NumericVector cpp_plain_row_sums(Rcpp::NumericMatrix x);
+RcppExport SEXP _couplr_cpp_plain_row_sums(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_plain_row_sums(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_weighted_moments
+Rcpp::List cpp_weighted_moments(Rcpp::NumericVector x, Rcpp::NumericVector w);
+RcppExport SEXP _couplr_cpp_weighted_moments(SEXP xSEXP, SEXP wSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type w(wSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_weighted_moments(x, w));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_group_covariance
+Rcpp::NumericMatrix cpp_group_covariance(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat);
+RcppExport SEXP _couplr_cpp_group_covariance(SEXP left_matSEXP, SEXP right_matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type left_mat(left_matSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type right_mat(right_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_group_covariance(left_mat, right_mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_precision_matrix
+SEXP cpp_precision_matrix(Rcpp::NumericMatrix cov_mat);
+RcppExport SEXP _couplr_cpp_precision_matrix(SEXP cov_matSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type cov_mat(cov_matSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_precision_matrix(cov_mat));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_scaling_statistics
+Rcpp::List cpp_scaling_statistics(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat, std::string method);
+RcppExport SEXP _couplr_cpp_scaling_statistics(SEXP left_matSEXP, SEXP right_matSEXP, SEXP methodSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type left_mat(left_matSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type right_mat(right_matSEXP);
+    Rcpp::traits::input_parameter< std::string >::type method(methodSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_scaling_statistics(left_mat, right_mat, method));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cpp_lap_solve_auction_lazy
 Rcpp::List cpp_lap_solve_auction_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat, SEXP metric, Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov, double max_distance, Rcpp::List calipers, bool maximize, Rcpp::Nullable<double> eps);
 RcppExport SEXP _couplr_cpp_lap_solve_auction_lazy(SEXP left_matSEXP, SEXP right_matSEXP, SEXP metricSEXP, SEXP inv_covSEXP, SEXP max_distanceSEXP, SEXP calipersSEXP, SEXP maximizeSEXP, SEXP epsSEXP) {
@@ -215,6 +307,39 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// lap_exact_assignment_dense
+Rcpp::List lap_exact_assignment_dense(Rcpp::NumericMatrix cost, Rcpp::IntegerVector match, Rcpp::NumericVector v_hint, bool maximize);
+RcppExport SEXP _couplr_lap_exact_assignment_dense(SEXP costSEXP, SEXP matchSEXP, SEXP v_hintSEXP, SEXP maximizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type cost(costSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type match(matchSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type v_hint(v_hintSEXP);
+    Rcpp::traits::input_parameter< bool >::type maximize(maximizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(lap_exact_assignment_dense(cost, match, v_hint, maximize));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lap_exact_assignment_lazy
+Rcpp::List lap_exact_assignment_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat, SEXP distance, Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov, double max_distance, Rcpp::List calipers, Rcpp::IntegerVector match, Rcpp::NumericVector v_hint, bool maximize);
+RcppExport SEXP _couplr_lap_exact_assignment_lazy(SEXP left_matSEXP, SEXP right_matSEXP, SEXP distanceSEXP, SEXP inv_covSEXP, SEXP max_distanceSEXP, SEXP calipersSEXP, SEXP matchSEXP, SEXP v_hintSEXP, SEXP maximizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type left_mat(left_matSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type right_mat(right_matSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type distance(distanceSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericMatrix> >::type inv_cov(inv_covSEXP);
+    Rcpp::traits::input_parameter< double >::type max_distance(max_distanceSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type calipers(calipersSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type match(matchSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type v_hint(v_hintSEXP);
+    Rcpp::traits::input_parameter< bool >::type maximize(maximizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(lap_exact_assignment_lazy(left_mat, right_mat, distance, inv_cov, max_distance, calipers, match, v_hint, maximize));
+    return rcpp_result_gen;
+END_RCPP
+}
 // lap_scan_reduced_costs
 Rcpp::List lap_scan_reduced_costs(Rcpp::NumericMatrix cost, Rcpp::NumericVector u, Rcpp::NumericVector v, double tol);
 RcppExport SEXP _couplr_lap_scan_reduced_costs(SEXP costSEXP, SEXP uSEXP, SEXP vSEXP, SEXP tolSEXP) {
@@ -253,6 +378,22 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type max_distance(max_distanceSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type calipers(calipersSEXP);
     rcpp_result_gen = Rcpp::wrap(lap_hall_witness_lazy(left_mat, right_mat, distance, inv_cov, max_distance, calipers));
+    return rcpp_result_gen;
+END_RCPP
+}
+// lap_cost_margins_lazy
+Rcpp::List lap_cost_margins_lazy(Rcpp::NumericMatrix left_mat, Rcpp::NumericMatrix right_mat, SEXP distance, Rcpp::Nullable<Rcpp::NumericMatrix> inv_cov, double max_distance, Rcpp::List calipers);
+RcppExport SEXP _couplr_lap_cost_margins_lazy(SEXP left_matSEXP, SEXP right_matSEXP, SEXP distanceSEXP, SEXP inv_covSEXP, SEXP max_distanceSEXP, SEXP calipersSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type left_mat(left_matSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type right_mat(right_matSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type distance(distanceSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::NumericMatrix> >::type inv_cov(inv_covSEXP);
+    Rcpp::traits::input_parameter< double >::type max_distance(max_distanceSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type calipers(calipersSEXP);
+    rcpp_result_gen = Rcpp::wrap(lap_cost_margins_lazy(left_mat, right_mat, distance, inv_cov, max_distance, calipers));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -1236,12 +1377,23 @@ static const R_CallMethodDef CallEntries[] = {
     {"_couplr_cpp_lazy_pair_distances", (DL_FUNC) &_couplr_cpp_lazy_pair_distances, 6},
     {"_couplr_cpp_lazy_dense_matrix", (DL_FUNC) &_couplr_cpp_lazy_dense_matrix, 4},
     {"_couplr_cpp_lazy_distance_sd", (DL_FUNC) &_couplr_cpp_lazy_distance_sd, 4},
+    {"_couplr_cpp_finite_sd", (DL_FUNC) &_couplr_cpp_finite_sd, 1},
+    {"_couplr_cpp_plain_sum", (DL_FUNC) &_couplr_cpp_plain_sum, 1},
+    {"_couplr_cpp_plain_mean", (DL_FUNC) &_couplr_cpp_plain_mean, 1},
+    {"_couplr_cpp_plain_row_sums", (DL_FUNC) &_couplr_cpp_plain_row_sums, 1},
+    {"_couplr_cpp_weighted_moments", (DL_FUNC) &_couplr_cpp_weighted_moments, 2},
+    {"_couplr_cpp_group_covariance", (DL_FUNC) &_couplr_cpp_group_covariance, 2},
+    {"_couplr_cpp_precision_matrix", (DL_FUNC) &_couplr_cpp_precision_matrix, 1},
+    {"_couplr_cpp_scaling_statistics", (DL_FUNC) &_couplr_cpp_scaling_statistics, 3},
     {"_couplr_cpp_lap_solve_auction_lazy", (DL_FUNC) &_couplr_cpp_lap_solve_auction_lazy, 8},
     {"_couplr_lap_certify_dense", (DL_FUNC) &_couplr_lap_certify_dense, 8},
     {"_couplr_lap_certify_lazy", (DL_FUNC) &_couplr_lap_certify_lazy, 13},
+    {"_couplr_lap_exact_assignment_dense", (DL_FUNC) &_couplr_lap_exact_assignment_dense, 4},
+    {"_couplr_lap_exact_assignment_lazy", (DL_FUNC) &_couplr_lap_exact_assignment_lazy, 9},
     {"_couplr_lap_scan_reduced_costs", (DL_FUNC) &_couplr_lap_scan_reduced_costs, 4},
     {"_couplr_lap_hall_witness_dense", (DL_FUNC) &_couplr_lap_hall_witness_dense, 1},
     {"_couplr_lap_hall_witness_lazy", (DL_FUNC) &_couplr_lap_hall_witness_lazy, 6},
+    {"_couplr_lap_cost_margins_lazy", (DL_FUNC) &_couplr_lap_cost_margins_lazy, 6},
     {"_couplr_lap_kbest_murty", (DL_FUNC) &_couplr_lap_kbest_murty, 4},
     {"_couplr_lap_solve_auction", (DL_FUNC) &_couplr_lap_solve_auction, 3},
     {"_couplr_lap_solve_auction_scaled", (DL_FUNC) &_couplr_lap_solve_auction_scaled, 3},

@@ -36,6 +36,13 @@
 # the padded problem with the same optimal solver. Pairs that came back on a
 # sentinel edge are dropped before the result is returned.
 #
+# A certificate is the one of the assignment problem over the rows and columns
+# kept. When the short side of the kept units is matched completely it proves
+# the matching optimal among the matchings of the units that have an
+# admissible partner, and its `scope` names those units (.scope_certificate()).
+# A padded solve answered another objective, and its result carries no
+# certificate.
+#
 # Returns a list with:
 #   result       — raw solver output for the submatrix (or NULL if degenerate)
 #   matched_rows — 1-based indices into the *original* cost_matrix rows
@@ -68,45 +75,43 @@
   orig_rows <- which(row_ok)
   orig_cols <- which(col_ok)
 
-  res <- tryCatch(
-    do.call(solver_fn, c(list(sub, maximize = FALSE), solver_params)),
-    error = function(e) NULL
-  )
+  # Whether the admissible pairs hold a matching of every row, or of every
+  # column when the columns are fewer, is a property of the graph and is
+  # decided by Hall's condition (src/core/lap_hall.h). An error raised by the
+  # solver is then an error of the solver and reaches the caller. Greedy
+  # matching answers any graph with the pairs it finds. Both questions are
+  # answered in C++ without a matrix of the cost matrix's size in R: the
+  # margins counted the admissible pairs, and every one of them lies in a kept
+  # row and column.
+  complete <- identical(solver_fn, greedy_matching) ||
+    margins$n_admissible == as.double(length(orig_rows)) * length(orig_cols) ||
+    lap_hall_witness_dense(sub)$max_cardinality == min(dim(sub))
 
   padded <- NULL
   greedy_fallback <- FALSE
-  if (is.null(res)) {
+  if (complete) {
+    res <- do.call(solver_fn, c(list(sub, maximize = FALSE), solver_params))
+  } else {
     padded <- .pad_forbidden(sub, .is_valid_cost(sub))
     if (!is.null(padded)) {
-      res <- tryCatch(
-        do.call(solver_fn, c(list(padded, maximize = FALSE), solver_params)),
-        error = function(e) NULL
-      )
-      if (is.null(res)) {
-        padded <- NULL
-      }
+      # The padded problem has another objective than the matching returned,
+      # so no certificate is asked of its solve.
+      padded_params <- solver_params
+      padded_params$certify <- NULL
+      res <- do.call(solver_fn, c(list(padded, maximize = FALSE), padded_params))
+      res[["certificate"]] <- NULL
+    } else {
+      # The lexicographic objective cannot be written exactly in doubles. Greedy
+      # still produces a partial matching, but it is not the optimal one, so say
+      # so rather than letting an optimal request come back quietly downgraded.
+      res <- greedy_matching(sub, strategy = "sorted")
+      greedy_fallback <- TRUE
+      warning("constraints admit no complete matching and the cost range is too ",
+              "wide to solve the maximum-cardinality problem exactly; returning ",
+              "a greedy partial matching, which is not optimal. Relax ",
+              "max_distance/calipers or rescale the covariates to recover an ",
+              "optimal result.", call. = FALSE)
     }
-  }
-
-  if (is.null(res)) {
-    # Neither the direct nor the padded solve returned. Greedy still produces a
-    # partial matching, but it is not the optimal one, so say so rather than
-    # letting an optimal request come back quietly downgraded.
-    res <- tryCatch(
-      greedy_matching(sub, strategy = "sorted"),
-      error = function(e) NULL
-    )
-    if (is.null(res)) {
-      return(list(result = NULL,
-                  matched_rows = integer(0),
-                  matched_cols = integer(0)))
-    }
-    greedy_fallback <- TRUE
-    warning("constraints admit no complete matching and the cost range is too ",
-            "wide to solve the maximum-cardinality problem exactly; returning ",
-            "a greedy partial matching, which is not optimal. Relax ",
-            "max_distance/calipers or rescale the covariates to recover an ",
-            "optimal result.", call. = FALSE)
   }
 
   match_vec <- as.integer(res$match)
@@ -123,6 +128,7 @@
   matched_rows <- orig_rows[matched_sub_rows]
   matched_cols <- orig_cols[matched_sub_cols]
 
+
   # The submatrix is an assignment LP, and its duals are what the matching is
   # certified against. A padded solve answered a different objective and a
   # greedy one no objective at all, so neither has them.
@@ -132,9 +138,66 @@
     potentials <- .sub_potentials(res, sub, orig_rows, orig_cols,
                                   dim(cost_matrix))
   }
+  res <- .scope_certificate(res, orig_rows, orig_cols, dim(cost_matrix))
 
   list(result = res, matched_rows = matched_rows, matched_cols = matched_cols,
        potentials = potentials)
+}
+
+# A certificate computed over some rows and columns of a larger problem, read
+# in the larger problem's indices. `scope` names the rows and columns it covers
+# (`left`, `right`) and how many the problem has (`n_left`, `n_right`), so that
+# what the certificate proves is stated beside it: optimality among the
+# matchings of those units. The worst violating pair it reports moves to the
+# same indices.
+#
+# A matching that covers the short side of the whole problem needs no scope:
+# the units left out have no admissible pair, so a zero dual on each of them
+# leaves every dual condition of the whole problem as it was, and the
+# certificate is one for the whole problem. It is then reported as one, as a
+# solve over the whole problem would report it.
+.scope_certificate <- function(res, orig_rows, orig_cols, dims) {
+  cert <- res[["certificate"]]
+  if (is.null(cert) ||
+      (length(orig_rows) == dims[1] && length(orig_cols) == dims[2])) {
+    return(res)
+  }
+  # The certificate was checked with rows <= columns, so on a transposed check
+  # its row index is a column of the problem.
+  row_of <- if (isTRUE(cert$transposed)) orig_cols else orig_rows
+  col_of <- if (isTRUE(cert$transposed)) orig_rows else orig_cols
+  if (isTRUE(cert$worst_i > 0L)) cert$worst_i <- row_of[cert$worst_i]
+  if (isTRUE(cert$worst_j > 0L)) cert$worst_j <- col_of[cert$worst_j]
+  if (isTRUE(cert$n_matched < min(dims))) {
+    cert$scope <- list(left = orig_rows, right = orig_cols,
+                       n_left = dims[1], n_right = dims[2])
+  }
+  res$certificate <- cert
+  res
+}
+
+# The scope of a certificate in the caller's units, named by id. The rows and
+# columns it covers are nodes of the compiled design, and the design's maps say
+# which unit each one stands for; the replicas of a k:1 left unit share their
+# partners, so they are covered together.
+.scope_on_units <- function(cert, row_unit, col_unit, left_ids, right_ids) {
+  if (is.null(cert) || is.null(cert$scope)) {
+    return(cert)
+  }
+  cert$scope <- list(
+    left = left_ids[sort(unique(row_unit[cert$scope$left]))],
+    right = right_ids[sort(unique(col_unit[cert$scope$right]))],
+    n_left = length(left_ids),
+    n_right = length(right_ids)
+  )
+  cert
+}
+
+# One sentence on the units a certificate covers, for print() and summary().
+.scope_text <- function(scope) {
+  sprintf("%s of %s left and %s of %s right units, those with an admissible partner",
+          .fmt_count(length(scope$left)), .fmt_count(scope$n_left),
+          .fmt_count(length(scope$right)), .fmt_count(scope$n_right))
 }
 
 # The assignment duals of `sub`, placed at the original rows and columns it was
@@ -159,17 +222,32 @@
   list(rows = rows, cols = cols)
 }
 
-# Lazy-cost-spec counterpart of .solve_with_partial_feasibility(). The whole
-# problem is put to the solver first. When the constraints admit no complete
-# matching -- the lazy solver throws, or the implicit loop answers with Hall's
-# witness -- the answer is the one the dense path reaches by pruning and
-# sentinel padding: the largest matching the constraints admit, and the
-# cheapest among those. Here it is the one-to-one design solved by the design
-# loop over the same specification, whose shortfall is a maximum flow certified
-# by a residual cut over every admissible pair and whose cost is priced against
-# its potentials, so no pair set is built on the way to it either.
+# Lazy-cost-spec counterpart of .solve_with_partial_feasibility(), answering
+# the same question in the same steps without storing a pair.
+#
+# The units without an admissible partner are found by reading the
+# specification (lazy_cost_spec_margins()) and left out, and the problem over
+# the units that remain is put to the same solver a complete problem goes to.
+# When it matches the short side of those units completely, its answer is the
+# optimum among their matchings, its duals and certificate are the ones of that
+# assignment problem, and the certificate's scope names the units it covers.
+#
+# When it does not -- the lazy solver throws, or the implicit loop answers with
+# Hall's witness -- the answer is the one the dense path reaches by sentinel
+# padding: the largest matching the constraints admit, and the cheapest among
+# those. Here it is the one-to-one design solved by the design loop over the
+# same specification, whose shortfall is a maximum flow certified by a residual
+# cut over every admissible pair and whose cost is priced against its
+# potentials, so no pair set is built on the way to it either. It carries no
+# assignment certificate. The witness names, in the specification's indices,
+# units with partners that cannot all be matched.
+#
+# `complete_infeasible` says the caller already knows the whole problem has no
+# complete matching, so that a problem whose units all have partners goes to
+# the design loop without being solved again.
 .solve_lazy_with_partial_feasibility <- function(cost_matrix, solver_fn,
-                                                 solver_params = list()) {
+                                                 solver_params = list(),
+                                                 complete_infeasible = FALSE) {
   mode <- lazy_cost_spec_mode(cost_matrix)
 
   if (identical(solver_fn, greedy_matching)) {
@@ -178,8 +256,31 @@
          "memory_mode = \"dense\".", call. = FALSE)
   }
 
+  dims <- c(cost_matrix$n_left, cost_matrix$n_right)
+  margins <- lazy_cost_spec_margins(cost_matrix)
+  orig_rows <- which(margins$row_ok)
+  orig_cols <- which(margins$col_ok)
+  # With no admissible pair at all there is nothing to leave out, and the solve
+  # over the whole problem is what answers with Hall's witness over every row.
+  if (!length(orig_rows)) {
+    orig_rows <- seq_len(dims[1])
+    orig_cols <- seq_len(dims[2])
+  }
+  whole <- length(orig_rows) == dims[1] && length(orig_cols) == dims[2]
+
+  if (whole && complete_infeasible) {
+    return(.lazy_partial_matching(cost_matrix))
+  }
+
+  sub <- if (whole) cost_matrix else
+    lazy_cost_spec_subset(cost_matrix, orig_rows, orig_cols)
+
+  # A method the mode does not run is an error of the call and reaches the
+  # caller. Past it, an error of the solve says the units that remain have no
+  # complete matching, which the design loop below then answers.
+  .check_spec_method(solver_params$method, mode)
   res <- tryCatch(
-    do.call(solver_fn, c(list(cost_matrix, maximize = FALSE), solver_params)),
+    do.call(solver_fn, c(list(sub, maximize = FALSE), solver_params)),
     error = function(e) e
   )
 
@@ -188,20 +289,44 @@
     # Hall's witness still says why no complete matching exists, beside the
     # largest one that does.
     if (!inherits(res, "error") && !is.null(res$witness)) {
-      partial$result$witness <- res$witness
+      partial$result$witness <- .witness_on_units(res$witness, orig_rows,
+                                                  orig_cols, dims)
     }
     return(partial)
   }
 
   match_vec <- as.integer(res$match)
-  matched_rows <- which(match_vec > 0L)
-  matched_cols <- match_vec[matched_rows]
+  matched_sub_rows <- which(match_vec > 0L)
+  matched_rows <- orig_rows[matched_sub_rows]
+  matched_cols <- orig_cols[match_vec[matched_sub_rows]]
 
-  duals <- .solver_duals(res, transposed = FALSE)
-  potentials <- if (is.null(duals)) NULL else list(rows = duals$u, cols = duals$v)
+  potentials <- .sub_potentials(res, sub, orig_rows, orig_cols, dims)
+  res <- .scope_certificate(res, orig_rows, orig_cols, dims)
 
   list(result = res, matched_rows = matched_rows, matched_cols = matched_cols,
        potentials = potentials)
+}
+
+# A Hall witness found on some rows and columns of a problem, read in the
+# problem's indices. A unit left out had no admissible pair at all, so the
+# deficient rows reach the same columns in the whole problem and the witness
+# holds there as it stands. Its indices follow its own orientation, which
+# `transposed` records.
+.witness_on_units <- function(w, orig_rows, orig_cols, dims) {
+  if (length(orig_rows) == dims[1] && length(orig_cols) == dims[2]) {
+    return(w)
+  }
+  row_of <- if (isTRUE(w$transposed)) orig_cols else orig_rows
+  col_of <- if (isTRUE(w$transposed)) orig_rows else orig_cols
+  w$rows <- row_of[w$rows]
+  w$cols <- col_of[w$cols]
+  if (!is.null(w$matching)) {
+    matching <- integer(if (isTRUE(w$transposed)) dims[2] else dims[1])
+    hit <- which(w$matching > 0L)
+    matching[row_of[hit]] <- col_of[w$matching[hit]]
+    w$matching <- matching
+  }
+  w
 }
 
 # The maximum-cardinality minimum-cost matching of a specification, by the
@@ -285,9 +410,7 @@
     return(cost_matrix)
   }
   if (is_lazy_cost_spec(cost_matrix)) {
-    spec <- cost_matrix
-    spec$inv_cov <- lazy_cost_spec_inv_cov(cost_matrix)
-    return(lazy_cost_spec_rows(spec, plan$row_unit, plan$col_unit))
+    return(lazy_cost_spec_subset(cost_matrix, plan$row_unit, plan$col_unit))
   }
   cost_matrix[plan$row_unit, plan$col_unit, drop = FALSE]
 }
@@ -445,8 +568,9 @@
 
   info <- list(
     solver = if (is.null(solver_result)) NA_character_ else solver_result$method_used,
+    solve_status = .solve_status_of(solver_result),
     n_matched = nrow(pairs),
-    total_distance = sum(pairs$distance, na.rm = TRUE)
+    total_distance = .plain_sum(pairs$distance, na.rm = TRUE)
   )
   if (identical(plan$design, "fixed_ratio")) {
     info$ratio <- ratio
@@ -467,7 +591,14 @@
   # the reason `status` does: return_diagnostics = FALSE truncates `info` to
   # three fields, and a certificate that survives only a diagnostic call is not
   # one a caller can rely on.
-  .carry_solve_evidence(out, solver_result)
+  .carry_solve_evidence(out, solver_result, plan, left_ids, right_ids)
+}
+
+# What a solve terminated on, for the matching's status; NA when no solve ran
+# or the solver reported none.
+.solve_status_of <- function(solver_result) {
+  status <- solver_result$status
+  if (is.null(status)) NA_character_ else as.character(status)
 }
 
 # The solve's duals in the caller's units, named by id. A design that
@@ -516,13 +647,16 @@
   list(left = spread("left", left_ids), right = spread("right", right_ids))
 }
 
-# Move what a solve proved about itself onto the matching it produced.
-.carry_solve_evidence <- function(out, solver_result) {
+# Move what a solve proved about itself onto the matching it produced, with the
+# scope of its certificate read in the caller's units.
+.carry_solve_evidence <- function(out, solver_result, plan, left_ids, right_ids) {
   if (is.null(solver_result)) {
     return(out)
   }
   if (!is.null(solver_result$certificate)) {
-    out$certificate <- solver_result$certificate
+    out$certificate <- .scope_on_units(solver_result$certificate,
+                                       plan$row_unit, plan$col_unit,
+                                       left_ids, right_ids)
   }
   if (!is.null(solver_result$search)) {
     out$search <- solver_result$search
@@ -599,7 +733,7 @@
     ),
     info = list(
       n_matched = nrow(pairs),
-      total_distance = sum(pairs$distance, na.rm = TRUE),
+      total_distance = .plain_sum(pairs$distance, na.rm = TRUE),
       replace = TRUE,
       ratio = ratio
     ),
@@ -755,8 +889,9 @@
     list(
       method = method_label,
       solver = if (is.null(solver_result)) NA_character_ else solver_result$method_used,
+      solve_status = .solve_status_of(solver_result),
       n_matched = nrow(pairs),
-      total_distance = sum(pairs$distance),
+      total_distance = .plain_sum(pairs$distance),
       distance_metric = dist_obj$metadata$distance,
       scaled = !identical(dist_obj$metadata$scale, FALSE),
       n_left = length(left_ids),
@@ -775,6 +910,8 @@
   )
   result$potentials <- .couples_potentials(solved$potentials, plan,
                                            left_ids, right_ids)
+  result <- .carry_solve_evidence(result, solver_result, plan,
+                                  left_ids, right_ids)
 
   # Check for full matching if required
   if (require_full_matching) {
@@ -787,7 +924,8 @@
     solver      = result$info$solver,
     greedy      = identical(method_label, "greedy"),
     n_pairs     = nrow(result$pairs),
-    n_requested = length(left_ids)
+    n_requested = length(left_ids),
+    solve_status = result$info$solve_status
   )
 
   result$info <- c(
@@ -822,9 +960,9 @@
     n_left = as.integer(n_left),
     n_right = as.integer(n_right),
     n_matched = nrow(pairs),
-    total_distance = sum(pairs$distance, na.rm = TRUE),
+    total_distance = .plain_sum(pairs$distance, na.rm = TRUE),
     mean_distance = if (nrow(pairs) > 0L) {
-      mean(pairs$distance, na.rm = TRUE)
+      .plain_mean(pairs$distance[!is.na(pairs$distance)])
     } else {
       NA_real_
     },
@@ -849,14 +987,17 @@
 # `solvers` is one method per block that ran a solve, which is what carries a
 # block's greedy fallback out to the status. Reporting the requested method
 # here instead reports every block as having run it, including the one that
-# did not.
-.blocked_info <- function(pairs, n_blocks, block_summary, solvers) {
+# did not. `solve_status` is what each of those solves terminated on.
+.blocked_info <- function(pairs, n_blocks, block_summary, solvers,
+                          solve_status = character(0)) {
   list(
     solver = if (length(solvers) > 0L) unique(solvers) else NA_character_,
+    solve_status = if (length(solve_status) > 0L) unique(solve_status) else
+      NA_character_,
     blocked = TRUE,
     n_blocks = n_blocks,
     n_matched = nrow(pairs),
-    total_distance = sum(pairs$distance, na.rm = TRUE),
+    total_distance = .plain_sum(pairs$distance, na.rm = TRUE),
     block_summary = block_summary
   )
 }
@@ -908,7 +1049,8 @@
       pairs = result$pairs,
       unmatched = result$unmatched,
       info = .blocked_info(result$pairs, length(blocks),
-                           result$block_summary, result$solvers),
+                           result$block_summary, result$solvers,
+                           result$solve_status),
       potentials = .merge_potentials(result$potentials, left_ids, right_ids)
     ))
   }
@@ -920,6 +1062,7 @@
   block_summaries <- list()
   block_potentials <- list()
   solvers <- character(0)
+  solve_status <- character(0)
 
   for (block in blocks) {
     left_block <- left[left[[block_col]] == block, ]
@@ -975,6 +1118,7 @@
     all_unmatched_right <- c(all_unmatched_right, block_result$unmatched$right)
 
     solvers <- c(solvers, block_result$info$solver)
+    solve_status <- c(solve_status, block_result$info$solve_status)
     block_potentials[[length(block_potentials) + 1]] <- block_result$potentials
 
     # Block summary
@@ -1014,7 +1158,8 @@
       left = all_unmatched_left,
       right = all_unmatched_right
     ),
-    info = .blocked_info(pairs, length(blocks), block_summary_df, solvers),
+    info = .blocked_info(pairs, length(blocks), block_summary_df, solvers,
+                         solve_status),
     potentials = .merge_potentials(block_potentials, left_ids, right_ids)
   )
 }
@@ -1102,8 +1247,10 @@
 #'   the same contract the dense path calls it under, with the block sized so
 #'   the matrix it returns stays near a million cells; each matched pair is
 #'   then evaluated again alone, and a distance that depends on the other units
-#'   in its call is an error. When the constraints admit no complete matching, the
-#'   largest matching they admit, cheapest among those, is found by the
+#'   in its call is an error. Units without an admissible partner are found by
+#'   reading the distances and left out of the solve, as the dense path prunes
+#'   them. When the units that remain cannot all be matched, the largest
+#'   matching the constraints admit, cheapest among those, is found by the
 #'   edge-generation loop over the same specification, as the dense path finds
 #'   it by padding. Where the metric carries a ball
 #'   bound, the column set is held in a ball tree and a subtree whose bound
@@ -1125,7 +1272,19 @@
 #'   solve, and to `FALSE` elsewhere, where it costs one extra pass over the
 #'   admissible pairs. Available for one-to-one and `ratio`-to-one matching
 #'   without blocks; greedy matching and matching with replacement solve no
-#'   assignment problem and carry none.
+#'   assignment problem and carry none. In every memory mode the matching is
+#'   made exactly optimal on the stored distances before it is certified, so
+#'   the certificate is exact (see `certify` in [assignment()]). When
+#'   `max_distance` or `calipers` leave some units without any admissible
+#'   partner, the matching is partial, and it is certified over the units
+#'   that can be matched: when every unit with a partner is matched (every
+#'   unit of the shorter side, among the units with partners), the certificate
+#'   is the one of the assignment problem over those units and all their
+#'   possible partners, proves the matching optimal among their matchings, and
+#'   names them in its `scope`. When even those units cannot all be matched,
+#'   the result is the largest matching and the cheapest among those, and
+#'   [certificate()] returns `NULL`. The rule is the same in every memory mode
+#'   and in [match_path()].
 #' @return A list with class "matching_result" containing:
 #'   - `pairs`: Tibble of matched pairs with distances
 #'   - `unmatched`: List of unmatched left and right IDs
@@ -1374,7 +1533,8 @@ match_couples <- function(left, right = NULL,
     solver      = result$info$solver,
     greedy      = greedy,
     n_pairs     = nrow(result$pairs),
-    n_requested = nrow(left) * ratio
+    n_requested = nrow(left) * ratio,
+    solve_status = result$info$solve_status
   )
 
   if (!return_unmatched) {

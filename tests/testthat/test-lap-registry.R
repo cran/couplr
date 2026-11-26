@@ -62,6 +62,24 @@ test_that("a solver returning a malformed match is refused", {
   expect_error(assignment(diag(3), method = "test_bad"), "one column index per row")
 })
 
+test_that("a solver assigning one column to several rows is refused", {
+  register_lap_solver("test_repeat",
+                      function(cost, maximize, ...) rep(1L, nrow(cost)))
+  on.exit(rm("test_repeat", envir = couplr:::.lap_registry), add = TRUE)
+  expect_error(assignment(diag(3), method = "test_repeat"),
+               'Solver "test_repeat" assigned a column to more than one row',
+               fixed = TRUE)
+})
+
+test_that("unmatched rows of a registered solver may repeat the value 0", {
+  register_lap_solver("test_partial",
+                      function(cost, maximize, ...) c(1L, 0L, 0L))
+  on.exit(rm("test_partial", envir = couplr:::.lap_registry), add = TRUE)
+  expect_identical(couplr:::.run_lap_solver(couplr:::.lap_solver("test_partial"),
+                                            diag(3), FALSE)$match,
+                   c(1L, 0L, 0L))
+})
+
 test_that("registered solvers return plain integer-valued match vectors", {
   output <- c(1, 2)
   register_lap_solver("test_indices", function(cost, maximize) output)
@@ -95,4 +113,71 @@ test_that("a registered solver with potentials passes them to the certificate", 
   res <- assignment(cost, method = "test_duals")
   expect_identical(certificate(res)$exact_duals_source, "solver")
   expect_true(certificate(res)$certified_optimal)
+})
+
+test_that("an error of a registered solver reaches the caller of match_couples()", {
+  register_lap_solver("test_fails",
+                      function(cost, maximize, ...) stop("solver broke"))
+  register_lap_solver("test_repeat2",
+                      function(cost, maximize, ...) rep(1L, nrow(cost)))
+  on.exit(rm(list = c("test_fails", "test_repeat2"),
+             envir = couplr:::.lap_registry), add = TRUE)
+  left <- data.frame(id = 1:3, x = c(1, 2, 3))
+  right <- data.frame(id = 4:7, x = c(1.1, 2.1, 3.1, 9))
+
+  expect_error(match_couples(left, right, vars = "x", method = "test_fails"),
+               "solver broke")
+  expect_error(match_couples(left, right, vars = "x", method = "test_repeat2"),
+               "more than one row")
+  # A caliper that still admits a complete matching changes nothing about that.
+  expect_error(suppressWarnings(match_couples(left, right, vars = "x",
+                                              max_distance = 0.5,
+                                              auto_scale = FALSE,
+                                              method = "test_fails")),
+               "solver broke")
+})
+
+test_that("a registered solver is optimal only when a certificate says so", {
+  identity_solver <- function(cost, maximize, ...) seq_len(nrow(cost))
+  register_lap_solver("test_identity", identity_solver)
+  on.exit(rm("test_identity", envir = couplr:::.lap_registry), add = TRUE)
+  claiming <- function(cost, maximize, ...) {
+    list(match = seq_len(nrow(cost)), status = "optimal")
+  }
+  register_lap_solver("test_claiming", claiming)
+  on.exit(rm("test_claiming", envir = couplr:::.lap_registry), add = TRUE)
+
+  cost <- matrix(c(5, 1, 9, 1, 5, 9, 9, 9, 1), 3, byrow = TRUE)
+  res <- assignment(cost, method = "test_identity")
+  expect_false(certificate(res)$certified_optimal)
+  expect_identical(res$status, "heuristic")
+  expect_identical(assignment(cost, method = "test_identity",
+                              certify = FALSE)$status, "heuristic")
+  expect_identical(assignment(cost, method = "test_claiming")$status,
+                   "heuristic")
+  expect_identical(assignment(cost, method = "test_claiming",
+                              certify = FALSE)$status, "optimal")
+  expect_identical(assignment(1 - diag(3), method = "test_identity")$status,
+                   "optimal")
+
+  left <- data.frame(id = 1:3, x = c(0, 1, 2))
+  right <- data.frame(id = 1:3, x = c(1, 0, 2.1))
+  m <- match_couples(left, right, vars = "x", auto_scale = FALSE,
+                     method = "test_identity")
+  expect_identical(m$status, "heuristic")
+  expect_false(glance(m)$certified)
+  expect_output(print(m), "heuristic", fixed = TRUE)
+})
+
+test_that("a certified solve by a solver without potentials carries them", {
+  set.seed(31)
+  cost <- matrix(runif(36), 6)
+  for (method in c("auction", "bruteforce", "csa")) {
+    res <- assignment(cost, method = method, certify = TRUE)
+    pot <- potentials(res)
+    expect_false(is.null(pot), info = method)
+    expect_true(certificate(res)$certified_optimal, info = method)
+    expect_equal(sum(pot$u) + sum(pot$v), res$total_cost, info = method)
+    expect_null(potentials(assignment(cost, method = method)), info = method)
+  }
 })
